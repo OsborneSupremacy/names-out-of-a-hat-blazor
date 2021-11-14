@@ -1,20 +1,25 @@
 ﻿@using NamesOutOfAHat2.Model
 
-<div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
-    <h5 class="card-header bg-info">@DisplayName</h5>
-    <div class="card-body">
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" @bind-value="Person.Name" />
-            <label for="Name" >Name</label>
-        </div>       
-        <div class="form-floating mb-3">
-            <input type="email" class="form-control" @bind-value="Person.Email" />
-            <label for="Email">Email</label>
-        </div> 
-        <button @onclick="CommitParticipantAddAsync" type="submit" class="btn btn-sm btn-primary">Add</button>&nbsp;
-        <a href="#" class="btn btn-sm btn-danger" >Cancel</a>
+<EditForm Model="@Person" OnValidSubmit="@CommitParticipantAddAsync">
+    <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
+        <h5 class="card-header bg-info">@DisplayName</h5>
+        <div class="card-body">
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" @bind-value="Person.Name" />
+                <label for="Name">Name</label>
+            </div>       
+            <div class="form-floating mb-3">
+                <input type="email" class="form-control" @bind-value="Person.Email" />
+                <label for="Email">Email</label>
+            </div>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <button type="submit" class="btn btn-sm btn-primary">Add</button>&nbsp;
+            <a href="#" class="btn btn-sm btn-danger" @onclick="CancelCallback" >Cancel</a>
+        </div>
     </div>
-</div>
+</EditForm>
+
 
 @code {
 
@@ -22,19 +27,20 @@
     public Person Person { get; set; }
 
     [Parameter]
-    public EventCallback<Person> PersonAddedCallBack { get; set; }
+    public EventCallback<Person> PersonAddedCallback { get; set; }
+
+    [Parameter]
+    public EventCallback CancelCallback { get; set; }
 
     public String DisplayName
     {
-        get
-        {
-            return (Person?.Name?.Trim().Length ?? 0) > 1 ? Person!.Name : "New Participant";
-        }
+        get => (Person?.Name?.Trim().Length ?? 0) > 1 ? Person!.Name : "New Participant";
     }
 
     public async Task CommitParticipantAddAsync()
     {
-        await PersonAddedCallBack.InvokeAsync(Person);
+        Person.Id = System.Guid.NewGuid();
+        await PersonAddedCallback.InvokeAsync(Person);
     }
 
 }

@@ -7,7 +7,18 @@
         <div class="jumbotron">
             <h1 class="display-5">Put everyone's name in the hat!</h1>
         </div>
-        <AddParticipant Person="@NewPerson" PersonAddedCallBack="@PersonAdded" />
+
+        @if(Mode == Modes.Default)
+        {
+            <p>
+                <button type="button" @onclick="SwitchToAddMode" class="btn btn-primary">Add a Participant</button>
+            </p>       
+        }
+
+        @if(Mode == Modes.Adding)
+        {
+            <AddParticipant Person="@NewPerson" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
+        }
 
         @if (Hat.Participants?.Any() ?? false)
         {
@@ -21,9 +32,30 @@
 </div>
 
 @code {
-    Person NewPerson = new Person();
+    Person NewPerson;
 
     Hat Hat = new Hat();
+
+    Modes Mode = Modes.Default;
+
+    enum Modes
+    {
+        Default,
+        Adding
+    }
+
+    void SwitchToAddMode()
+    {
+        NewPerson = new Person() { Id = System.Guid.NewGuid() };
+        Mode = Modes.Adding;
+    }
+
+    void Cancelled()
+    {
+        Mode = Modes.Default;
+    }
+
+    void SwitchMode(Modes mode) => Mode = mode;
 
     private void PersonAdded(Person person)
     {
@@ -33,8 +65,7 @@
         participant.Person = person;
         Hat.Participants.Add(participant);
 
-        // TODO: Ensure that this is necessary
-        StateHasChanged();
+        SwitchMode(Modes.Default);
     }
 
 }
