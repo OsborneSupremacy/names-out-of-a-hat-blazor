@@ -12,12 +12,12 @@
         {
             <p>
                 <button type="button" @onclick="SwitchToAddMode" class="btn btn-primary">Add a Participant</button>
-            </p>       
+            </p>
         }
 
         @if(Mode == Modes.Adding)
         {
-            <AddParticipant Person="@NewPerson" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
+            <AddParticipant Person="@Person" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
         }
 
         @if (Hat.Participants?.Any() ?? false)
@@ -32,7 +32,7 @@
 </div>
 
 @code {
-    Person NewPerson;
+    Person Person;
 
     Hat Hat = new Hat();
 
@@ -46,7 +46,7 @@
 
     void SwitchToAddMode()
     {
-        NewPerson = new Person() { Id = System.Guid.NewGuid() };
+        Person = new Person() { Id = System.Guid.NewGuid() };
         Mode = Modes.Adding;
     }
 
@@ -61,8 +61,34 @@
     {
         Hat.Participants ??= new List<Participant>();
 
-        var participant = new Participant();
-        participant.Person = person;
+        // create recipient
+        var recipient = new Recipient() 
+        {
+            Person = person,
+            Eligible = true
+        };
+
+        var newGiverRecipients = new List<Recipient>();
+
+        // make person a recipient for all existing participant
+        foreach (Participant ep in Hat.Participants)
+        {
+            ep.Recipients.Add(recipient);
+            newGiverRecipients.Add(new Recipient()
+            {
+                Person = ep.Person,
+                Eligible = true
+            });
+        }
+
+        // make existing people recipients for new participant
+        
+        // add new participant to hat
+        var participant = new Participant() {
+            Person = person,
+            Recipients = newGiverRecipients
+        };
+        
         Hat.Participants.Add(participant);
 
         SwitchMode(Modes.Default);
