@@ -1,0 +1,30 @@
+﻿@using NamesOutOfAHat2.Model
+
+<div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
+    <h5 class="card-header bg-info">@Participant.Person.Name</h5>
+    <ul class="list-group list-group-flush">
+    <li class="list-group-item">📧 @Participant.Person.Email</li>
+    <li class="list-group-item">
+        <ul>
+            <label class="form-label"><b>🎁 Eligible Recipients</b></label>
+            <div v-for="sp in people" :key="sp.id" class="form-check" style="text-align: left">
+                <input class="form-check-input" type="checkbox" value="" :id="'cb_' + person.id + '_' + sp.id">
+                <label class="form-check-label" :for="'cb_' + person.id + '_' + sp.id">
+                {{ sp.name }}
+                </label>
+            </div>
+        </ul>
+    </li>
+    <li class="list-group-item">
+        <a href="#" class="btn btn-sm btn-primary" @click="editMode = true" >Edit</a>&nbsp;
+        <a href="#" class="btn btn-sm btn-danger" @click="remove" >Remove</a>
+    </li>
+    </ul>
+</div>
+
+@code {
+
+    [Parameter]
+    public Participant Participant { get; set; }
+
+}

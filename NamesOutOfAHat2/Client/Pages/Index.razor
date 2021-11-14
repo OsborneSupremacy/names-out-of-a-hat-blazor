@@ -1,0 +1,40 @@
+﻿@page "/"
+
+@using NamesOutOfAHat2.Model
+
+<div class="bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <div class="jumbotron">
+            <h1 class="display-5">Put everyone's name in the hat!</h1>
+        </div>
+        <AddParticipant Person="@NewPerson" PersonAddedCallBack="@PersonAdded" />
+
+        @if (Hat.Participants?.Any() ?? false)
+        {
+            @foreach(var participant in Hat.Participants)
+            {
+                <ParticipantDisplay Participant="@participant" />
+            }
+        }
+
+    </div>
+</div>
+
+@code {
+    Person NewPerson = new Person();
+
+    Hat Hat = new Hat();
+
+    private void PersonAdded(Person person)
+    {
+        Hat.Participants ??= new List<Participant>();
+
+        var participant = new Participant();
+        participant.Person = person;
+        Hat.Participants.Add(participant);
+
+        // TODO: Ensure that this is necessary
+        StateHasChanged();
+    }
+
+}
