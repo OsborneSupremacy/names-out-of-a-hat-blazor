@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Client", "N
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Shared", "NamesOutOfAHat2\Shared\NamesOutOfAHat2.Shared.csproj", "{94D13C2C-DBE2-4663-BF94-95CF871BEEA6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamesOutOfAHat2.Model", "NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj", "{0718BBAA-4D33-4B1A-92F8-AD81426D076C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Model", "NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj", "{0718BBAA-4D33-4B1A-92F8-AD81426D076C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
