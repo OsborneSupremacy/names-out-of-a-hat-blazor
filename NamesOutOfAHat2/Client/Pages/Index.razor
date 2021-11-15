@@ -24,7 +24,7 @@
         {
             @foreach(var participant in Hat.Participants)
             {
-                <ParticipantDisplay Participant="@participant" />
+                <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" />
             }
         }
 
@@ -56,6 +56,11 @@
     }
 
     void SwitchMode(Modes mode) => Mode = mode;
+
+    void ParticipantEdited(Participant participant)
+    {
+        StateHasChanged();
+    }
 
     void PersonAdded(Person person)
     {

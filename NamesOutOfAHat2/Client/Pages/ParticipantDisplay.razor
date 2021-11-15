@@ -6,22 +6,22 @@
     <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
         <h5 class="card-header bg-info">@Participant.Person.Name</h5>
         <ul class="list-group list-group-flush">
-        <li class="list-group-item">📧 @Participant.Person.Email</li>
-        <li class="list-group-item">
-            <label class="form-label"><b>🎁 Eligible Recipients</b></label>
-            @foreach(var recipient in Participant.Recipients)
-            {
-                var id = System.Guid.NewGuid();
-                <div class="form-check" style="text-align: left">
-                    <input class="form-check-input" id="@id" type="checkbox" @bind="recipient.Eligible" />
-                    <label class="form-check-label" for="@id" >@recipient.Person.Name</label>
-                </div>
-            }
-        </li>
-        <li class="list-group-item">
-            <a href="#" class="btn btn-sm btn-primary" @onclick="Edit" >Edit</a>&nbsp;
-            <a href="#" class="btn btn-sm btn-danger" @click="remove" >Remove</a>
-        </li>
+            <li class="list-group-item">📧 @Participant.Person.Email</li>
+            <li class="list-group-item">
+                <label class="form-label"><b>🎁 Eligible Recipients</b></label>
+                @foreach(var recipient in Participant.Recipients)
+                {
+                    var id = System.Guid.NewGuid();
+                    <div class="form-check" style="text-align: left">
+                        <input class="form-check-input" id="@id" type="checkbox" @bind="recipient.Eligible" />
+                        <label class="form-check-label" for="@id" >@recipient.Person.Name</label>
+                    </div>
+                }
+            </li>
+            <li class="list-group-item">
+                <a href="#" class="btn btn-sm btn-primary" @onclick="Edit" >Edit</a>&nbsp;
+                <a href="#" class="btn btn-sm btn-danger" @click="remove" >Remove</a>
+            </li>
         </ul>
     </div>
 }
@@ -29,7 +29,7 @@
 @*Edit Mode*@
 @if(Mode == Modes.Editing)
 {
-    <EditForm Model="@Participant.Person" >
+    <EditForm Model="@Participant.Person" OnValidSubmit="@CommitParticipantEditAsync">
         <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
             <h5 class="card-header bg-info">@DisplayName</h5>
             <div class="card-body">
@@ -43,7 +43,7 @@
                 </div>
                 <DataAnnotationsValidator />
                 <ValidationSummary />
-                <button type="submit" class="btn btn-sm btn-primary" @onclick="Display">Done</button>&nbsp;
+                <button type="submit" class="btn btn-sm btn-primary">Done</button>&nbsp;
             </div>
         </div>
     </EditForm>
@@ -66,9 +66,18 @@
     [Parameter]
     public Participant Participant { get; set; }
 
+    [Parameter]
+    public EventCallback<Participant> ParticpantEditedCallback { get; set; }
+
     public String DisplayName
     {
         get => (Participant.Person?.Name?.Trim().Length ?? 0) > 1 ? Participant.Person!.Name : "Participant";
+    }
+
+    public async Task CommitParticipantEditAsync()
+    {
+        await ParticpantEditedCallback.InvokeAsync(Participant);
+        Display();
     }
 
 }
