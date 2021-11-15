@@ -1,5 +1,7 @@
 ﻿@page "/"
+@inject NamesOutOfAHat2.Service.LocalStorageService Storage
 
+@using System.Text.Json
 @using NamesOutOfAHat2.Model
 
 <div class="bg-light rounded-3">
@@ -32,7 +34,7 @@
 </div>
 
 @code {
-    Person Person;
+    Person? Person;
 
     Hat Hat = new Hat();
 
@@ -42,6 +44,18 @@
     {
         Default,
         Adding
+    }
+
+    protected override async void OnInitialized() 
+    {
+        var savedHat = await TryLoadFromLocalStorageAsync();
+        if (savedHat.success)
+        {
+            Hat = savedHat.hat!;
+            StateHasChanged();
+        }
+        else
+            SwitchToAddMode();
     }
 
     void SwitchToAddMode()
@@ -60,6 +74,7 @@
     void ParticipantEdited(Participant participant)
     {
         StateHasChanged();
+        SaveToLocalStorage();
     }
 
     void PersonAdded(Person person)
@@ -87,16 +102,40 @@
         }
 
         // make existing people recipients for new participant
-        
+
         // add new participant to hat
         var participant = new Participant() {
             Person = person,
             Recipients = newGiverRecipients
         };
-        
+
         Hat.Participants.Add(participant);
 
         SwitchMode(Modes.Default);
+
+        SaveToLocalStorage();
+    }
+
+    async Task<(bool success, Hat? hat)> TryLoadFromLocalStorageAsync()
+    {
+        Hat? hat = null;
+        var hatJson = await Storage.GetFromLocalStorage("hat");
+
+        try
+        {
+            hat = JsonSerializer.Deserialize<Hat>(hatJson);
+        } catch
+        {
+            return (false, hat);
+        }
+
+        return (true, hat);
+    }
+
+    async void SaveToLocalStorage()
+    {
+        var hatJson = JsonSerializer.Serialize(Hat);
+        await Storage.SetLocalStorage("hat", hatJson);
     }
 
 }
