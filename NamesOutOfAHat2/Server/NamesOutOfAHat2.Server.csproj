@@ -12,7 +12,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\NamesOutOfAHat2.Client.csproj" />
-    <ProjectReference Include="..\Shared\NamesOutOfAHat2.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 

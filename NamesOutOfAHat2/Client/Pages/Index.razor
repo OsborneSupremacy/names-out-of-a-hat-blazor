@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject NamesOutOfAHat2.Service.LocalStorageService Storage
+@inject NamesOutOfAHat2.Interface.ILocalStorageService Storage
 
 @using System.Text.Json
 @using NamesOutOfAHat2.Model
@@ -22,12 +22,16 @@
             <AddParticipant Person="@Person" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
         }
 
-        @if (Hat.Participants?.Any() ?? false)
+        @if(Hat.Participants?.Any() ?? false)
         {
             @foreach(var participant in Hat.Participants)
             {
                 <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" />
             }
+
+            <div class="container-fluid py-5">
+                <button type="button" @click="validateHat" class="btn btn-primary btn-lg">Shake Up The Hat!</button>
+            </div>
         }
 
     </div>
@@ -100,8 +104,6 @@
                 Eligible = true
             });
         }
-
-        // make existing people recipients for new participant
 
         // add new participant to hat
         var participant = new Participant() {

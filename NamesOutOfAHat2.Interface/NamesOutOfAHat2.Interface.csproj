@@ -2,11 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <SupportedPlatform Include="browser" />
+    <ProjectReference Include="..\NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj" />
   </ItemGroup>
+
 </Project>
