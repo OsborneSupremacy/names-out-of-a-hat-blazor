@@ -64,7 +64,7 @@ namespace NamesOutOfAHat2.Service.Tests
 
             // assert
             isValid.Should().BeFalse();
-            errors.Count().Should().Be(1);
+            errors.Count.Should().Be(1);
         }
 
         [Theory]
@@ -99,7 +99,7 @@ namespace NamesOutOfAHat2.Service.Tests
             // assert
             isValid.Should().Be(!duplicatesExist);
             if (duplicatesExist)
-                errors.Count().Should().Be(1);
+                errors.Count.Should().Be(1);
         }
 
         protected class MockDuplicateCheckService : IDuplicateCheckService

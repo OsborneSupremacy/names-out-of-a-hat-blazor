@@ -25,7 +25,7 @@ namespace NamesOutOfAHat2.Service.Tests
 
             // assert
             isValid.Should().BeFalse();
-            results.Count().Should().Be(1);
+            results.Count.Should().Be(1);
         }
 
         [Fact]
