@@ -51,6 +51,13 @@
             </div>
         }
 
+        @if(Mode == Modes.Staging)
+        {
+            <div class="alert alert-info" role="alert">
+                <h4>The gift exchange looks good.</h4>
+            </div>
+        }
+
     </div>
 </div>
 
@@ -65,7 +72,8 @@
     {
         Default,
         Adding,
-        ShowingErrors
+        ShowingErrors,
+        Staging
     }
 
     protected override async void OnInitialized() 
@@ -189,23 +197,17 @@
         await Storage.SetLocalStorage("hat", hatJson);
     }
 
-    List<string> Errors = new List<string>();
+    List<string> Errors;
 
     void ShakeUpTheHat()
     {
         var (isValid, errors) = ValidationService.Validate(Hat);
+        Errors = errors!.ToList();
 
-        if (isValid)
-        {
-            Errors = new List<string>();
-            SwitchMode(Modes.Default);
-        } else
-        {
-            Errors = errors.ToList();
+        if (!isValid)
             SwitchMode(Modes.ShowingErrors);
-        }
-
-        // TODO: When a gift exchange emails are sent, give it a random code word to differentiate attempts
+        else
+            SwitchMode(Modes.Staging);
 
     }
 
