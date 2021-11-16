@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject NamesOutOfAHat2.Interface.ILocalStorageService Storage
+@inject NamesOutOfAHat2.Service.ValidationService ValidationService
 
 @using System.Text.Json
 @using NamesOutOfAHat2.Model
@@ -30,7 +31,23 @@
             }
 
             <div class="container-fluid py-5">
-                <button type="button" @click="validateHat" class="btn btn-primary btn-lg">Shake Up The Hat!</button>
+                <button type="button" @onclick="ShakeUpTheHat" class="btn btn-primary btn-lg">Shake Up The Hat!</button>
+            </div>
+        }
+
+        @if(Mode == Modes.ShowingErrors)
+        {
+            <div class="alert alert-danger" role="alert">
+                <h4>There is a problem with the names in the hat.</h4>
+                @if(Errors.Any())
+                {
+                    <ul>
+                        @foreach(var error in Errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                }
             </div>
         }
 
@@ -47,7 +64,8 @@
     enum Modes
     {
         Default,
-        Adding
+        Adding,
+        ShowingErrors
     }
 
     protected override async void OnInitialized() 
@@ -169,6 +187,26 @@
     {
         var hatJson = JsonSerializer.Serialize(Hat);
         await Storage.SetLocalStorage("hat", hatJson);
+    }
+
+    List<string> Errors = new List<string>();
+
+    void ShakeUpTheHat()
+    {
+        var (isValid, errors) = ValidationService.Validate(Hat);
+
+        if (isValid)
+        {
+            Errors = new List<string>();
+            SwitchMode(Modes.Default);
+        } else
+        {
+            Errors = errors.ToList();
+            SwitchMode(Modes.ShowingErrors);
+        }
+
+        // TODO: When a gift exchange emails are sent, give it a random code word to differentiate attempts
+
     }
 
 }

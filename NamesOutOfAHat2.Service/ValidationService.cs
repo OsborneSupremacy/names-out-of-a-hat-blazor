@@ -25,16 +25,16 @@ namespace NamesOutOfAHat2.Service
             var (isValid, errors) = _componentModelValidationService.Validate(hat);
             if (!isValid) return (false, errors);
 
-            return Validate(hat);
+            return Validate(hat.Participants);
         }
 
-        public (bool isValid, IList<string> errors) Validate(IList<Participant> givers)
+        public (bool isValid, IList<string> errors) Validate(IList<Participant> participants)
         {
-            var (isValid, errors) = _componentModelValidationService.ValidateList(givers);
+            var (isValid, errors) = _componentModelValidationService.ValidateList(participants);
             if (!isValid) return (false, errors);
 
             // validate count
-            (isValid, errors) = givers.Count switch
+            (isValid, errors) = participants.Count switch
             {
                 0 => (false, errorToList("A gift exchange like this needs at least three people")),
                 1 => (false, errorToList("One person makes for a lonely gift exchange. Add at least two more people.")),
@@ -49,8 +49,8 @@ namespace NamesOutOfAHat2.Service
 
             foreach (var duplicateCheckService in duplicateCheckServices)
             {
-                (isValid, errors) = duplicateCheckService.Execute(givers.Select(x => x.Person).ToList());
-                if (!isValid) return (false, errors);
+                var (duplicatesExist, duplicateErrors) = duplicateCheckService.Execute(participants.Select(x => x.Person).ToList());
+                if (duplicatesExist) return (false, duplicateErrors);
             }
 
             return (true, Enumerable.Empty<string>().ToList());

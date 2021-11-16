@@ -29,10 +29,10 @@
 @*Edit Mode*@
 @if(Mode == Modes.Editing)
 {
-    <EditForm Model="@Participant.Person" OnValidSubmit="@CommitParticipantEditAsync">
-        <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
-            <h5 class="card-header bg-info">@DisplayName</h5>
-            <div class="card-body">
+    <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
+        <h5 class="card-header bg-info">@DisplayName</h5>
+        <div class="card-body">
+            <EditForm Model="@Participant.Person" OnValidSubmit="@CommitParticipantEditAsync">
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" @bind-value="Participant.Person.Name" />
                     <label for="Name">Name</label>
@@ -44,9 +44,9 @@
                 <DataAnnotationsValidator />
                 <ValidationSummary />
                 <button type="submit" class="btn btn-sm btn-primary">Done</button>&nbsp;
-            </div>
+            </EditForm>
         </div>
-    </EditForm>
+    </div>
 }
 
 @code {
