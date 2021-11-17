@@ -112,29 +112,19 @@
     {
         Hat.Participants ??= new List<Participant>();
 
-        // create recipient
-        var recipient = new Recipient() 
-        {
-            Person = person,
-            Eligible = true
-        };
-
         var newGiverRecipients = new List<Recipient>();
 
-        // make person a recipient for all existing participant
+        // make person a recipient for all existing participants
         foreach (Participant ep in Hat.Participants)
         {
-            ep.Recipients.Add(recipient);
-            newGiverRecipients.Add(new Recipient()
-            {
-                Person = ep.Person,
-                Eligible = true
-            });
+            // new person is recipient for existing participant
+            ep.Recipients.Add(new Recipient(person, true));
+            // existing participant is recipient for new person
+            newGiverRecipients.Add(new Recipient(ep.Person, true));
         }
 
         // add new participant to hat
-        var participant = new Participant() {
-            Person = person,
+        var participant = new Participant(person) {
             Recipients = newGiverRecipients
         };
 
@@ -171,13 +161,7 @@
                 {
                     // old recipient found
                     if(participantPeople.TryGetValue(oldRecip.Person.Id, out var newRecip))
-                    {
-                        newRecips.Add(new Recipient()
-                        {
-                            Person = newRecip,
-                            Eligible = oldRecip.Eligible
-                        });
-                    }
+                        newRecips.Add(new Recipient(newRecip, oldRecip.Eligible));
                     // any old recipients not found in list of people will be lost
                 }
 
@@ -200,8 +184,10 @@
 
     List<string> Errors;
 
-    void ShakeUpTheHat()
+    async void ShakeUpTheHat()
     {
+        await SaveToLocalStorage();
+
         var (isValid, errors) = ValidationService.Validate(Hat);
 
         if(isValid)
@@ -213,7 +199,6 @@
             SwitchMode(Modes.ShowingErrors);
         else
             SwitchMode(Modes.Staging);
-
     }
 
 }
