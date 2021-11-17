@@ -6,7 +6,7 @@ using NamesOutOfAHat2.Utility;
 namespace NamesOutOfAHat2.Service
 {
     [RegistrationTarget(typeof(ILocalStorageService))]
-    [ServiceLifetime(ServiceLifetime.Scoped)]
+    [ServiceLifetime(ServiceLifetime.Singleton)]
     public class LocalStorageService : ILocalStorageService
     {
         private readonly IJSRuntime _js;

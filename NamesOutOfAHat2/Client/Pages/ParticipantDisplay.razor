@@ -11,10 +11,9 @@
                 <label class="form-label"><b>🎁 Eligible Recipients</b></label>
                 @foreach(var recipient in Participant.Recipients)
                 {
-                    var id = System.Guid.NewGuid();
                     <div class="form-check" style="text-align: left">
-                        <input class="form-check-input" id="@id" type="checkbox" @bind="recipient.Eligible" />
-                        <label class="form-check-label" for="@id" >@recipient.Person.Name</label>
+                        <input class="form-check-input" id='@(Participant.Person.Id + "_" + recipient.Person.Id)' type="checkbox" @bind="recipient.Eligible" />
+                        <label class="form-check-label" for='@(Participant.Person.Id + "_" + recipient.Person.Id)' >@recipient.Person.Name</label>
                     </div>
                 }
             </li>

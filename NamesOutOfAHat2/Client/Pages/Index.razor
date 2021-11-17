@@ -1,6 +1,7 @@
 ﻿@page "/"
 @inject NamesOutOfAHat2.Interface.ILocalStorageService Storage
 @inject NamesOutOfAHat2.Service.ValidationService ValidationService
+@inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 
 @using System.Text.Json
 @using NamesOutOfAHat2.Model
@@ -11,7 +12,7 @@
             <h1 class="display-5">Put everyone's name in the hat!</h1>
         </div>
 
-        @if(Mode == Modes.Default)
+        @if(Mode != Modes.Adding)
         {
             <p>
                 <button type="button" @onclick="SwitchToAddMode" class="btn btn-primary">Add a Participant</button>
@@ -101,13 +102,13 @@
 
     void SwitchMode(Modes mode) => Mode = mode;
 
-    void ParticipantEdited(Participant participant)
+    async void ParticipantEdited(Participant participant)
     {
         StateHasChanged();
-        SaveToLocalStorage();
+        await SaveToLocalStorage();
     }
 
-    void PersonAdded(Person person)
+    async void PersonAdded(Person person)
     {
         Hat.Participants ??= new List<Participant>();
 
@@ -141,7 +142,7 @@
 
         SwitchMode(Modes.Default);
 
-        SaveToLocalStorage();
+        await SaveToLocalStorage();
     }
 
     async Task<(bool success, Hat? hat)> TryLoadFromLocalStorageAsync()
@@ -191,7 +192,7 @@
         return (true, hat);
     }
 
-    async void SaveToLocalStorage()
+    async Task SaveToLocalStorage()
     {
         var hatJson = JsonSerializer.Serialize(Hat);
         await Storage.SetLocalStorage("hat", hatJson);
@@ -202,6 +203,10 @@
     void ShakeUpTheHat()
     {
         var (isValid, errors) = ValidationService.Validate(Hat);
+
+        if(isValid)
+            (isValid, errors) = EligibilityValidationService.Validate(Hat);
+
         Errors = errors!.ToList();
 
         if (!isValid)
