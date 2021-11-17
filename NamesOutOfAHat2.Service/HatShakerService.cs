@@ -11,6 +11,7 @@ namespace NamesOutOfAHat2.Service
         public (bool isValid, List<string> errors, Hat hat) ShakeMultiple(Hat hat, int count)
         {
             var randomSeeds = new List<int>();
+
             for (int x = 0; x <= count; x++)
                 randomSeeds.Add(new Randomizer().Int());
 

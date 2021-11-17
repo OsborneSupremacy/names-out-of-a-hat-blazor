@@ -23,13 +23,13 @@
 
 @code {
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public Person Person { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public EventCallback<Person> PersonAddedCallback { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public EventCallback CancelCallback { get; set; }
 
     public String DisplayName
