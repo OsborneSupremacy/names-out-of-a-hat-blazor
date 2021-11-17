@@ -72,9 +72,9 @@ namespace NamesOutOfAHat2.Service.Tests
             var sam = "sam".ToPerson();
             var andy = "andy".ToPerson();
 
-            var hat = new Hat();
-
-            hat.Participants = BuildParticipantList()
+            var hat = new Hat
+            {
+                Participants = BuildParticipantList()
                 .AddParticipant(joe.ToParticipant()
                     .AddEligibleRecipients(sue, sam, andy)
                 )
@@ -89,7 +89,8 @@ namespace NamesOutOfAHat2.Service.Tests
                 .AddParticipant(andy.ToParticipant()
                     .AddEligibleRecipients(joe)
                     .AddIneligibleRecipients(sue, sam)
-                ); 
+                )
+            };
 
             return hat;
         }
@@ -108,11 +109,11 @@ namespace NamesOutOfAHat2.Service.Tests
 
             // will only be eligible to one participant, who is also eligible to gift everyone else
             // If not assigned to that one possible participant, will fail
-            var kilo = "kilo".ToPerson(); 
+            var kilo = "kilo".ToPerson();
 
-            var hat = new Hat();
-
-            hat.Participants = BuildParticipantList()
+            var hat = new Hat
+            {
+                Participants = BuildParticipantList()
                 .AddParticipant(alpha.ToParticipant()
                     .AddEligibleRecipients(beta, charlie, delta, echo, foxtrot, golf, hotel, india, kilo)
                 )
@@ -150,7 +151,8 @@ namespace NamesOutOfAHat2.Service.Tests
                 )
                 .AddParticipant(kilo.ToParticipant()
                     .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, hotel, india, golf)
-                );
+                )
+            };
 
             return hat;
         }
@@ -245,9 +247,9 @@ namespace NamesOutOfAHat2.Service.Tests
             var sue = "sue".ToPerson();
             var sam = "sam".ToPerson();
 
-            var hat = new Hat();
-
-            hat.Participants = BuildParticipantList()
+            var hat = new Hat
+            {
+                Participants = BuildParticipantList()
                 .AddParticipant(joe.ToParticipant()
                     .AddEligibleRecipients(sue)
                     .AddIneligibleRecipients(sam)
@@ -259,7 +261,8 @@ namespace NamesOutOfAHat2.Service.Tests
                 .AddParticipant(sam.ToParticipant()
                     .AddEligibleRecipients(joe)
                     .AddIneligibleRecipients(sue)
-                );
+                )
+            };
 
             var service = autoFixture.Create<HatShakerService>();
 

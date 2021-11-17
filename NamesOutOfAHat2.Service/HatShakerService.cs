@@ -8,6 +8,15 @@ namespace NamesOutOfAHat2.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class HatShakerService
     {
+        public (bool isValid, List<string> errors, Hat hat) ShakeMultiple(Hat hat, int count)
+        {
+            var randomSeeds = new List<int>();
+            for (int x = 0; x <= count; x++)
+                randomSeeds.Add(new Randomizer().Int());
+
+            return ShakeMultiple(hat, randomSeeds);
+        }
+
         public (bool isValid, List<string> errors, Hat hat) ShakeMultiple(Hat hat, List<int> randomSeeds)
         {
             bool isValid = false;
