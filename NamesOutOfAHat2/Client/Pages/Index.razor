@@ -9,7 +9,18 @@
 <div class="bg-light rounded-3">
     <div class="container-fluid py-5">
         <div class="jumbotron">
-            <h1 class="display-5">Put everyone's name in the hat!</h1>
+            <p>
+                <input 
+                    aria-label="Gift Exchange Name"
+                    type="text"
+                    name="GiftExchangeName"
+                    class="form-control form-control-lg"
+                    @bind-value="Hat.Name"
+                    placeholder="Exter the Name of Your Gift Exchange (optional)"
+                    style="text-align: center"
+                    />
+            </p>
+            <h2 class="display-5">Put everyone's name in the hat!</h2>
         </div>
 
         @if(Mode != Modes.Adding)
@@ -108,7 +119,7 @@
         await SaveToLocalStorage();
     }
 
-    async void PersonAdded(Person person)
+    async Task PersonAdded(Person person)
     {
         Hat.Participants ??= new List<Participant>();
 
@@ -184,7 +195,7 @@
 
     List<string> Errors;
 
-    async void ShakeUpTheHat()
+    async Task ShakeUpTheHat()
     {
         await SaveToLocalStorage();
 
