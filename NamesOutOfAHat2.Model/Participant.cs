@@ -13,7 +13,7 @@ namespace NamesOutOfAHat2.Model
             Person = person;
         }
 
-        public Recipient? Recipient { get; set; }
+        public Person? PickedRecipient { get; set; }
 
         [Required]
         public Person Person { get; set; } = default!;
