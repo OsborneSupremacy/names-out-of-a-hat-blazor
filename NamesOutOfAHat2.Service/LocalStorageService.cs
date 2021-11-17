@@ -1,31 +1,24 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.JSInterop;
-using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Utility;
+using blazored = Blazored.LocalStorage;
 
 namespace NamesOutOfAHat2.Service
 {
-    [RegistrationTarget(typeof(ILocalStorageService))]
-    [ServiceLifetime(ServiceLifetime.Singleton)]
-    public class LocalStorageService : ILocalStorageService
+    [RegistrationTarget(typeof(Interface.ILocalStorageService))]
+    [ServiceLifetime(ServiceLifetime.Scoped)]
+    public class LocalStorageService : Interface.ILocalStorageService
     {
-        private readonly IJSRuntime _js;
+        private readonly blazored.ILocalStorageService _storage; 
 
-        private const string _identifier = "localStorage.getItem";
-
-        public LocalStorageService(IJSRuntime js)
+        public LocalStorageService(blazored.ILocalStorageService storage)
         {
-            _js = js;
+            _storage = storage;
         }
 
-        public async Task<string> GetFromLocalStorage(string key)
-        {
-            return await _js.InvokeAsync<string>(_identifier, key);
-        }
+        public async Task<string> GetFromLocalStorage(string key) =>
+            await _storage.GetItemAsStringAsync(key);
 
-        public async Task SetLocalStorage(string key, string value)
-        {
-            await _js.InvokeVoidAsync(_identifier, key, value);
-        }
+        public async Task SetLocalStorage(string key, string value) => 
+            await _storage.SetItemAsStringAsync(key, value);
     }
 }
