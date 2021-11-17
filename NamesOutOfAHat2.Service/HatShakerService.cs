@@ -1,10 +1,30 @@
 ﻿using NamesOutOfAHat2.Model;
 using Bogus;
+using NamesOutOfAHat2.Utility;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NamesOutOfAHat2.Service
 {
+    [ServiceLifetime(ServiceLifetime.Scoped)]
     public class HatShakerService
     {
+        public (bool isValid, List<string> errors, Hat hat) ShakeMultiple(Hat hat, List<int> randomSeeds)
+        {
+            bool isValid = false;
+            var errors = new List<string>();
+
+            foreach(var seed in randomSeeds)
+            {
+                System.Diagnostics.Debug.WriteLine(seed);
+
+                (isValid, errors, hat) = Shake(hat, seed);
+                if (isValid)
+                    break;
+            }
+
+            return (isValid, errors, hat);
+        }
+
         public (bool isValid, List<string> errors, Hat hat) Shake(Hat hat, int randomSeed)
         {
             Randomizer.Seed = new Random(randomSeed);
