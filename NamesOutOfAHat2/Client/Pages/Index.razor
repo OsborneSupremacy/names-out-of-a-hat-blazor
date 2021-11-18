@@ -2,9 +2,11 @@
 @inject NamesOutOfAHat2.Interface.ILocalStorageService Storage
 @inject NamesOutOfAHat2.Service.ValidationService ValidationService
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
+@inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 
 @using System.Text.Json
 @using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Utility
 
 <div class="bg-light rounded-3">
     <div class="container-fluid py-5">
@@ -20,22 +22,25 @@
                     style="text-align: center"
                     />
             </p>
-            <h2 class="display-5">Put everyone's name in the hat!</h2>
+            @if(Mode.In(Modes.Default, Modes.Adding, Modes.ShowingErrors))
+            {
+                <h2 class="display-5">Put everyone's name in the hat!</h2>
+            }
         </div>
 
-        @if(Mode != Modes.Adding)
+        @if(Mode.In(Modes.Default, Modes.Adding))
         {
             <p>
                 <button type="button" @onclick="SwitchToAddMode" class="btn btn-primary">Add a Participant</button>
             </p>
         }
 
-        @if(Mode == Modes.Adding)
+        @if(Mode.In(Modes.Adding))
         {
             <AddParticipant Person="@Person" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
         }
 
-        @if(Hat.Participants?.Any() ?? false)
+        @if(Mode.In(Modes.Default) && (Hat.Participants?.Any() ?? false))
         {
             @foreach(var participant in Hat.Participants)
             {
@@ -43,14 +48,19 @@
             }
 
             <div class="container-fluid py-5">
-                <button type="button" @onclick="ShakeUpTheHat" class="btn btn-primary btn-lg">Shake Up The Hat!</button>
+                <h4>Click the button below to "Shake Up The Hat"</h4>
+                <p>
+                    <button aria-label="Shake Up The Hat" type="button" @onclick="ShakeUpTheHat" class="btn btn-primary btn-lg">Shake Up The Hat!</button>
+                </p>
+                <h5>If names can be picked successfully, we'll confirm with you, before sending emails to the participants.</h5>
             </div>
         }
 
-        @if(Mode == Modes.ShowingErrors)
+        @if(Mode.In(Modes.ShowingErrors))
         {
             <div class="alert alert-danger" role="alert">
                 <h4>There is a problem with the names in the hat.</h4>
+                <hr>
                 @if(Errors.Any())
                 {
                     <ul>
@@ -63,11 +73,44 @@
             </div>
         }
 
-        @if(Mode == Modes.Staging)
+        @if(Mode.In(Modes.Staging))
         {
-            <div class="alert alert-info" role="alert">
-                <h4>The gift exchange looks good.</h4>
+            <div class="container-fluid py-5">
+
+                <div class="alert alert-info" role="alert">
+                  <h4 class="alert-heading">The Hat Was Shaken, and Names Were Picked Successfully!</h4>
+                  <hr>
+                  <p class="mb-0">Does everything below look good?</p>
+                </div>
+
+                <table class="table table-striped" style="text-align: left" >
+                    <thead>
+                        <tr>
+                            <th scope="col">Participant Name</th>
+                            <th scope="col">Participant Email</th>
+                            <th scope="col">Picked Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var participant in Hat.Participants)
+                        {
+                            <tr>
+                                <td>@participant.Person.Name</td>
+                                <td>@participant.Person.Email</td>
+                                <td>@(WriteEligibleRecipients(participant))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
+
+            <p>
+                <button aria-label="Continue" type="button" class="btn btn-primary btn-lg">Everything Looks Good. Continue.</button>
+            </p>
+
+            <p>
+                <button aria-label="Go Back" type="button" @onclick="SwitchToDefaultMode" class="btn btn-warning">Go Back</button>
+            </p>
         }
 
     </div>
@@ -105,6 +148,8 @@
         Person = new Person() { Id = System.Guid.NewGuid() };
         Mode = Modes.Adding;
     }
+
+    void SwitchToDefaultMode() => Mode = Modes.Default;
 
     void Cancelled()
     {
@@ -204,12 +249,42 @@
         if(isValid)
             (isValid, errors) = EligibilityValidationService.Validate(Hat);
 
+        if(isValid)
+            (isValid, errors, Hat) = HatShakerService.ShakeMultiple(Hat, 100);
+
         Errors = errors!.ToList();
 
         if (!isValid)
             SwitchMode(Modes.ShowingErrors);
         else
             SwitchMode(Modes.Staging);
+    }
+
+    string WriteEligibleRecipients(Participant participant)
+    {
+        var s = new System.Text.StringBuilder();
+
+        var names = participant
+            .Recipients
+            .Where(x => x.Eligible)
+            .Select(x => x.Person)
+            .Select(x => x.Name)
+            .OrderBy(x => x)
+            .ToList();
+
+        for(int x = 0; x < names.Count; x++)
+        {
+            if(x > 0)
+            {
+                if (x == (names.Count - 1))
+                    s.Append(" or ");
+                else
+                    s.Append(", ");
+            }
+            s.Append(names[x]);
+        }
+
+        return s.ToString();
     }
 
 }
