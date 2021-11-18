@@ -8,6 +8,8 @@ namespace NamesOutOfAHat2.Model
 
         public string EmailTemplate { get; set; }
 
+        public Participant? Organizer { get; set;  }
+
         [Required, MinLength(1)]
         public IList<Participant>? Participants { get; set; }
     }
