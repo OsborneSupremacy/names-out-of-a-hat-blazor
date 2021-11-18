@@ -262,29 +262,14 @@
 
     string WriteEligibleRecipients(Participant participant)
     {
-        var s = new System.Text.StringBuilder();
-
         var names = participant
             .Recipients
             .Where(x => x.Eligible)
             .Select(x => x.Person)
             .Select(x => x.Name)
-            .OrderBy(x => x)
-            .ToList();
+            .OrderBy(x => x);
 
-        for(int x = 0; x < names.Count; x++)
-        {
-            if(x > 0)
-            {
-                if (x == (names.Count - 1))
-                    s.Append(" or ");
-                else
-                    s.Append(", ");
-            }
-            s.Append(names[x]);
-        }
-
-        return s.ToString();
+        return names.ToNaturalLanguageList();
     }
 
 }
