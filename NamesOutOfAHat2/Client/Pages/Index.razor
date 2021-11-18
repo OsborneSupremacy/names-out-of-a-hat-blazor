@@ -159,11 +159,27 @@
                         Thank you for participating in the <b>@Hat.Name</b>!<br /><br />
                         The person you have been randomly assigned is:<br /><br />
                         <b>{Picked Name}</b><br /><br />
-                        Please purchase a gift in the range of {Price Range}.<br /><br />
+
+                        @if(!string.IsNullOrWhiteSpace(Hat.PriceRange))
+                        {
+                            @WritePriceRangeSentence()
+                            <br /><br />
+                        }
+
+                        @if(!string.IsNullOrWhiteSpace(Hat.AdditionalInformation))
+                        {
+                            @Hat.AdditionalInformation
+                            <br /><br />
+                        }
                         If you have any questions, contact <a href="mailto:@Hat.Organizer.Person.Email">@Hat.Organizer.Person.Name</a>.
                     </p>
                     <hr>
-                    <input type="text" class="form-control" @bind-value="Hat.PriceRange" placeholder="Gift Price Range (optional)" ng-maxlength="500" />
+                    <div class="mb-3">
+                        <input type="text" class="form-control" @bind-value="Hat.PriceRange" placeholder="Gift Price Range (optional)" ng-maxlength="500" />
+                    </div>
+                    <div class="mb-3"> 
+                        <input type="text" class="form-control" @bind-value="Hat.AdditionalInformation" placeholder="Additional Info (optional)" ng-maxlength="1000" />
+                    </div>
                 </div>
             </div>
 
@@ -346,6 +362,13 @@
     {
         Hat.Organizer = participant;
     }
+
+    /// <summary>
+    /// Shouldn't need a function for this, but razor is really having trouble determing 
+    /// what is / isn't code
+    /// </summary>
+    /// <returns></returns>
+    string WritePriceRangeSentence() => $"Please purchase a gift in the range of {Hat.PriceRange}.";
 
     async Task Finalize()
     {
