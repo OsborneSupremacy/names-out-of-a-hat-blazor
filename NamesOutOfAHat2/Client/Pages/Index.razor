@@ -81,7 +81,7 @@
         {
             <div class="container-fluid py-5">
 
-                <div class="alert alert-info" role="alert">
+                <div class="alert alert-light" role="alert">
                     <h4 class="alert-heading">The Hat Was Shaken, and Names Were Picked Successfully!</h4>
                     <hr>
                     <p class="mb-0">Does everything below look good?</p>
@@ -120,7 +120,7 @@
         @if(Mode.In(Modes.Organizer))
         {
             <div class="container-fluid py-5">
-                <div class="alert alert-info" role="alert">
+                <div class="alert alert-light" role="alert">
                     <h4 class="alert-heading">Select The Gift Exchange Organizer</h4>
                     <hr>
                     @if (Hat.Organizer is not null) {
@@ -136,12 +136,43 @@
 
             </div>
 
-            <p>
-                <button aria-label="Continue" type="button" class="btn btn-primary btn-lg">Everything Looks Good. Continue.</button>
-            </p>
+            @if(Hat.Organizer is not null)
+            {
+                <p>
+                    <button aria-label="Continue" type="button" @onclick="SwitchToEmailCompositionMode" class="btn btn-primary btn-lg">Everything Looks Good. Continue.</button>
+                </p>
+            }
 
             <p>
                 <button aria-label="Go Back" type="button" @onclick="SwitchToVerificationMode" class="btn btn-warning">Go Back</button>
+            </p>
+        }
+
+        @if(Mode.In(Modes.EmailComposition))
+        {
+            <div class="container-fluid py-5">
+                <div class="alert alert-light" role="alert">
+                    <h4 class="alert-heading">Here is the Email That Will Be Sent to Participants</h4>
+                    <hr>
+                    <p class="mb-0" style="text-align: left;">
+                        Dear {Participant},<br /><br />
+                        Thank you for participating in the <b>@Hat.Name</b>!<br /><br />
+                        The person you have been randomly assigned is:<br /><br />
+                        <b>{Picked Name}</b><br /><br />
+                        Please purchase a gift in the range of {Price Range}.<br /><br />
+                        If you have any questions, contact <a href="mailto:@Hat.Organizer.Person.Email">@Hat.Organizer.Person.Name</a>.
+                    </p>
+                    <hr>
+                    <input type="text" class="form-control" @bind-value="Hat.PriceRange" placeholder="Gift Price Range (optional)" ng-maxlength="500" />
+                </div>
+            </div>
+
+            <p>
+                <button aria-label="Continue" type="button" @onclick="Finalize" class="btn btn-primary btn-lg">Everything Looks Good. Send Emails!</button>
+            </p>
+
+            <p>
+                <button aria-label="Go Back" type="button" @onclick="SwitchToOrganizerMode" class="btn btn-warning">Go Back</button>
             </p>
         }
 
@@ -162,7 +193,9 @@
         ShowingErrors,
         Verification,
         Organizer,
-        EmailComposition
+        EmailComposition,
+        Success,
+        Failure
     }
 
     protected override async void OnInitialized() 
@@ -312,6 +345,12 @@
     void SetOrganizer(Participant participant)
     {
         Hat.Organizer = participant;
+    }
+
+    async Task Finalize()
+    {
+        
+
     }
 
 }

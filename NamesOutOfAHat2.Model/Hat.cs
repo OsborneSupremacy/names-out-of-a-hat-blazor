@@ -6,7 +6,8 @@ namespace NamesOutOfAHat2.Model
     {
         public string Name { get; set; }
 
-        public string EmailTemplate { get; set; }
+        [MaxLength(255)]
+        public string PriceRange { get; set; }
 
         public Participant? Organizer { get; set;  }
 
