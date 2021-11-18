@@ -1,10 +1,32 @@
 
+using Microsoft.Extensions.Options;
+using NamesOutOfAHat2.Interface;
+using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Service;
+
+var configBuilder = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json");
+
+if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+    .Equals("Development", StringComparison.OrdinalIgnoreCase))
+    configBuilder.AddUserSecrets<Program>();
+
+var config = configBuilder.Build();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
+builder.Services.AddControllers();
+
+builder.Services.Configure<ApiKeys>(
+    config.GetSection(nameof(ApiKeys)));
+
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IOptions<ApiKeys>>().Value);
+
+builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 
 var app = builder.Build();
 
@@ -27,9 +49,8 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-
-app.MapRazorPages();
-app.MapControllers();
-app.MapFallbackToFile("index.html");
+app.UseEndpoints(endpoints => {
+    endpoints.MapControllers();
+});
 
 app.Run();

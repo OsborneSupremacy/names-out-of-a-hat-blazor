@@ -4,6 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aee71232-45f2-471f-91df-227802951cfb</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,10 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\NamesOutOfAHat2.Client.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
 
