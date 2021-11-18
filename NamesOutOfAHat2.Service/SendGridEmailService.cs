@@ -18,23 +18,17 @@ namespace NamesOutOfAHat2.Service
             _apiKey = apiKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(apiKeys));
         }
 
-        public async Task SendAsync(
-            string senderEmail,
-            string recipientEmail,
-            string subject,
-            string plainTextContent,
-            string htmlContent
-            )
+        public async Task SendAsync(EmailParts emailParts)
         {
             await new SendGridClient(_apiKey)
                 .SendEmailAsync(
                     MailHelper
                         .CreateSingleEmail(
-                        new EmailAddress(senderEmail), 
-                        new EmailAddress(recipientEmail), 
-                        subject, 
-                        plainTextContent, 
-                        htmlContent)
+                        new EmailAddress(emailParts.SenderEmail), 
+                        new EmailAddress(emailParts.RecipientEmail), 
+                        emailParts.Subject, 
+                        emailParts.PlainTextBody, 
+                        emailParts.HtmlBody)
                 );
         }
     }
