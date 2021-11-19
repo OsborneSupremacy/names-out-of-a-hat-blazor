@@ -8,7 +8,7 @@ namespace NamesOutOfAHat2.Server.Controllers
     public class EmailController : ControllerBase
     {
         [HttpPost]
-        [Route("api/email/getsomestuff")]
+        [Route("api/email")]
         [Produces("application/json")]
         public async Task<IActionResult> SendAsync(
             [FromServices] IEmailService emailService,

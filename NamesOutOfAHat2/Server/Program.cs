@@ -53,4 +53,6 @@ app.UseEndpoints(endpoints => {
     endpoints.MapControllers();
 });
 
+app.MapFallbackToFile("index.html");
+
 app.Run();
