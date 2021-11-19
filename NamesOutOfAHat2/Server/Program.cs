@@ -1,4 +1,5 @@
 
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Options;
 using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
@@ -17,6 +18,13 @@ var config = configBuilder.Build();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddSignalR();
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
 
 builder.Services.AddControllers();
 
@@ -53,6 +61,7 @@ app.UseEndpoints(endpoints => {
     endpoints.MapControllers();
 });
 
+app.MapHub<MessageHub>("/messagehub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

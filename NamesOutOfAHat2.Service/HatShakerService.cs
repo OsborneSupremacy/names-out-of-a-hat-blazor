@@ -2,6 +2,7 @@
 using Bogus;
 using NamesOutOfAHat2.Utility;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 
 namespace NamesOutOfAHat2.Service
 {
@@ -25,8 +26,9 @@ namespace NamesOutOfAHat2.Service
 
             foreach(var seed in randomSeeds)
             {
-                System.Diagnostics.Debug.WriteLine(seed);
-
+#if DEBUG      
+                Debug.WriteLine(seed);
+#endif
                 (isValid, errors, hat) = Shake(hat, seed);
                 if (isValid)
                     break;

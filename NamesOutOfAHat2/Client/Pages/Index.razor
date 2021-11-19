@@ -3,6 +3,8 @@
 @inject NamesOutOfAHat2.Service.ValidationService ValidationService
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
+@inject NamesOutOfAHat2.Service.ClientMessenger ClientMessenger
+@inject NavigationManager NavigationManager
 
 @using System.Text.Json
 @using NamesOutOfAHat2.Model
@@ -372,8 +374,7 @@
 
     async Task Finalize()
     {
-        
-
+        await ClientMessenger.SendAsync(NavigationManager, Hat);
     }
 
 }

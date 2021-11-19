@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.1.5" />
     <PackageReference Include="Bogus" Version="33.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
     <PackageReference Include="Microsoft.JSInterop" Version="6.0.0" />
     <PackageReference Include="SendGrid" Version="9.25.0" />
   </ItemGroup>
