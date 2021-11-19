@@ -13,9 +13,12 @@ namespace NamesOutOfAHat2.Service
     {
         private readonly string _apiKey = string.Empty;
 
-        public SendGridEmailService(ApiKeys apiKeys)
+        private readonly string _senderEmail = string.Empty;
+
+        public SendGridEmailService(ConfigKeys configKeys)
         {
-            _apiKey = apiKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(apiKeys));
+            _apiKey = configKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(configKeys));
+            _senderEmail = configKeys?.GetValueOrDefault("senderEmail") ?? throw new ArgumentNullException(nameof(configKeys));
         }
 
         public async Task SendAsync(EmailParts emailParts)
@@ -24,10 +27,10 @@ namespace NamesOutOfAHat2.Service
                 .SendEmailAsync(
                     MailHelper
                         .CreateSingleEmail(
-                        new EmailAddress(emailParts.SenderEmail), 
+                        new EmailAddress(_senderEmail), 
                         new EmailAddress(emailParts.RecipientEmail), 
                         emailParts.Subject, 
-                        emailParts.PlainTextBody, 
+                        string.Empty, 
                         emailParts.HtmlBody)
                 );
         }

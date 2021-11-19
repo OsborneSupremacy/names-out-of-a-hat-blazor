@@ -194,6 +194,32 @@
             </p>
         }
 
+        @if(Mode.In(Modes.Success))
+        {
+            <div class="container-fluid py-5">
+                <div class="alert alert-light" role="alert">
+                    <h4 class="alert-heading">Done!</h4>
+                    <hr>
+                    <p class="mb-0">
+                        The emails have been sent! If someone did not get an email, have their check their junk mail folder(s). For Gmail users especially, have them check the many folders that Gmail sometimes automatically files emails under (e.g. Social, Updates, Forums, Promotions).
+                    </p>
+                    <p class="mb-0">
+                        For Gmail users especially, have them check the many folders that Gmail sometimes automatically files emails under (e.g. Social, Updates, Forums, Promotions).
+                    </p>
+                    <p class="mb-0">
+                        If some participants still didn't get an email, try a different email address for them. You'll have to go back to the first step and re-send all emails.
+                    </p>
+                    <p class="mb-0">
+                        If you don't want to do that, here's a trick -- click F12 on your keyboard, select Application, then Local Storage, then this website. You should see an item named "Hat". That item contains all of the information related to this gift exchange.
+                    </p>
+                </div>
+            </div>
+
+            <p>
+                <button aria-label="Go Back" type="button" @onclick="SwitchToDefaultMode" class="btn btn-primary btn-lg">Go Back To The Hat</button>
+            </p>
+        }
+
     </div>
 </div>
 
@@ -234,10 +260,29 @@
         Mode = Modes.Adding;
     }
 
-    void SwitchToDefaultMode() => Mode = Modes.Default;
-    void SwitchToVerificationMode() => Mode = Modes.Verification;
-    void SwitchToOrganizerMode() => Mode = Modes.Organizer;
-    void SwitchToEmailCompositionMode() => Mode = Modes.EmailComposition;
+    async Task SwitchToDefaultMode()
+    {
+        Mode = Modes.Default;
+        await SaveToLocalStorage();
+    }
+
+    async Task SwitchToVerificationMode()
+    {
+        Mode = Modes.Verification;
+        await SaveToLocalStorage();
+    }
+
+    async Task SwitchToOrganizerMode()
+    {
+        Mode = Modes.Organizer;
+        await SaveToLocalStorage();
+    }
+
+    async Task SwitchToEmailCompositionMode()
+    {
+        Mode = Modes.EmailComposition;
+        await SaveToLocalStorage();
+    }
 
     void Cancelled()
     {
@@ -374,7 +419,9 @@
 
     async Task Finalize()
     {
+        await SaveToLocalStorage();
         await ClientMessenger.SendAsync(NavigationManager, Hat);
+        SwitchMode(Modes.Success);
     }
 
 }

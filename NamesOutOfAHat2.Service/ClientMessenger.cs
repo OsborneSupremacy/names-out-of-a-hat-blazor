@@ -18,7 +18,7 @@ namespace NamesOutOfAHat2.Service
             try
             {
                 await hubConnection.StartAsync();
-                await hubConnection.SendAsync("SendGiftExchange", hat);
+                await hubConnection.SendAsync("RecieveGiftExchange", hat);
                 await hubConnection.StopAsync();
             }
             catch

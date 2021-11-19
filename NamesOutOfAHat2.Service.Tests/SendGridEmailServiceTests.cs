@@ -14,21 +14,20 @@ namespace NamesOutOfAHat2.Service.Tests
         public async void SentAsync_Should_Work()
         {
             // arrange
-            var apiKeys = new ApiKeys()
+            var configKeys = new ConfigKeys()
             {
-                { "sendGrid", "Paste the real API key here" }
+                { "sendGrid", "Paste the real API key here" },
+                { "senderEmail", "ben@osbornesupremacy.com" }
             };
 
             var emailParts = new EmailParts()
             {
-                SenderEmail = "ben@osbornesupremacy.com",
                 RecipientEmail = "osborne.ben@gmail.com",
                 Subject = "Test Sendgrid Email",
-                PlainTextBody = "This is a plain text test",
                 HtmlBody = "<p>This is an html test.</p>"
             };
 
-            var service = new SendGridEmailService(apiKeys);
+            var service = new SendGridEmailService(configKeys);
 
             // act
             Func<Task> serviceDelegate = async () =>

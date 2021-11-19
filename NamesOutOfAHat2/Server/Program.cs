@@ -28,13 +28,14 @@ builder.Services.AddResponseCompression(opts =>
 
 builder.Services.AddControllers();
 
-builder.Services.Configure<ApiKeys>(
-    config.GetSection(nameof(ApiKeys)));
+builder.Services.Configure<ConfigKeys>(
+    config.GetSection(nameof(ConfigKeys)));
 
 builder.Services.AddSingleton(sp =>
-    sp.GetRequiredService<IOptions<ApiKeys>>().Value);
+    sp.GetRequiredService<IOptions<ConfigKeys>>().Value);
 
 builder.Services.AddScoped<IEmailService, SendGridEmailService>();
+builder.Services.AddScoped<EmailStagingService>();
 
 var app = builder.Build();
 
