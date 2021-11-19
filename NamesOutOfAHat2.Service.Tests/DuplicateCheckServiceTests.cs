@@ -2,10 +2,12 @@ using FluentAssertions;
 using NamesOutOfAHat2.Model;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
+    [ExcludeFromCodeCoverage]
     public class DuplicateCheckServiceTests
     {
         [Fact]

@@ -1,11 +1,12 @@
 ﻿using FluentAssertions;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
+    [ExcludeFromCodeCoverage]
     public class ComponentModelValidationServiceTests
     {
         [Fact]

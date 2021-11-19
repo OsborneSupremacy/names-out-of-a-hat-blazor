@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
+    [ExcludeFromCodeCoverage]
     public static class HatShakerTestExtensions
     {
         public static Person ToPerson(this string name) =>

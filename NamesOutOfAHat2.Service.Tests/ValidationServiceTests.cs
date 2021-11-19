@@ -6,11 +6,13 @@ using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Test.Utility;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Xunit;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
+    [ExcludeFromCodeCoverage]
     public class ValidationServiceTests
     {
         [Fact]
