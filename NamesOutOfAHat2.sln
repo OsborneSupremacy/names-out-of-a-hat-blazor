@@ -15,9 +15,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Interface",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Utility", "NamesOutOfAHat2.Utility\NamesOutOfAHat2.Utility.csproj", "{5993121C-4D11-4810-BF19-CE33B3C18383}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamesOutOfAHat2.Service.Tests", "NamesOutOfAHat2.Service.Tests\NamesOutOfAHat2.Service.Tests.csproj", "{E1D14D9B-F7F2-4D7C-A78A-B8FC091A7873}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Service.Tests", "NamesOutOfAHat2.Service.Tests\NamesOutOfAHat2.Service.Tests.csproj", "{E1D14D9B-F7F2-4D7C-A78A-B8FC091A7873}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamesOutOfAHat2.Test.Utility", "NamesOutOfAHat2.Test.Utility\NamesOutOfAHat2.Test.Utility.csproj", "{D2F9B327-1F3A-45CF-95E7-B3DE6F5518F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Test.Utility", "NamesOutOfAHat2.Test.Utility\NamesOutOfAHat2.Test.Utility.csproj", "{D2F9B327-1F3A-45CF-95E7-B3DE6F5518F6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DD61C6B9-6602-4986-9CB8-3399094A154E}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
