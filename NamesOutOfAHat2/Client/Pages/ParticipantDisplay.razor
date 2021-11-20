@@ -1,4 +1,5 @@
 ﻿@using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Utility
 
 @*Display Mode*@
 @if(Mode == Modes.Default)
@@ -19,7 +20,7 @@
             </li>
             <li class="list-group-item">
                 <a href="#" class="btn btn-sm btn-primary" @onclick="Edit" >Edit</a>&nbsp;
-                <a href="#" class="btn btn-sm btn-danger" @click="remove" >Remove</a>
+                <a href="#" class="btn btn-sm btn-danger" @onclick="Remove" >Remove</a>
             </li>
         </ul>
     </div>
@@ -29,7 +30,7 @@
 @if(Mode == Modes.Editing)
 {
     <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
-        <h5 class="card-header bg-info">@DisplayName</h5>
+        <h5 class="card-header bg-info">@Participant.WriteDisplayName()</h5>
         <div class="card-body">
             <EditForm Model="@Participant.Person" OnValidSubmit="@CommitParticipantEditAsync">
                 <div class="form-floating mb-3">
@@ -60,6 +61,11 @@
 
     void Edit() => Mode = Modes.Editing;
 
+    public async Task Remove()
+    {
+        await ParticipantRemovedCallback.InvokeAsync(Participant);
+    }
+
     void Display() => Mode = Modes.Default;
 
     [Parameter, EditorRequired]
@@ -68,10 +74,8 @@
     [Parameter, EditorRequired]
     public EventCallback<Participant> ParticpantEditedCallback { get; set; }
 
-    public String DisplayName
-    {
-        get => (Participant.Person?.Name?.Trim().Length ?? 0) > 1 ? Participant.Person!.Name : "Participant";
-    }
+    [Parameter, EditorRequired]
+    public EventCallback<Participant> ParticipantRemovedCallback { get; set; }
 
     public async Task CommitParticipantEditAsync()
     {

@@ -33,6 +33,24 @@ namespace NamesOutOfAHat2.Service
             return hat;
         }
 
+        public Hat RemoveParticipant(Hat hat, Participant participant)
+        {
+            var id = participant.Person.Id;
+
+            var participants = hat.Participants.ToList();
+
+            foreach (var parcipant in participants)
+            {
+                var recipients = parcipant.Recipients.ToList();
+                recipients.RemoveAll(x => x.Person.Id == id);
+                parcipant.Recipients = recipients;
+            }
+
+            participants.RemoveAll(x => x.Person.Id == id);
+            hat.Participants = participants;
+            return hat;
+        }
+
         /// <summary>
         /// the hat from local storage isn't exactly the same as the hat that was saved
         /// because through serialization / deserialization, participant people are no

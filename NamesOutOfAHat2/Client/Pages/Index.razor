@@ -48,7 +48,7 @@
         {
             @foreach(var participant in Hat.Participants)
             {
-                <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" />
+                <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
             }
 
             <div class="container-fluid py-5">
@@ -244,6 +244,13 @@
 
     async void ParticipantEdited(Participant participant)
     {
+        StateHasChanged();
+        await SaveToLocalStorage();
+    }
+
+    async void ParticipantRemoved(Participant participant)
+    {
+        Hat = HatService.RemoveParticipant(Hat, participant);
         StateHasChanged();
         await SaveToLocalStorage();
     }
