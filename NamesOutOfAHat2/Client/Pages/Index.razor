@@ -361,29 +361,10 @@
             SwitchMode(Modes.Verification);
     }
 
-    string WriteEligibleRecipients(Participant participant)
-    {
-        var names = participant
-            .Recipients
-            .Where(x => x.Eligible)
-            .Select(x => x.Person)
-            .Select(x => x.Name)
-            .OrderBy(x => x);
-
-        return names.ToNaturalLanguageList();
-    }
-
     void SetOrganizer(Participant participant)
     {
         Hat.Organizer = participant;
     }
-
-    /// <summary>
-    /// Shouldn't need a function for this, but razor is really having trouble determing 
-    /// what is / isn't code
-    /// </summary>
-    /// <returns></returns>
-    string WritePriceRangeSentence() => $"Please purchase a gift in the range of {Hat.PriceRange}.";
 
     async Task Finalize()
     {
