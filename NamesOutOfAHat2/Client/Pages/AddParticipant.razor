@@ -1,8 +1,9 @@
 ﻿@using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Utility
 
 <EditForm Model="@Person" OnValidSubmit="@CommitParticipantAddAsync">
     <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
-        <h5 class="card-header bg-info">@DisplayName</h5>
+        <h5 class="card-header bg-info">@Person.WriteDisplayName()</h5>
         <div class="card-body">
             <div class="form-floating mb-3">
                 <input type="text" class="form-control" @bind-value="Person.Name" />
@@ -31,11 +32,6 @@
 
     [Parameter, EditorRequired]
     public EventCallback CancelCallback { get; set; }
-
-    public String DisplayName
-    {
-        get => (Person?.Name?.Trim().Length ?? 0) > 1 ? Person!.Name : "New Participant";
-    }
 
     public async Task CommitParticipantAddAsync()
     {
