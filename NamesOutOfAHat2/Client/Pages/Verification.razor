@@ -1,0 +1,29 @@
+﻿@using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Utility 
+
+<table class="table table-striped" style="text-align: left" >
+    <thead>
+        <tr>
+            <th scope="col">Participant Name</th>
+            <th scope="col">Participant Email</th>
+            <th scope="col">Picked Name</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var participant in Hat.Participants)
+        {
+            <tr>
+                <td>@participant.Person.Name</td>
+                <td>@participant.Person.Email</td>
+                <td>@participant.WriteEligibleRecipients()</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; }
+
+}

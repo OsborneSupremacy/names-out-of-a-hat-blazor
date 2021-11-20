@@ -13,14 +13,7 @@ namespace NamesOutOfAHat2.Service
 
         public async Task<List<EmailParts>> StageEmailsAsync(Hat hat)
         {
-            var subject = string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(hat.Name))
-                subject = $"Thank you for participating in the {hat.Name}!";
-            else
-                subject = $"{hat.Organizer.Person.Name} has added you to a gift exchange!";
-
-            var emailTemplate = GenerateEmailTemplate(hat, subject);
+            var emailTemplate = GenerateEmailTemplate(hat);
 
             var emails = new List<EmailParts>();
 
@@ -29,7 +22,7 @@ namespace NamesOutOfAHat2.Service
                 emails.Add(new EmailParts()
                 { 
                     RecipientEmail = participant.Person.Email,
-                    Subject = subject,
+                    Subject = GetSubject(hat),
                     HtmlBody = emailTemplate
                         .Replace(_participantPh, participant.Person.Name)
                         .Replace(_pickedNamePh, participant.PickedRecipient.Name)
@@ -39,12 +32,12 @@ namespace NamesOutOfAHat2.Service
             return emails;
         }
 
-        public string GenerateEmailTemplate(Hat hat, string subject)
+        public string GenerateEmailTemplate(Hat hat)
         {
             var e = new List<string>();
 
             e.Add($"Dear {_participantPh},");
-            e.Add(subject);
+            e.Add(GetSubject(hat));
             e.Add("The person you have been randomly assigned is:");
             e.Add($"<b>{_pickedNamePh}</b>");
 
@@ -65,6 +58,14 @@ namespace NamesOutOfAHat2.Service
             }
 
             return s.ToString();
+        }
+
+        private string GetSubject(Hat hat)
+        {
+            if (!string.IsNullOrWhiteSpace(hat.Name))
+                return $"Thank you for participating in the {hat.Name}!";
+            else
+                return $"{hat.Organizer.Person.Name} has added you to a gift exchange!";
         }
     }
 }

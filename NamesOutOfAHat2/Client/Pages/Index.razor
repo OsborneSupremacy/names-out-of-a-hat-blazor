@@ -4,6 +4,7 @@
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 @inject NamesOutOfAHat2.Service.ClientMessenger ClientMessenger
+@inject NamesOutOfAHat2.Service.EmailStagingService EmailStagingService
 @inject NavigationManager NavigationManager
 
 @using System.Text.Json
@@ -89,25 +90,8 @@
                     <p class="mb-0">Does everything below look good?</p>
                 </div>
 
-                <table class="table table-striped" style="text-align: left" >
-                    <thead>
-                        <tr>
-                            <th scope="col">Participant Name</th>
-                            <th scope="col">Participant Email</th>
-                            <th scope="col">Picked Name</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach(var participant in Hat.Participants)
-                        {
-                            <tr>
-                                <td>@participant.Person.Name</td>
-                                <td>@participant.Person.Email</td>
-                                <td>@(WriteEligibleRecipients(participant))</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <Verification Hat="@Hat" />
+
             </div>
 
             <p>
@@ -157,23 +141,7 @@
                     <h4 class="alert-heading">Here is the Email That Will Be Sent to Participants</h4>
                     <hr>
                     <p class="mb-0" style="text-align: left;">
-                        Dear {Participant},<br /><br />
-                        Thank you for participating in the <b>@Hat.Name</b>!<br /><br />
-                        The person you have been randomly assigned is:<br /><br />
-                        <b>{Picked Name}</b><br /><br />
-
-                        @if(!string.IsNullOrWhiteSpace(Hat.PriceRange))
-                        {
-                            @WritePriceRangeSentence()
-                            <br /><br />
-                        }
-
-                        @if(!string.IsNullOrWhiteSpace(Hat.AdditionalInformation))
-                        {
-                            @Hat.AdditionalInformation
-                            <br /><br />
-                        }
-                        If you have any questions, contact <a href="mailto:@Hat.Organizer.Person.Email">@Hat.Organizer.Person.Name</a>.
+                        @((MarkupString)EmailStagingService.GenerateEmailTemplate(Hat))
                     </p>
                     <hr>
                     <div class="mb-3">
