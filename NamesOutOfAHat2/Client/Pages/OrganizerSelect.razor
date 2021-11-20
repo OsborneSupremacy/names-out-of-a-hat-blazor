@@ -1,0 +1,30 @@
+﻿@using NamesOutOfAHat2.Model
+
+<div class="container-fluid py-5">
+    <div class="alert alert-light" role="alert">
+        <h4 class="alert-heading">Select The Gift Exchange Organizer</h4>
+        <hr>
+        @if (Hat.Organizer is not null) {
+            <h5>@Hat.Organizer.Person.Name is the Organizer</h5>
+        }
+        <div class="list-group">
+            @foreach(var participant in Hat.Participants)
+            {
+                <button type="button" @onclick="(() => SetOrganizer(participant))" class="list-group-item list-group-item-action">@participant.Person.Name</button>
+            }
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; }
+
+    void SetOrganizer(Participant participant)
+    {
+        Hat.Organizer = participant;
+    }
+
+}
