@@ -32,5 +32,33 @@ namespace NamesOutOfAHat2.Service
 
             return hat;
         }
+
+        /// <summary>
+        /// the hat from local storage isn't exactly the same as the hat that was saved
+        /// because through serialization / deserialization, participant people are no
+        /// longer the same objects as recipient people.
+        /// To get them to be the same object, rebuild recipient lists/// </summary>
+        /// <returns></returns>
+        public Hat ReconstructParticipants(Hat hat)
+        {
+            var participantPeople = hat!.Participants!.ToDictionary(x => x.Person.Id, x => x.Person);
+
+            foreach (var partcipant in hat!.Participants!)
+            {
+                var newRecips = new List<Recipient>();
+
+                foreach (var oldRecip in partcipant.Recipients)
+                {
+                    // old recipient found
+                    if (participantPeople.TryGetValue(oldRecip.Person.Id, out var newRecip))
+                        newRecips.Add(new Recipient(newRecip, oldRecip.Eligible));
+                    // any old recipients not found in list of people will be lost
+                }
+
+                partcipant.Recipients = newRecips;
+            }
+
+            return hat;
+        }
     }
 }
