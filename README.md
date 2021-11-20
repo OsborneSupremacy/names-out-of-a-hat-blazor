@@ -81,3 +81,5 @@ Add the key plus your authorized email address to **NamesOutOfAHat2\Server\appse
 
 In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run in.
 
+As a precaution, the application will not send actual emails when running in Debug configuration.
+
