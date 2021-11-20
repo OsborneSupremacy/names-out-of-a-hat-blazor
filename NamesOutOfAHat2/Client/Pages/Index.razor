@@ -5,6 +5,7 @@
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 @inject NamesOutOfAHat2.Service.ClientMessenger ClientMessenger
 @inject NamesOutOfAHat2.Service.EmailStagingService EmailStagingService
+@inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
 
 @using System.Text.Json
@@ -249,28 +250,8 @@
 
     async Task PersonAdded(Person person)
     {
-        Hat.Participants ??= new List<Participant>();
-
-        var newGiverRecipients = new List<Recipient>();
-
-        // make person a recipient for all existing participants
-        foreach (Participant ep in Hat.Participants)
-        {
-            // new person is recipient for existing participant
-            ep.Recipients.Add(new Recipient(person, true));
-            // existing participant is recipient for new person
-            newGiverRecipients.Add(new Recipient(ep.Person, true));
-        }
-
-        // add new participant to hat
-        var participant = new Participant(person) {
-            Recipients = newGiverRecipients
-        };
-
-        Hat.Participants.Add(participant);
-
+        Hat = HatService.AddParticipant(Hat, person);
         SwitchMode(Modes.Default);
-
         await SaveToLocalStorage();
     }
 
