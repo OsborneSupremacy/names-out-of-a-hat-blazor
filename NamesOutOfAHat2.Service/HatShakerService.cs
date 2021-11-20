@@ -60,7 +60,7 @@ namespace NamesOutOfAHat2.Service
 
                 if(!eligibleRecipients.Any())
                 {
-                    errors.Add($"Could not find an eligble recipient for {participant.Person.Name} that was not already taken");
+                    errors.Add($"Could not find an eligible recipient for {participant.Person.Name} that was not already taken");
                     break;
                 }
 
