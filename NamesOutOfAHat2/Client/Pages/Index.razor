@@ -4,7 +4,6 @@
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 @inject NamesOutOfAHat2.Service.ClientMessenger ClientMessenger
-@inject NamesOutOfAHat2.Service.EmailStagingService EmailStagingService
 @inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
 
@@ -83,17 +82,7 @@
 
         @if(Mode.In(Modes.Verification))
         {
-            <div class="container-fluid py-5">
-
-                <div class="alert alert-light" role="alert">
-                    <h4 class="alert-heading">The Hat Was Shaken, and Names Were Picked Successfully!</h4>
-                    <hr>
-                    <p class="mb-0">Does everything below look good?</p>
-                </div>
-
-                <Verification Hat="@Hat" />
-
-            </div>
+            <Verification Hat="@Hat" />
 
             <p>
                 <button aria-label="Continue" type="button" @onclick="SwitchToOrganizerMode" class="btn btn-primary btn-lg">Everything Looks Good. Continue.</button>
@@ -122,22 +111,7 @@
 
         @if(Mode.In(Modes.EmailComposition))
         {
-            <div class="container-fluid py-5">
-                <div class="alert alert-light" role="alert">
-                    <h4 class="alert-heading">Here is the Email That Will Be Sent to Participants</h4>
-                    <hr>
-                    <p class="mb-0" style="text-align: left;">
-                        @((MarkupString)EmailStagingService.GenerateEmailTemplate(Hat))
-                    </p>
-                    <hr>
-                    <div class="mb-3">
-                        <input type="text" class="form-control" @bind-value="Hat.PriceRange" placeholder="Gift Price Range (optional)" ng-maxlength="500" />
-                    </div>
-                    <div class="mb-3"> 
-                        <input type="text" class="form-control" @bind-value="Hat.AdditionalInformation" placeholder="Additional Info (optional)" ng-maxlength="1000" />
-                    </div>
-                </div>
-            </div>
+            <EmailPreview Hat="@Hat" />
 
             <p>
                 <button aria-label="Continue" type="button" @onclick="Finalize" class="btn btn-primary btn-lg">Everything Looks Good. Send Emails!</button>
