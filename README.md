@@ -62,7 +62,7 @@ There is a limit to the number of times the application will attempt to successf
 
 ## Running the Application
 
-## Prerequisites
+### Prerequisites
 
 The application uses SendGrid to send emails. This is abstracted with `IEmailService`, so if someone wants to use something else, they could create a different implementation.
 
@@ -77,7 +77,7 @@ Add the key plus your authorized email address to **NamesOutOfAHat2\Server\appse
   }
 ```
 
-## Debugging
+### Debugging
 
 In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run in.
 
