@@ -22,9 +22,12 @@
     [Parameter, EditorRequired]
     public Hat Hat { get; set; }
 
-    void SetOrganizer(Participant participant)
+    [Parameter, EditorRequired]
+    public EventCallback OrganizerSelectedCallback { get; set; }
+
+    async void SetOrganizer(Participant participant)
     {
         Hat.Organizer = participant;
+        await OrganizerSelectedCallback.InvokeAsync();
     }
-
 }

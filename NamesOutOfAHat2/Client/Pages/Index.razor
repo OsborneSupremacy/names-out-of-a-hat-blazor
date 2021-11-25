@@ -95,7 +95,7 @@
 
         @if(Mode.In(Modes.Organizer))
         {
-            <OrganizerSelect Hat="@Hat" />
+            <OrganizerSelect Hat="@Hat" OrganizerSelectedCallback="OrganizerSelected" />
 
             @if(Hat.Organizer is not null)
             {
@@ -234,6 +234,11 @@
         Hat = HatService.AddParticipant(Hat, person);
         SwitchMode(Modes.Default);
         await SaveToLocalStorage();
+    }
+
+    async Task OrganizerSelected()
+    {
+        StateHasChanged();
     }
 
     async Task<(bool success, Hat? hat)> TryLoadFromLocalStorageAsync()
