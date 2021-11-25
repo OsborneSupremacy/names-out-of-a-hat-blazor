@@ -23,3 +23,16 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build the Docker image
+      run: |
+        docker build . --file ./NamesOutOfAHat2.Server/Dockerfile --tag ghcr.io/osbornesupremacy/namesoutofahat:latest
+        docker push ghcr.io/osbornesupremacy/namesoutofahat:latest
+        
