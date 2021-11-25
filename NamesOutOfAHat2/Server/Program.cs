@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Options;
 using NamesOutOfAHat2.Interface;

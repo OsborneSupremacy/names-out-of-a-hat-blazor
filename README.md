@@ -83,3 +83,13 @@ In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run in
 
 As a precaution, the application will not send actual emails when running in Debug configuration.
 
+## Hosting
+
+If hosting on Azure (or other cloud provider), these configuration settings are required:
+
+| Name                    | Value            |
+| ----------------------- | ---------------- |
+| ASPNETCORE_ENVIRONMENT  | Production       |
+| configKeys__senderEmail | you@email.com    |
+| configKeys__sendgrid    | SendGrid API key |
+

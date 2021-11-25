@@ -16,7 +16,7 @@ namespace NamesOutOfAHat2.Service
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         }
 
-        public async Task RecieveGiftExchange(Hat hat)
+        public async Task ReceiveGiftExchange(Hat hat)
         {
             var emails = await _emailStagingService.StageEmailsAsync(hat);
 
