@@ -33,6 +33,6 @@ jobs:
         
     - name: Build the Docker image
       run: |
-        docker build . --file ./NamesOutOfAHat2.Server/Dockerfile --tag ghcr.io/osbornesupremacy/namesoutofahat:latest
+        docker build . --file ./NamesOutOfAHat2/Server/Dockerfile --tag ghcr.io/osbornesupremacy/namesoutofahat:latest
         docker push ghcr.io/osbornesupremacy/namesoutofahat:latest
         
