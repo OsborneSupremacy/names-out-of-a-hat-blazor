@@ -2,6 +2,8 @@
 
 A web application to facilitate a "names out of hat" type gift exchange, written with Blazor.
 
+![Names Out A Hat Screenshot 1](docs/screenshot_01.png)
+
 ## What is a "Names Out Of A Hat" type gift exchange?
 
 Most people probably know what this is, but I'm including a description for those who don't.
@@ -11,10 +13,20 @@ For families / groups that organize Christmas or other holiday gift exchanges, t
 As a solution to that, some groups have everyone buy a gift for just one other person. That is a determined through a drawing:
 
 1. Everyone writes their name on a piece of paper.
+
+![Everyone writes their name on a piece of paper](docs/IMG_8224.jpg)
+
 2. All names are put into a hat.
-3. Names are drawn one at a time.
-4. The person drawing the name does not reveal it to anyone else.
-5. If someone draws their own name (or in some variations, the name of their spouse / significant other), all names are put back in the hat, and the process is restarted.
+
+![All names are put into a hat](docs/IMG_8222.jpg)
+
+3. The hat is shaken.
+4. Names are drawn one at a time.
+
+![Names are drawn one at a time](docs/IMG_8223.jpg)
+
+5. The person drawing the name does not reveal it to anyone else.
+6. If someone draws their own name (or in some variations, the name of their spouse / significant other), all names are put back in the hat, and the process is restarted.
 
 ## Why create an application to do this?
 

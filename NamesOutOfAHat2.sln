@@ -21,6 +21,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Test.Utilit
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DD61C6B9-6602-4986-9CB8-3399094A154E}"
 	ProjectSection(SolutionItems) = preProject
+		docs\IMG_8222.jpg = docs\IMG_8222.jpg
+		docs\IMG_8223.jpg = docs\IMG_8223.jpg
+		docs\IMG_8224.jpg = docs\IMG_8224.jpg
 		README.md = README.md
 	EndProjectSection
 EndProject
