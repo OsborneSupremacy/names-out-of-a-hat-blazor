@@ -6,8 +6,17 @@ using NamesOutOfAHat2.Service;
 
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json")
-    .AddUserSecrets<Program>();
+    .AddJsonFile("appsettings.json");
+
+if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+    .Equals("Development", StringComparison.OrdinalIgnoreCase))
+    configBuilder.AddUserSecrets<Program>();
+
+if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+    .Equals("Production", StringComparison.OrdinalIgnoreCase))
+    configBuilder.AddAzureAppConfiguration(options => {
+        
+    });
 
 var config = configBuilder.Build();
 
