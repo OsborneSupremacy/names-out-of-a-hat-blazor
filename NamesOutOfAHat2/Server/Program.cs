@@ -8,15 +8,15 @@ var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json");
 
-if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-    .Equals("Development", StringComparison.OrdinalIgnoreCase))
-    configBuilder.AddUserSecrets<Program>();
+configBuilder.AddUserSecrets<Program>(true);
 
-if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-    .Equals("Production", StringComparison.OrdinalIgnoreCase))
-    configBuilder.AddAzureAppConfiguration(options => {
-        
-    });
+// If you have a an Azure App config, when running locally, can store it in launchSettings.json
+// On Azure, store it in application settings
+var azureConfigConnectionString = Environment
+    .GetEnvironmentVariable("AZURE_CONFIG_CONNECTIONSTRING") ?? string.Empty;
+
+if(!string.IsNullOrWhiteSpace(azureConfigConnectionString))
+    configBuilder.AddAzureAppConfiguration(azureConfigConnectionString);
 
 var config = configBuilder.Build();
 
