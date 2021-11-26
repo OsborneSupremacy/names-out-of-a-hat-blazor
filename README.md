@@ -71,10 +71,10 @@ If you do want to use SendGrid, you'll need an API key. You can register for a f
 Add the key plus your authorized email address to **NamesOutOfAHat2\Server\appsettings.json** (or your user secrets, when running locally):
 
 ```json
-"configKeys": {
+  "configKeys": {
     "sendgrid": "SendGrid API key",
     "senderEmail" : "you@email.com"
-}
+  }
 ```
 
 ### Debugging
