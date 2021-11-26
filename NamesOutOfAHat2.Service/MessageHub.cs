@@ -20,14 +20,12 @@ namespace NamesOutOfAHat2.Service
         {
             var emails = await _emailStagingService.StageEmailsAsync(hat);
 
-#if !DEBUG
             var tasks = new List<Task>();
 
             foreach (var email in emails)
                 tasks.Add(_emailService.SendAsync(email));
 
             await Task.WhenAll(tasks);
-#endif
         }
     }
 }
