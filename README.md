@@ -85,11 +85,12 @@ As a precaution, the application will not send actual emails when running in Deb
 
 ## Hosting
 
-If hosting on Azure (or other cloud provider), these configuration settings are required:
+If hosting on Azure, I recommend that you create an App Configuration with your SendGrid keys. The names of the keys would be:
 
-| Name                    | Value            |
-| ----------------------- | ---------------- |
-| ASPNETCORE_ENVIRONMENT  | Production       |
-| configKeys__senderEmail | you@email.com    |
-| configKeys__sendgrid    | SendGrid API key |
+```
+configKeys:senderEmail
+configKeys:sendgrid
+```
+
+In your Azure App Service, you would need just one application setting, pointing to your App Configuration endpoint. That settings should be named `AZURE_CONFIG_CONNECTIONSTRING`. You would get the value from your Azure App Configuration (Access Keys --> Connection String).
 
