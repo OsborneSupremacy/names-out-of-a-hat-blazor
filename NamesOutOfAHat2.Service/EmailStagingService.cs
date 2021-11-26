@@ -8,38 +8,32 @@ namespace NamesOutOfAHat2.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class EmailStagingService
     {
-        private const string _participantPh = "--|||||participant|||||--";
-        private const string _pickedNamePh = "--|||||pickedName|||||--";
-
         public async Task<List<EmailParts>> StageEmailsAsync(Hat hat)
         {
-            var emailTemplate = GenerateEmailTemplate(hat);
-
             var emails = new List<EmailParts>();
 
             foreach(var participant in hat.Participants)
-            {
                 emails.Add(new EmailParts()
                 { 
                     RecipientEmail = participant.Person.Email,
                     Subject = GetSubject(hat),
-                    HtmlBody = emailTemplate
-                        .Replace(_participantPh, participant.Person.Name)
-                        .Replace(_pickedNamePh, participant.PickedRecipient.Name)
+                    HtmlBody = GenerateEmail(hat, participant.Person.Name, participant.PickedRecipient.Name)
                 });
-            }
 
             return emails;
         }
 
-        public string GenerateEmailTemplate(Hat hat)
+        public string GenerateEmail(Hat hat) =>
+            GenerateEmail(hat, "{Participant Name}", "{Picked Name}");
+
+        protected string GenerateEmail(Hat hat, string participant, string pickedName)
         {
             var e = new List<string>();
 
-            e.Add($"Dear {_participantPh},");
+            e.Add($"Dear {participant},");
             e.Add(GetSubject(hat));
             e.Add("The person you have been randomly assigned is:");
-            e.Add($"<b>{_pickedNamePh}</b>");
+            e.Add($"<b>{pickedName}</b>");
 
             if (!string.IsNullOrWhiteSpace(hat.PriceRange))
                 e.Add($"Please purchase a gift in the range of {hat.PriceRange}.");
