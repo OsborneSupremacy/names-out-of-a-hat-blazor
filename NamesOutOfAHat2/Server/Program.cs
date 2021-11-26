@@ -6,11 +6,8 @@ using NamesOutOfAHat2.Service;
 
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json");
-
-if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-    .Equals("Development", StringComparison.OrdinalIgnoreCase))
-    configBuilder.AddUserSecrets<Program>();
+    .AddJsonFile("appsettings.json")
+    .AddUserSecrets<Program>();
 
 var config = configBuilder.Build();
 
