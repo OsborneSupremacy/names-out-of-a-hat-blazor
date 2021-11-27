@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Service;
 
 namespace NamesOutOfAHat2.Server.Controllers
@@ -32,16 +31,28 @@ namespace NamesOutOfAHat2.Server.Controllers
 
             var emails = await emailStagingService.StageEmailsAsync(hat);
 
-#if !DEBUG
+            var emailErrors = new List<string>();
+
             var tasks = new List<Task>();
-
+#if DEBUG
             foreach (var email in emails)
-                tasks.Add(emailService.SendAsync(email));
-
-            await Task.WhenAll(tasks);
+            {
+                tasks.Add(
+                    emailService.SendAsync(email)
+                        .ContinueWith(async (task) => {
+                            var (success, details) = await task;
+                            if (!success)
+                                emailErrors.Add(details);
+                        })
+                );
+            }
 #endif
+            await Task.WhenAll(tasks);
+
+            if (emailErrors.Any())
+                return new BadRequestObjectResult(emailErrors);
+
             return new OkResult();
         }
-
     }
 }

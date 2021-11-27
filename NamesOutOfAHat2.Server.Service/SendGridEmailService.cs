@@ -21,9 +21,9 @@ namespace NamesOutOfAHat2.Server.Service
             _senderEmail = configKeys?.GetValueOrDefault("senderEmail") ?? throw new ArgumentNullException(nameof(configKeys));
         }
 
-        public async Task SendAsync(EmailParts emailParts)
+        public async Task<(bool success, string details)> SendAsync(EmailParts emailParts)
         {
-            await new SendGridClient(_apiKey)
+            var response = await new SendGridClient(_apiKey)
                 .SendEmailAsync(
                     MailHelper
                         .CreateSingleEmail(
@@ -33,6 +33,13 @@ namespace NamesOutOfAHat2.Server.Service
                         string.Empty, 
                         emailParts.HtmlBody)
                 );
+
+            if (response.IsSuccessStatusCode)
+                return (true, string.Empty);
+            
+            var details = $"Error sending email to {emailParts.RecipientEmail}. Code: {response.StatusCode}";
+
+            return (false, details);
         }
     }
 }
