@@ -2,6 +2,7 @@
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Utility;
 using System.Text;
+using System.Web;
 
 namespace NamesOutOfAHat2.Service
 {
@@ -36,10 +37,10 @@ namespace NamesOutOfAHat2.Service
             e.Add($"<b>{pickedName}</b>");
 
             if (!string.IsNullOrWhiteSpace(hat.PriceRange))
-                e.Add($"Please purchase a gift in the range of {hat.PriceRange}.");
+                e.Add($"Please purchase a gift in the range of {HttpUtility.HtmlEncode(hat.PriceRange)}.");
 
             if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
-                e.Add(hat.AdditionalInformation);
+                e.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation));
 
             e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer.Person.Email}"">{hat.Organizer.Person.Name}</a>");
             e.Add("<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>");

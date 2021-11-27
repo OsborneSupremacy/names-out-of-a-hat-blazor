@@ -1,21 +1,17 @@
 ﻿@using NamesOutOfAHat2.Model
 
-<div class="container-fluid py-5">
-    <div class="alert alert-light" role="alert">
-        <h4 class="alert-heading">Select The Gift Exchange Organizer</h4>
-        <hr>
-        @if (Hat.Organizer is not null) {
-            <h5>@Hat.Organizer.Person.Name is the Organizer</h5>
-        }
-        <div class="list-group">
-            @foreach(var participant in Hat.Participants)
-            {
-                <button type="button" @onclick="(() => SetOrganizer(participant))" class="list-group-item list-group-item-action">@participant.Person.Name</button>
-            }
-        </div>
-    </div>
+<SectionHeading Text="Select The Gift Exchange Organizer" />
 
-</div>
+@if (Hat.Organizer is not null) {
+    <p class="lead">@Hat.Organizer.Person.Name is the Organizer</p>
+}
+@foreach(var participant in Hat.Participants)
+{
+    <div style="cursor: pointer" class="@GetClass(participant.Person.Id)" role="alert" @onclick="(() => SetOrganizer(participant))">
+        @participant.Person.Name
+    </div>
+}
+
 
 @code {
 
@@ -24,6 +20,12 @@
 
     [Parameter, EditorRequired]
     public EventCallback OrganizerSelectedCallback { get; set; }
+
+    private string GetClass(Guid id)
+    {
+        if (id == (Hat.Organizer?.Person.Id ?? Guid.Empty )) return "alert alert-primary";
+        return "alert alert-secondary";
+    }
 
     async void SetOrganizer(Participant participant)
     {

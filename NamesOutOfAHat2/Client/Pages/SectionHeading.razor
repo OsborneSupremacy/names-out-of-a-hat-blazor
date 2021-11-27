@@ -1,0 +1,12 @@
+﻿<h1 class="display-6 fw-bold lh-1">@Text</h1>
+<p class="lead">@Lead</p>
+
+@code {
+    
+    [Parameter, EditorRequired]
+    public string Text { get; set; }
+
+    [Parameter]
+    public string Lead { get; set; }
+
+}

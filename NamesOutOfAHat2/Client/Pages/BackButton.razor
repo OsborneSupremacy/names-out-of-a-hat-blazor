@@ -1,0 +1,10 @@
+﻿<button aria-label="@Text" type="button" @onclick="ClickedCallback" class="btn btn-warning btn-outline-secondary btn-lg px-4">@Text</button>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback ClickedCallback { get; set; }
+}

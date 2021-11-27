@@ -11,142 +11,113 @@
 @using NamesOutOfAHat2.Model
 @using NamesOutOfAHat2.Utility
 
-<div class="bg-light rounded-3">
-    <div class="container-fluid py-5">
-        <div class="jumbotron">
-            <p>
-                <input 
-                    aria-label="Gift Exchange Name"
-                    type="text"
-                    name="GiftExchangeName"
-                    class="form-control form-control-lg"
-                    @bind-value="Hat.Name"
-                    placeholder="Exter the Name of Your Gift Exchange (optional)"
-                    style="text-align: center"
-                    />
-            </p>
-            @if(Mode.In(Modes.Default, Modes.Adding, Modes.ShowingErrors))
+<div class="container my-5">
+    <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
+        <div class="col-lg-12 p-3 p-lg-5 pt-lg-3">
+
+            @if (Mode.In(Modes.Default, Modes.Adding))
             {
-                <h2 class="display-5">Put everyone's name in the hat!</h2>
-            }
-        </div>
-
-        @if(Mode.In(Modes.Default))
-        {
-            <p>
-                <button type="button" @onclick="SwitchToAddMode" class="btn btn-primary">Add a Participant</button>
-            </p>
-        }
-
-        @if(Mode.In(Modes.Adding))
-        {
-            <AddParticipant Person="@Person" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
-        }
-
-        @if(Mode.In(Modes.Default) && (Hat.Participants?.Any() ?? false))
-        {
-            @foreach(var participant in Hat.Participants)
-            {
-                <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
+                <SectionHeading Text="Put everyone's name in the hat!" />
             }
 
-            <div class="container-fluid py-5">
-                <h4>Click the button below to "Shake Up The Hat"</h4>
+            @if (Mode.In(Modes.Default))
+            {
                 <p>
-                    <button aria-label="Shake Up The Hat" type="button" @onclick="ShakeUpTheHat" class="btn btn-primary btn-lg">Shake Up The Hat!</button>
+                    <button type="button" @onclick="SwitchToAddMode" class="btn btn-primary">Add a Participant</button>
                 </p>
-                <h5>If names can be picked successfully, we'll confirm with you, before sending emails to the participants.</h5>
-            </div>
-        }
+            }
 
-        @if(Mode.In(Modes.ShowingErrors))
-        {
-            <div class="alert alert-danger" role="alert">
-                <h4>There is a problem with the names in the hat.</h4>
-                <hr>
-                @if(Errors.Any())
+            @if (Mode.In(Modes.Adding))
+            {
+                <AddParticipant Person="@Person" PersonAddedCallback="@PersonAdded" CancelCallback="@Cancelled" />
+            }
+
+            @if (Mode.In(Modes.Default) && (Hat.Participants?.Any() ?? false))
+            {
+                @foreach (var participant in Hat.Participants)
                 {
-                    <ul>
-                        @foreach(var error in Errors)
-                        {
-                            <li>@error</li>
-                        }
-                    </ul>
+                    <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
                 }
-            </div>
 
-            <p>
-                <button aria-label="Go Back" type="button" @onclick="SwitchToDefaultMode" class="btn btn-warning">Go Back</button>
-            </p>
-        }
-
-        @if(Mode.In(Modes.Verification))
-        {
-            <Verification Hat="@Hat" />
-
-            <p>
-                <button aria-label="Continue" type="button" @onclick="SwitchToOrganizerMode" class="btn btn-primary btn-lg">Everything Looks Good. Continue.</button>
-            </p>
-
-            <p>
-                <button aria-label="Go Back" type="button" @onclick="SwitchToDefaultMode" class="btn btn-warning">Go Back</button>
-            </p>
-        }
-
-        @if(Mode.In(Modes.Organizer))
-        {
-            <OrganizerSelect Hat="@Hat" OrganizerSelectedCallback="OrganizerSelected" />
-
-            @if(Hat.Organizer is not null)
-            {
-                <p>
-                    <button aria-label="Continue" type="button" @onclick="SwitchToEmailCompositionMode" class="btn btn-primary btn-lg">Everything Looks Good. Continue.</button>
-                </p>
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <PrimaryButton ClickedCallback="ShakeUpTheHat" Text="Shake Up The Hat" />
+                </div>
             }
 
-            <p>
-                <button aria-label="Go Back" type="button" @onclick="SwitchToVerificationMode" class="btn btn-warning">Go Back</button>
-            </p>
-        }
+            @if (Mode.In(Modes.ShowingErrors))
+            {
+                <SectionHeading Text="There is a problem with the hat." />
 
-        @if(Mode.In(Modes.EmailComposition))
-        {
-            <EmailPreview Hat="@Hat" />
-
-            <p>
-                <button aria-label="Continue" type="button" @onclick="Finalize" class="btn btn-primary btn-lg">Everything Looks Good. Send Emails!</button>
-            </p>
-
-            <p>
-                <button aria-label="Go Back" type="button" @onclick="SwitchToOrganizerMode" class="btn btn-warning">Go Back</button>
-            </p>
-        }
-
-        @if(Mode.In(Modes.Success))
-        {
-            <div class="container-fluid py-5">
-                <div class="alert alert-light" role="alert">
-                    <h4 class="alert-heading">Done!</h4>
-                    <hr>
-                    <p class="mb-0">
-                        The emails have been sent! If someone did not get an email, ask them to check their junk mail folder(s).
-                        <br /><br />
-                        For Gmail users especially, have them check the many folders that Gmail sometimes automatically files emails under (e.g. Social, Updates, Forums, Promotions).
-                        <br /><br />
-                        If some participants still didn't get an email, try a different email address for them. You'll have to go back to the first step and re-send all emails.
-                        <br /><br />
-                        If you don't want to do that, here's a trick -- click F12 on your keyboard, select Application, then Local Storage, then this website. You should see an item named "Hat". That item contains all of the information related to this gift exchange.
-                    </p>
+                <div class="alert alert-danger" role="alert">
+                    @if (Errors.Any())
+                    {
+                        <ul>
+                            @foreach (var error in Errors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    }
                 </div>
-            </div>
 
-            <p>
-                <button aria-label="Go Back" type="button" @onclick="SwitchToDefaultMode" class="btn btn-primary btn-lg">Go Back To The Hat</button>
-            </p>
-        }
+                <BackButton ClickedCallback="SwitchToDefaultMode" Text="Go Back" />
+            }
 
+            @if (Mode.In(Modes.Verification))
+            {
+                <Verification Hat="@Hat" />
+                <PrimaryButton ClickedCallback="SwitchToOrganizerMode" Text="Everything Looks Good. Continue." />
+                <BackButton ClickedCallback="SwitchToDefaultMode" Text="Go Back" />
+            }
+
+            @if (Mode.In(Modes.Organizer))
+            {
+                <OrganizerSelect Hat="@Hat" OrganizerSelectedCallback="OrganizerSelected" />
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    @if (Hat.Organizer is not null)
+                    {
+                        <PrimaryButton ClickedCallback="SwitchToEmailCompositionMode" Text="Everything Looks Good. Continue." />
+                    }
+                    <BackButton ClickedCallback="SwitchToVerificationMode" Text="Go Back" />
+                </div>
+            }
+
+            @if (Mode.In(Modes.EmailComposition))
+            {
+                <EmailPreview Hat="@Hat" />
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <PrimaryButton ClickedCallback="Finalize" Text="Everything Looks Good. Send Emails!" />
+                    <BackButton ClickedCallback="SwitchToOrganizerMode" Text="Go Back" />
+                </div>
+            }
+
+            @if (Mode.In(Modes.Success))
+            {
+                <SectionHeading Text="Done!" Lead="The emails have been sent!" />
+
+                <hr>
+                <p class="mb-0">
+                        If someone did not get an email, ask them to check their junk mail folder(s).
+                    <br /><br />
+                    For Gmail users especially, have them check the many folders that Gmail sometimes automatically files emails under (e.g. Social, Updates, Forums, Promotions).
+                    <br /><br />
+                    If some participants still didn't get an email, try a different email address for them. You'll have to go back to the first step and re-send all emails.
+                    <br /><br />
+                    If you don't want to do that, here's a trick -- click F12 on your keyboard, select Application, then Local Storage, then this website. You should see an item named "Hat". That item contains all of the information related to this gift exchange.
+                </p>
+
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <PrimaryButton ClickedCallback="SwitchToDefaultMode" Text="Go Back To The Hat" />
+                </div>
+            }
+
+        </div>
     </div>
 </div>
+
+
+
 
 @code {
     Person? Person;
@@ -167,7 +138,7 @@
         Failure
     }
 
-    protected override async void OnInitialized() 
+    protected override async void OnInitialized()
     {
         var savedHat = await TryLoadFromLocalStorageAsync();
         if (savedHat.success)
@@ -249,14 +220,15 @@
         try
         {
             hat = JsonSerializer.Deserialize<Hat>(hatJson);
-        } catch
+        }
+        catch
         {
             return (false, hat);
         }
 
         if (!hat?.Participants?.Any() ?? false)
             return (false, hat);
-        
+
         hat = HatService.ReconstructParticipants(hat!);
 
         return (true, hat);
@@ -276,10 +248,10 @@
 
         var (isValid, errors) = ValidationService.Validate(Hat);
 
-        if(isValid)
+        if (isValid)
             (isValid, errors) = EligibilityValidationService.Validate(Hat);
 
-        if(isValid)
+        if (isValid)
             (isValid, errors, Hat) = HatShakerService.ShakeMultiple(Hat, 100);
 
         Errors = errors!.ToList();
