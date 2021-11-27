@@ -5,7 +5,7 @@ using NamesOutOfAHat2.Utility;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace NamesOutOfAHat2.Service
+namespace NamesOutOfAHat2.Server.Service
 {
     [RegistrationTarget(typeof(IEmailService))]
     [ServiceLifetime(ServiceLifetime.Scoped)]

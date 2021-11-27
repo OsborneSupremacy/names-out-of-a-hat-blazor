@@ -3,7 +3,7 @@
 @inject NamesOutOfAHat2.Service.ValidationService ValidationService
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
-@inject NamesOutOfAHat2.Service.ClientMessenger ClientMessenger
+@inject NamesOutOfAHat2.Client.Service.ClientMessenger ClientMessenger
 @inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
 
@@ -97,7 +97,7 @@
 
                 <hr>
                 <p class="mb-0">
-                        If someone did not get an email, ask them to check their junk mail folder(s).
+                    If someone did not get an email, ask them to check their junk mail folder(s).
                     <br /><br />
                     For Gmail users especially, have them check the many folders that Gmail sometimes automatically files emails under (e.g. Social, Updates, Forums, Promotions).
                     <br /><br />
@@ -106,9 +106,21 @@
                     If you don't want to do that, here's a trick -- click F12 on your keyboard, select Application, then Local Storage, then this website. You should see an item named "Hat". That item contains all of the information related to this gift exchange.
                 </p>
 
-
                 <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
                     <PrimaryButton ClickedCallback="SwitchToDefaultMode" Text="Go Back To The Hat" />
+                </div>
+            }
+
+            @if(Mode.In(Modes.Failure))
+            {
+                <SectionHeading Text="Oh, no. Something went wrong!" Lead="Sorry, but something went wrong. I don't have great error handling yet, but the details of the error are below." />
+
+                <div class="alert alert-danger" role="alert">
+                    @ErrorDetails
+                </div>
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <PrimaryButton ClickedCallback="SwitchToDefaultMode" Text="Try Again" />
                 </div>
             }
 
@@ -125,6 +137,8 @@
     Hat Hat = new Hat();
 
     Modes Mode = Modes.Default;
+
+    string ErrorDetails;
 
     enum Modes
     {
@@ -265,8 +279,16 @@
     async Task Finalize()
     {
         await SaveToLocalStorage();
-        await ClientMessenger.SendAsync(NavigationManager, Hat);
-        SwitchMode(Modes.Success);
+        var (success, details) = await ClientMessenger.SendAsync(NavigationManager, Hat);
+
+        if(success)
+        {
+            SwitchMode(Modes.Success);
+        } else
+        {
+            ErrorDetails = details;
+            SwitchMode(Modes.Failure);
+        }
     }
 
 }

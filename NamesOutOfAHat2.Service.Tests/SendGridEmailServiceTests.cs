@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Server.Service;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;

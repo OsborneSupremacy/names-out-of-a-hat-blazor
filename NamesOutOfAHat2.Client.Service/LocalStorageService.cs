@@ -2,7 +2,7 @@
 using NamesOutOfAHat2.Utility;
 using blazored = Blazored.LocalStorage;
 
-namespace NamesOutOfAHat2.Service
+namespace NamesOutOfAHat2.Client.Service
 {
     [RegistrationTarget(typeof(Interface.ILocalStorageService))]
     [ServiceLifetime(ServiceLifetime.Scoped)]

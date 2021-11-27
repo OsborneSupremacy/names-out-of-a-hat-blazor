@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Options;
-using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Service;
+using NamesOutOfAHat2.Utility;
 
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -39,8 +40,8 @@ builder.Services.Configure<ConfigKeys>(
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IOptions<ConfigKeys>>().Value);
 
-builder.Services.AddScoped<IEmailService, SendGridEmailService>();
-builder.Services.AddScoped<EmailStagingService>();
+builder.Services.RegisterServicesInAssembly(typeof(ValidationService));
+builder.Services.RegisterServicesInAssembly(typeof(SendGridEmailService));
 
 var app = builder.Build();
 
@@ -67,7 +68,6 @@ app.UseEndpoints(endpoints => {
     endpoints.MapControllers();
 });
 
-app.MapHub<MessageHub>("/messagehub");
 app.MapFallbackToFile("index.html");
 
 app.Run();
