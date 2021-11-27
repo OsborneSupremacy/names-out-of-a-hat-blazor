@@ -17,27 +17,20 @@ namespace NamesOutOfAHat2.Service
             foreach (Participant ep in hat.Participants)
             {
                 // new person is recipient for existing participant
-                ep.Recipients.Add(new Recipient(person, true));
+                ep.Eligible(person);
                 // existing participant is recipient for new person
                 newGiverRecipients.Add(new Recipient(ep.Person, true));
             }
 
-            // add new participant to hat
-            var participant = new Participant(person)
-            {
-                Recipients = newGiverRecipients
-            };
-
-            hat.Participants.Add(participant);
-
-            return hat;
+            return hat
+                .AddParticipant(person.ToParticipant(newGiverRecipients));
         }
 
         public Hat RemoveParticipant(Hat hat, Participant participant)
         {
             var id = participant.Person.Id;
 
-            var participants = hat.Participants.ToList();
+            var participants = hat.Participants?.ToList() ?? Enumerable.Empty<Participant>().ToList();
 
             foreach (var parcipant in participants)
             {
@@ -48,6 +41,11 @@ namespace NamesOutOfAHat2.Service
 
             participants.RemoveAll(x => x.Person.Id == id);
             hat.Participants = participants;
+
+            // if person being removed is organizer, remove the organizer
+            if ((hat.Organizer?.Person.Id ?? Guid.Empty) == id)
+                hat.Organizer = null;
+
             return hat;
         }
 

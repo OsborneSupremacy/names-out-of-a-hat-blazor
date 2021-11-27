@@ -2,70 +2,15 @@
 using FluentAssertions;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Test.Utility;
-using System;
 using System.Collections.Generic;
 using Xunit;
 using System.Linq;
-using System.Diagnostics.CodeAnalysis;
+using NamesOutOfAHat2.Utility;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
-    [ExcludeFromCodeCoverage]
-    public static class HatShakerTestExtensions
-    {
-        public static Person ToPerson(this string name) =>
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = name,
-                Email = $"{name}@gmail.com"
-            };
-
-        public static Participant ToParticipant(this Person input) =>
-            new(input);
-
-        public static Participant AddRecipient(this Participant input, Person person, bool eligible)
-        {
-            input.Recipients ??= new List<Recipient>();
-            input.Recipients.Add(new Recipient()
-            {
-                Person = person,
-                Eligible = eligible
-            });
-            return input;
-        }
-
-        public static Participant AddEligibleRecipients(this Participant input, params Person[] people) 
-        { 
-            foreach(var person in people)
-                input.AddRecipient(person, true);
-            return input;
-        }
-
-        public static Participant AddIneligibleRecipients(this Participant input, params Person[] people)
-        {
-            foreach (var person in people)
-                input.AddRecipient(person, false);
-            return input;
-        }
-
-        public static List<Participant> BuildParticipantList(this List<Participant> input)
-        {
-            input = new List<Participant>();
-            return input;
-        }
-
-        public static List<Participant> AddParticipant(this List<Participant> input, Participant participant)
-        {
-            input.Add(participant);
-            return input;
-        }
-    }
-
     public class HatShakerServiceTests
     {
-        protected List<Participant> BuildParticipantList() => 
-            new List<Participant>();
 
         private Hat GetUnresolvableHat()
         {
@@ -74,25 +19,22 @@ namespace NamesOutOfAHat2.Service.Tests
             var sam = "sam".ToPerson();
             var andy = "andy".ToPerson();
 
-            var hat = new Hat
-            {
-                Participants = BuildParticipantList()
+            var hat = new Hat()
                 .AddParticipant(joe.ToParticipant()
-                    .AddEligibleRecipients(sue, sam, andy)
+                    .Eligible(sue, sam, andy)
                 )
                 .AddParticipant(sue.ToParticipant()
-                    .AddEligibleRecipients(joe)
-                    .AddIneligibleRecipients(sam, andy)
+                    .Eligible(joe)
+                    .Ineligible(sam, andy)
                 )
                 .AddParticipant(sam.ToParticipant()
-                    .AddEligibleRecipients(joe)
-                    .AddIneligibleRecipients(sue, andy)
+                    .Eligible(joe)
+                    .Ineligible(sue, andy)
                 )
                 .AddParticipant(andy.ToParticipant()
-                    .AddEligibleRecipients(joe)
-                    .AddIneligibleRecipients(sue, sam)
-                )
-            };
+                    .Eligible(joe)
+                    .Ineligible(sue, sam)
+                );
 
             return hat;
         }
@@ -113,48 +55,45 @@ namespace NamesOutOfAHat2.Service.Tests
             // If not assigned to that one possible participant, will fail
             var kilo = "kilo".ToPerson();
 
-            var hat = new Hat
-            {
-                Participants = BuildParticipantList()
+            var hat = new Hat()
                 .AddParticipant(alpha.ToParticipant()
-                    .AddEligibleRecipients(beta, charlie, delta, echo, foxtrot, golf, hotel, india, kilo)
+                    .Eligible(beta, charlie, delta, echo, foxtrot, golf, hotel, india, kilo)
                 )
                 .AddParticipant(beta.ToParticipant()
-                    .AddEligibleRecipients(alpha, charlie, delta, echo, foxtrot, golf, hotel, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, charlie, delta, echo, foxtrot, golf, hotel, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(charlie.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, delta, echo, foxtrot, golf, hotel, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, delta, echo, foxtrot, golf, hotel, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(delta.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, echo, foxtrot, golf, hotel, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, charlie, echo, foxtrot, golf, hotel, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(echo.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, delta, foxtrot, golf, hotel, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, charlie, delta, foxtrot, golf, hotel, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(foxtrot.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, delta, echo, golf, hotel, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, charlie, delta, echo, golf, hotel, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(golf.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, hotel, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, charlie, delta, echo, foxtrot, hotel, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(hotel.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, golf, india)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, charlie, delta, echo, foxtrot, golf, india)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(india.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, golf, hotel)
-                    .AddIneligibleRecipients(kilo)
+                    .Eligible(alpha, beta, charlie, delta, echo, foxtrot, golf, hotel)
+                    .Ineligible(kilo)
                 )
                 .AddParticipant(kilo.ToParticipant()
-                    .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, hotel, india, golf)
-                )
-            };
+                    .Eligible(alpha, beta, charlie, delta, echo, foxtrot, hotel, india, golf)
+                );
 
             return hat;
         }
@@ -249,22 +188,19 @@ namespace NamesOutOfAHat2.Service.Tests
             var sue = "sue".ToPerson();
             var sam = "sam".ToPerson();
 
-            var hat = new Hat
-            {
-                Participants = BuildParticipantList()
+            var hat = new Hat()
                 .AddParticipant(joe.ToParticipant()
-                    .AddEligibleRecipients(sue)
-                    .AddIneligibleRecipients(sam)
+                    .Eligible(sue)
+                    .Ineligible(sam)
                 )
                 .AddParticipant(sue.ToParticipant()
-                    .AddEligibleRecipients(sam)
-                    .AddIneligibleRecipients(joe)
+                    .Eligible(sam)
+                    .Ineligible(joe)
                 )
                 .AddParticipant(sam.ToParticipant()
-                    .AddEligibleRecipients(joe)
-                    .AddIneligibleRecipients(sue)
-                )
-            };
+                    .Eligible(joe)
+                    .Ineligible(sue)
+                );
 
             var service = autoFixture.Create<HatShakerService>();
 
@@ -275,7 +211,6 @@ namespace NamesOutOfAHat2.Service.Tests
             isValid.Should().BeTrue();
             hatOut.Participants.Where(x => x.PickedRecipient is null).Should().BeEmpty();
         }
-
 
         [Fact]
         public void ShakeMultiple_Should_Return_Valid_When_Resolution_Difficult_But_Possible()

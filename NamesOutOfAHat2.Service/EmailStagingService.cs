@@ -57,7 +57,7 @@ namespace NamesOutOfAHat2.Service
         private string GetSubject(Hat hat)
         {
             if (!string.IsNullOrWhiteSpace(hat.Name))
-                return $"Thank you for participating in the {hat.Name}!";
+                return $"Thank you for participating in {hat.Name}!";
             else
                 return $"{hat.Organizer.Person.Name} has added you to a gift exchange!";
         }

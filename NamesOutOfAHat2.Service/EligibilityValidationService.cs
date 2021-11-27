@@ -9,12 +9,32 @@ namespace NamesOutOfAHat2.Service
     {
         public (bool isValid, IList<string> errors) Validate(Hat hat)
         {
-            var people = hat.Participants.Select(x => x.Person).ToList();
             var errors = new List<string>();
+
+            var participants = hat.Participants?.ToList() ?? Enumerable.Empty<Participant>().ToList();
+
+            foreach (var participant in participants)
+            {
+                if (!(participant.Recipients?.Any() ?? false))
+                {
+                    errors.Add($"{participant.Person.Name} has no possible recipients");
+                    continue;
+                }
+                if (!(participant.Recipients?.Any(x => x.Eligible) ?? false))
+                {
+                    errors.Add($"{participant.Person.Name} has no eligible recipients");
+                    continue;
+                }
+            }
+
+            if (errors.Any())
+                return (false, errors);
+
+            var people = participants.Select(x => x.Person).ToList();
 
             foreach (var person in people)
             {
-                if(!hat.Participants
+                if(!participants
                     .Where(x => x.Person.Id != person.Id)
                     .SelectMany(x => x.Recipients)
                     .Where(x => x.Eligible && x.Person.Id == person.Id)

@@ -18,7 +18,7 @@ namespace NamesOutOfAHat2.Model
         [Required]
         public Person Person { get; set; } = default!;
 
-        [Required, MinLength(1)]
+        [Required, MinLength(1, ErrorMessage = "Each participant needs at least one possible recipient")]
         public IList<Recipient> Recipients { get; set; } = default!;
     }
 }

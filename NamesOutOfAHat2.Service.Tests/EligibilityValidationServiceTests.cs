@@ -2,6 +2,7 @@
 using FluentAssertions;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Test.Utility;
+using NamesOutOfAHat2.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -19,39 +20,15 @@ namespace NamesOutOfAHat2.Service.Tests
             // arrange
             var autoFixture = new Fixture().AddAutoMoqCustomization();
 
-            var joe = new Person() { Id = Guid.NewGuid(), Name = "Joe", Email = "Joe@gmail.com" };
-            var sue = new Person() { Id = Guid.NewGuid(), Name = "Sue", Email = "Sue@gmail.com" };
-            var sam = new Person() { Id = Guid.NewGuid(), Name = "Sam", Email = "Sam@gmail.com" };
+            var joe = "joe".ToPerson();
+            var sue = "sue".ToPerson();
+            var sam = "sam".ToPerson();
 
             var hat = new Hat()
-            {
-                Participants = new List<Participant>()
-                {
-                    new Participant(joe) {
-                        Recipients = new List<Recipient>()
-                        {
-                            new Recipient (sue, true),
-                            new Recipient (sam, false)
-                        }
-                    },
-
-                    new Participant(sue) {
-                        Recipients = new List<Recipient>()
-                        {
-                            new Recipient (joe, true),
-                            new Recipient (sam, false)
-                        }
-                    },
-
-                    new Participant(sam) {
-                        Recipients = new List<Recipient>()
-                        {
-                            new Recipient (joe, true),
-                            new Recipient (sue, true)
-                        }
-                    }
-                }
-            };
+                .AddParticipant(joe.ToParticipant().Eligible(sue).Ineligible(sam))
+                .AddParticipant(sue.ToParticipant().Eligible(joe).Ineligible(sam))
+                .AddParticipant(sam.ToParticipant().Eligible(joe).Ineligible(sue))
+                ;
 
             var service = autoFixture.Create<EligibilityValidationService>();
 
@@ -61,7 +38,7 @@ namespace NamesOutOfAHat2.Service.Tests
             // assert
             isValid.Should().BeFalse();
             errors.Count().Should().Be(1);
-            errors.Single().Should().Contain("Sam");
+            errors.Single().Should().Contain("sam");
         }
 
         [Fact]
@@ -70,39 +47,15 @@ namespace NamesOutOfAHat2.Service.Tests
             // arrange
             var autoFixture = new Fixture().AddAutoMoqCustomization();
 
-            var joe = new Person() { Id = Guid.NewGuid(), Name = "Joe", Email = "Joe@gmail.com" };
-            var sue = new Person() { Id = Guid.NewGuid(), Name = "Sue", Email = "Sue@gmail.com" };
-            var sam = new Person() { Id = Guid.NewGuid(), Name = "Sam", Email = "Sam@gmail.com" };
+            var joe = "joe".ToPerson();
+            var sue = "sue".ToPerson();
+            var sam = "sam".ToPerson();
 
             var hat = new Hat()
-            {
-                Participants = new List<Participant>()
-                {
-                    new Participant(joe) {
-                        Recipients = new List<Recipient>()
-                        {
-                            new Recipient (sue, true),
-                            new Recipient (sam, true)
-                        }
-                    },
-
-                    new Participant(sue) {
-                        Recipients = new List<Recipient>()
-                        {
-                            new Recipient (joe, true),
-                            new Recipient (sam, false)
-                        }
-                    },
-
-                    new Participant(sam) {
-                        Recipients = new List<Recipient>()
-                        {
-                            new Recipient (joe, true),
-                            new Recipient (sue, true)
-                        }
-                    }
-                }
-            };
+                .AddParticipant(joe.ToParticipant().Eligible(sue, sam))
+                .AddParticipant(sue.ToParticipant().Eligible(joe).Ineligible(sam))
+                .AddParticipant(sam.ToParticipant().Eligible(joe, sue))
+                ;
 
             var service = autoFixture.Create<EligibilityValidationService>();
 
@@ -111,6 +64,61 @@ namespace NamesOutOfAHat2.Service.Tests
 
             // assert
             isValid.Should().BeTrue();
+        }
+
+
+        [Fact]
+        public void ValidateEligibility_Should_Fail_When_Person_Has_No_Recipients()
+        {
+            // arrange
+            var autoFixture = new Fixture().AddAutoMoqCustomization();
+
+            var joe = "joe".ToPerson();
+            var sue = "sue".ToPerson();
+            var sam = "sam".ToPerson();
+
+            var hat = new Hat()
+                .AddParticipant(joe.ToParticipant())
+                .AddParticipant(sue.ToParticipant().Eligible(joe, sam))
+                .AddParticipant(sam.ToParticipant().Eligible(joe, sue))
+                ;
+
+            var service = autoFixture.Create<EligibilityValidationService>();
+
+            // act
+            var (isValid, errors) = service.Validate(hat);
+
+            // assert
+            isValid.Should().BeFalse();
+            errors.Count().Should().Be(1);
+            errors.Single().Should().Contain("joe");
+        }
+
+        [Fact]
+        public void ValidateEligibility_Should_Fail_When_Person_Has_No_Elgible_Recipients()
+        {
+            // arrange
+            var autoFixture = new Fixture().AddAutoMoqCustomization();
+
+            var joe = "joe".ToPerson();
+            var sue = "sue".ToPerson();
+            var sam = "sam".ToPerson();
+
+            var hat = new Hat()
+                .AddParticipant(joe.ToParticipant().Ineligible(sue, sam))
+                .AddParticipant(sue.ToParticipant().Eligible(joe, sam))
+                .AddParticipant(sam.ToParticipant().Eligible(joe, sue))
+                ;
+
+            var service = autoFixture.Create<EligibilityValidationService>();
+
+            // act
+            var (isValid, errors) = service.Validate(hat);
+
+            // assert
+            isValid.Should().BeFalse();
+            errors.Count().Should().Be(1);
+            errors.Single().Should().Contain("joe");
         }
 
     }

@@ -15,5 +15,32 @@ namespace NamesOutOfAHat2.Utility
 
         public static string WriteDisplayName(this Participant input) =>
            !string.IsNullOrWhiteSpace(input.Person?.Name ?? string.Empty) ? input.Person!.Name : "Participant";
+
+        public static Participant ToParticipant(this Person input) => new(input);
+
+        public static Participant AddRecipient(this Participant input, Person person, bool eligible)
+        {
+            input.Recipients ??= new List<Recipient>();
+            input.Recipients.Add(new Recipient()
+            {
+                Person = person,
+                Eligible = eligible
+            });
+            return input;
+        }
+
+        public static Participant Eligible(this Participant input, params Person[] people)
+        {
+            foreach (var person in people)
+                input.AddRecipient(person, true);
+            return input;
+        }
+
+        public static Participant Ineligible(this Participant input, params Person[] people)
+        {
+            foreach (var person in people)
+                input.AddRecipient(person, false);
+            return input;
+        }
     }
 }
