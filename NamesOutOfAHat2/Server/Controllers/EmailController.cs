@@ -34,7 +34,7 @@ namespace NamesOutOfAHat2.Server.Controllers
             var emailErrors = new List<string>();
 
             var tasks = new List<Task>();
-#if DEBUG
+#if !DEBUG
             foreach (var email in emails)
             {
                 tasks.Add(
