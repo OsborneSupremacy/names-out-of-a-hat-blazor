@@ -19,8 +19,19 @@
     <input type="text" class="form-control" @bind-value="Hat.AdditionalInformation" placeholder="Additional Info (optional)" ng-maxlength="1000" />
 </div>
 
+<ButtonArea>
+    <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Send Emails!" />
+    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+</ButtonArea>
+
 @code {
 
     [Parameter, EditorRequired]
     public Hat Hat { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback NextCallback { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback PreviousCallback { get; set; }
 }

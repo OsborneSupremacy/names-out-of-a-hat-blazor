@@ -12,6 +12,13 @@
     </div>
 }
 
+<ButtonArea>
+    @if (Hat.Organizer is not null)
+    {
+        <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Continue." />
+    }
+    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+</ButtonArea>
 
 @code {
 
@@ -19,7 +26,11 @@
     public Hat Hat { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback OrganizerSelectedCallback { get; set; }
+    public EventCallback NextCallback { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback PreviousCallback { get; set; }
+
 
     private string GetClass(Guid id)
     {
@@ -30,6 +41,5 @@
     async void SetOrganizer(Participant participant)
     {
         Hat.Organizer = participant;
-        await OrganizerSelectedCallback.InvokeAsync();
     }
 }

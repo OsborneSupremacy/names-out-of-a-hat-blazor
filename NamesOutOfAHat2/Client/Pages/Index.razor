@@ -65,81 +65,37 @@
 
             @if (Mode.In(Modes.Verification))
             {
-                <Verification Hat="@Hat" />
-                <PrimaryButton ClickedCallback="NextMode" Text="Everything Looks Good. Continue." />
-                <BackButton ClickedCallback="DefaultMode" Text="Go Back" />
+                <Verification Hat="@Hat" NextCallback="NextMode" PreviousCallback="DefaultMode" />
             }
 
             @if (Mode.In(Modes.Organizer))
             {
-                <OrganizerSelect Hat="@Hat" OrganizerSelectedCallback="OrganizerSelected" />
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                    @if (Hat.Organizer is not null)
-                    {
-                        <PrimaryButton ClickedCallback="NextMode" Text="Everything Looks Good. Continue." />
-                    }
-                    <BackButton ClickedCallback="PreviousMode" Text="Go Back" />
-                </div>
+                <OrganizerSelect Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.SendVerifyEmail))
             {
-                <SendVerificationEmail Hat="@Hat" />
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                    <PrimaryButton ClickedCallback="SendCodeAndAdvance" Text="Looks Good. Send the Code!" />
-                    <BackButton ClickedCallback="PreviousMode" Text="Go Back" />
-                </div>
+                <SendVerificationEmail Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.ConfirmationCodeEntry))
             {
-                <ConfirmationCodeEntry Hat="@Hat" />
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                    <PrimaryButton ClickedCallback="NextMode" Text="Verify" />
-                    <BackButton ClickedCallback="PreviousMode" Text="Go Back" />
-                </div>
+                <ConfirmationCodeEntry Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.EmailComposition))
             {
-                <EmailPreview Hat="@Hat" />
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                    <PrimaryButton ClickedCallback="NextMode" Text="Everything Looks Good. Send Emails!" />
-                    <BackButton ClickedCallback="PreviousMode" Text="Go Back" />
-                </div>
+                <EmailPreview Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.Success))
             {
-                <SectionHeading Text="Done!" Lead="The emails have been sent!" />
-
-                <hr>
-                <p class="mb-0">
-                    If someone did not get an email, ask them to check their junk mail folder(s).
-                    <br /><br />
-                    For Gmail users especially, have them check the many folders that Gmail sometimes automatically files emails under (e.g. Social, Updates, Forums, Promotions).
-                    <br /><br />
-                    If some participants still didn't get an email, try a different email address for them. You'll have to go back to the first step and re-send all emails.
-                    <br /><br />
-                    If you don't want to do that, here's a trick -- click F12 on your keyboard, select Application, then Local Storage, then this website. You should see an item named "Hat". That item contains all of the information related to this gift exchange.
-                </p>
-
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                    <PrimaryButton ClickedCallback="DefaultMode" Text="Go Back To The Hat" />
-                </div>
+                <Success Hat="@Hat" NextCallback="DefaultMode" />
             }
 
             @if(Mode.In(Modes.Failure))
             {
-                <SectionHeading Text="Oh, no. Something went wrong!" Lead="Sorry, but something went wrong. I don't have great error handling yet, but the details of the error are below." />
-
-                <div class="alert alert-danger" role="alert">
-                    @ErrorDetails
-                </div>
-
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                    <PrimaryButton ClickedCallback="DefaultMode" Text="Try Again" />
-                </div>
+                <ErrorDisplay ErrorDetails="@ErrorDetails" NextCallback="DefaultMode" />
             }
 
         </div>
@@ -225,11 +181,6 @@
         Hat = HatService.AddParticipant(Hat, person);
         await DefaultMode();
         await SaveToLocalStorage();
-    }
-
-    async Task OrganizerSelected()
-    {
-        StateHasChanged();
     }
 
     async Task SendCodeAndAdvance()
