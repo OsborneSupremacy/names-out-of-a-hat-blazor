@@ -4,6 +4,14 @@ namespace NamesOutOfAHat2.Model
 {
     public class Hat
     {
+        public Hat()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        [Required]
+        public Guid Id { get; set; } = default!;
+
         public string? Name { get; set; } = default!;
 
         [MaxLength(10000)]
