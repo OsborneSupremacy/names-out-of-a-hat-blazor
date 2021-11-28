@@ -1,9 +1,36 @@
-﻿<button aria-label="@Text" type="button" @onclick="ClickedCallback" class="btn btn-primary btn-lg px-4 gap-3">@Text</button>
+﻿<div aria-label="@Text" @onclick="Clicked" class="btn btn-primary btn-lg px-4">
+    @if(processing)
+    {
+        <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <span>
+            &nbsp;
+        </span>
+    }
+    @Text
+</div>
 
 @code {
 
     [Parameter, EditorRequired]
     public string Text { get; set; }
+
+    private bool processing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        processing = false;
+    }
+
+    protected async Task Clicked()
+    {
+        if (processing) return;
+        processing = true;
+        await Task.Delay(1000);
+        await ClickedCallback.InvokeAsync();
+        processing = false;
+    }
 
     [Parameter, EditorRequired]
     public EventCallback ClickedCallback { get; set; }
