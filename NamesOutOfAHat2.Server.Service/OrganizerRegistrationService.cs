@@ -27,11 +27,12 @@ namespace NamesOutOfAHat2.Server.Service
             var cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetSlidingExpiration(TimeSpan.FromDays(7));
 
-            OrganizerRegistration registration = new ()
+            OrganizerRegistration registration = new()
             {
                 HatId = hat.Id,
                 OrganizerEmail = hat.Organizer?.Person.Email ?? string.Empty,
-                VerificationCode = code
+                VerificationCode = code,
+                Verified = false
             };
 
             _memoryCache.Set(hat.Id, registration, cacheEntryOptions);

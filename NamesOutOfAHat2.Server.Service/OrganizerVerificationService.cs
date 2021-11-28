@@ -15,12 +15,9 @@ namespace NamesOutOfAHat2.Server.Service
             _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         }
 
-        public bool VerifyAsync(Hat hat, string code)
+        public bool Verify(Hat hat, string code)
         {
-            if (_memoryCache.TryGetValue(hat.Id, out ICacheEntry value))
-                return false;
-
-            if (value is not OrganizerRegistration registration)
+            if (!_memoryCache.TryGetValue(hat.Id, out OrganizerRegistration registration))
                 return false;
 
             // email address doesn't match
@@ -31,8 +28,11 @@ namespace NamesOutOfAHat2.Server.Service
             if (!registration.VerificationCode.ContentEquals(code))
                 return false;
 
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromDays(7));
+
             registration.Verified = true;
-            value.SetValue(registration); 
+            _memoryCache.Set(hat.Id, registration, cacheEntryOptions);
 
             return true;
         }
