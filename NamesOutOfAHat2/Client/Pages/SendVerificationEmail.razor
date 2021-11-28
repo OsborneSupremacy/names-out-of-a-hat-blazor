@@ -1,0 +1,12 @@
+﻿@using NamesOutOfAHat2.Model
+
+<SectionHeading Text="We Need to Verify the Email Address of the Organizer" Lead="We're not going to add you to any email lists. This is only to prevent abuse." />
+
+<p class="lead">A code will be sent to @Hat.Organizer.Person.Name at @Hat.Organizer.Person.Email.</p>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; }
+
+}

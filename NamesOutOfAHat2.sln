@@ -28,9 +28,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		docs\screenshot_01.png = docs\screenshot_01.png
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamesOutOfAHat2.Client.Service", "NamesOutOfAHat2.Client.Service\NamesOutOfAHat2.Client.Service.csproj", "{A19462FA-6556-47CA-AEA3-D3BE5E7D78FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Client.Service", "NamesOutOfAHat2.Client.Service\NamesOutOfAHat2.Client.Service.csproj", "{A19462FA-6556-47CA-AEA3-D3BE5E7D78FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamesOutOfAHat2.Server.Service", "NamesOutOfAHat2.Server.Service\NamesOutOfAHat2.Server.Service.csproj", "{A1E92297-61DD-4140-814D-49BB1A99DEB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Server.Service", "NamesOutOfAHat2.Server.Service\NamesOutOfAHat2.Server.Service.csproj", "{A1E92297-61DD-4140-814D-49BB1A99DEB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

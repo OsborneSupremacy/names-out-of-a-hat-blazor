@@ -15,6 +15,7 @@ namespace NamesOutOfAHat2.Service
             e.Add($"Dear {hat.Organizer.Person.Name},");
             e.Add("Your 🎩 Names Out Of A Hat 🎩 verification code is:");
             e.Add($"<b>{code}</b>");
+            e.Add("-Names Out Of A Hat Administrator");
 
             var s = new StringBuilder();
             foreach (var i in e)

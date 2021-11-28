@@ -82,6 +82,24 @@
                 </div>
             }
 
+            @if (Mode.In(Modes.SendVerifyEmail))
+            {
+                <SendVerificationEmail Hat="@Hat" />
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <PrimaryButton ClickedCallback="SendCodeAndAdvance" Text="Looks Good. Send the Code!" />
+                    <BackButton ClickedCallback="PreviousMode" Text="Go Back" />
+                </div>
+            }
+
+            @if (Mode.In(Modes.ConfirmationCodeEntry))
+            {
+                <ConfirmationCodeEntry Hat="@Hat" />
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <PrimaryButton ClickedCallback="NextMode" Text="Verify" />
+                    <BackButton ClickedCallback="PreviousMode" Text="Go Back" />
+                </div>
+            }
+
             @if (Mode.In(Modes.EmailComposition))
             {
                 <EmailPreview Hat="@Hat" />
@@ -144,9 +162,11 @@
         ShowingErrors = 2,
         Verification = 3,
         Organizer = 4,
-        EmailComposition = 5,
-        Success = 6,
-        Failure = 7
+        SendVerifyEmail = 5,
+        ConfirmationCodeEntry = 6,
+        EmailComposition = 7,
+        Success = 8,
+        Failure = 9
     }
 
     protected override async void OnInitialized()
@@ -203,13 +223,26 @@
     async Task PersonAdded(Person person)
     {
         Hat = HatService.AddParticipant(Hat, person);
-        DefaultMode();
+        await DefaultMode();
         await SaveToLocalStorage();
     }
 
     async Task OrganizerSelected()
     {
         StateHasChanged();
+    }
+
+    async Task SendCodeAndAdvance()
+    {
+        var (success, details) = await ClientMessenger.SendVerificationAsync(NavigationManager, Hat);
+
+        if(success)
+            await NextMode();
+        else
+        {
+            ErrorDetails = details;
+            SwitchMode(Modes.Failure);
+        }
     }
 
     async Task<(bool success, Hat? hat)> TryLoadFromLocalStorageAsync()
