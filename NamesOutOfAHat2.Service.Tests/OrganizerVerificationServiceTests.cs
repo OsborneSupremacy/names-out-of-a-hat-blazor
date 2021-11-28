@@ -4,10 +4,12 @@ using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Test.Utility;
 using NamesOutOfAHat2.Utility;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
+    [ExcludeFromCodeCoverage]
     public class OrganizerVerificationServiceTests
     {
         [Fact]

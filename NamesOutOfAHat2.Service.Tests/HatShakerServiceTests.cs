@@ -6,12 +6,13 @@ using System.Collections.Generic;
 using Xunit;
 using System.Linq;
 using NamesOutOfAHat2.Utility;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NamesOutOfAHat2.Service.Tests
 {
+    [ExcludeFromCodeCoverage]
     public class HatShakerServiceTests
     {
-
         private Hat GetUnresolvableHat()
         {
             var joe = "joe".ToPerson();
