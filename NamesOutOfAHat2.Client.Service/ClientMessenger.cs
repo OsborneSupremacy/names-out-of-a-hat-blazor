@@ -16,13 +16,19 @@ namespace NamesOutOfAHat2.Client.Service
             _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
         }
 
-        public async Task<(bool success, string details)> SendAsync(NavigationManager navigationManager, Hat hat)
+        public async Task<(bool success, string details)> SendVerificationAsync(NavigationManager navigationManager, Hat hat) =>
+            await SendAsync(navigationManager, hat, "api/verify");
+
+        public async Task<(bool success, string details)> SendAsync(NavigationManager navigationManager, Hat hat) => 
+            await SendAsync(navigationManager, hat, "api/email");
+
+        public async Task<(bool success, string details)> SendAsync<T>(NavigationManager navigationManager, T input, string relativeUrl)
         {
             var client = _clientFactory.CreateClient();
 
             using var response = await client.PostAsJsonAsync(
-                navigationManager.ToAbsoluteUri("api/email"),
-                hat);
+                navigationManager.ToAbsoluteUri(relativeUrl),
+                input);
 
             if (response.IsSuccessStatusCode)
                 return (true, string.Empty);
