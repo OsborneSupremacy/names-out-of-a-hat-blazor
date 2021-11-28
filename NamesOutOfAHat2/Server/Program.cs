@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Server.Service;
@@ -40,6 +41,9 @@ builder.Services.Configure<ConfigKeys>(
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IOptions<ConfigKeys>>().Value);
 
+var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+builder.Services.AddSingleton(memoryCache);
 builder.Services.RegisterServicesInAssembly(typeof(ValidationService));
 builder.Services.RegisterServicesInAssembly(typeof(SendGridEmailService));
 
