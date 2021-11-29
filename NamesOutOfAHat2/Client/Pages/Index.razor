@@ -3,7 +3,7 @@
 @inject NamesOutOfAHat2.Service.ValidationService ValidationService
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
-@inject NamesOutOfAHat2.Client.Service.ClientMessenger ClientMessenger
+@inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
 @inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
 
@@ -185,7 +185,7 @@
 
     async Task SendCodeAndAdvance()
     {
-        var (success, details) = await ClientMessenger.SendVerificationAsync(NavigationManager, Hat);
+        var (success, details) = await ClientHttpService.SendVerificationAsync(NavigationManager, Hat);
 
         if(success)
             await NextMode();
@@ -249,7 +249,7 @@
     async Task Finalize()
     {
         await SaveToLocalStorage();
-        var (success, details) = await ClientMessenger.SendAsync(NavigationManager, Hat);
+        var (success, details) = await ClientHttpService.SendAsync(NavigationManager, Hat);
 
         if(success)
         {

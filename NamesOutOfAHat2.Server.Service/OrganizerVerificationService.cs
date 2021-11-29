@@ -15,24 +15,26 @@ namespace NamesOutOfAHat2.Server.Service
             _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         }
 
-        public bool Verify(Hat hat, string code)
+        public bool Verify(OrganizerRegistration registrationIn)
         {
-            if (!_memoryCache.TryGetValue(hat.Id, out OrganizerRegistration registration))
+            if (registrationIn is null) return false;
+
+            if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
                 return false;
 
             // email address doesn't match
-            if(!registration.OrganizerEmail.ContentEquals(hat.Organizer?.Person.Email ?? string.Empty))
+            if(!registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
                 return false;
 
             // code doesn't match
-            if (!registration.VerificationCode.ContentEquals(code))
+            if (!registrationOut.VerificationCode.ContentEquals(registrationIn.VerificationCode))
                 return false;
 
             var cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetSlidingExpiration(TimeSpan.FromDays(7));
 
-            registration.Verified = true;
-            _memoryCache.Set(hat.Id, registration, cacheEntryOptions);
+            registrationOut.Verified = true;
+            _memoryCache.Set(registrationIn.HatId, registrationOut, cacheEntryOptions);
 
             return true;
         }

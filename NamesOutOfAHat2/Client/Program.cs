@@ -14,7 +14,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHttpClient();
 
-builder.Services.RegisterServicesInAssembly(typeof(ClientMessenger));
+builder.Services.RegisterServicesInAssembly(typeof(ClientHttpService));
 builder.Services.RegisterServicesInAssembly(typeof(ValidationService));
 
 await builder.Build().RunAsync();

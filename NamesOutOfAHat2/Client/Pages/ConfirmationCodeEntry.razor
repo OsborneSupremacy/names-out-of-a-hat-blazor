@@ -1,9 +1,23 @@
 ﻿@using NamesOutOfAHat2.Model
 
-<SectionHeading Text="Enter Your Confirmation Code" />
+@inject NavigationManager NavigationManager
+@inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
+
+<SectionHeading Text="Enter Your Confirmation Code" Lead="Please be patient as your code is delivered via email. Check your junk mail and other folders." />
+
+<div class="mb-3">
+    <input type="text" class="form-control" @bind-value="_code" placeholder="Verification Code" ng-maxlength="100" />
+</div>
+
+@if(_invalidCode)
+{
+    <div class="alert alert-danger" role="alert">
+        Invalid Code
+    </div>
+}
 
 <ButtonArea>
-    <PrimaryButton ClickedCallback="NextCallback" Text="Verify" />
+    <PrimaryButton ClickedCallback="VerifyAsync" Text="Verify" />
     <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
 </ButtonArea>
 
@@ -11,6 +25,30 @@
 
     [Parameter, EditorRequired]
     public Hat Hat { get; set; }
+
+    private string _code = default!;
+
+    private bool _invalidCode = false;
+
+    private async Task VerifyAsync()
+    {
+        _invalidCode = false;
+
+        OrganizerRegistration registration = new()
+        {
+            HatId = Hat.Id,
+            OrganizerEmail = Hat.Organizer?.Person.Email ?? string.Empty,
+            VerificationCode = _code,
+            Verified = false
+        };
+
+        var result = await ClientHttpService.VerifyAsync(NavigationManager, registration);
+
+        if (result.success)
+            await NextCallback.InvokeAsync();
+        else
+            _invalidCode = true;
+    }
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }

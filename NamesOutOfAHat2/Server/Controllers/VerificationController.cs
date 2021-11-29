@@ -13,6 +13,19 @@ namespace NamesOutOfAHat2.Server.Controllers
         [HttpPost]
         [Route("api/verify")]
         [Produces("application/json")]
+        public IActionResult Verify(
+            [FromBody] OrganizerRegistration registration,
+            [FromServices] OrganizerVerificationService verificationService
+            ) =>
+                verificationService.Verify(registration) switch
+                {
+                    true => new OkResult(),
+                    _ => new UnauthorizedResult()
+                };
+
+        [HttpPost]
+        [Route("api/verify-register")]
+        [Produces("application/json")]
         public async Task<IActionResult> SendAsync(
             [FromServices] VerificationEmailStagingService emailStagingService,
             [FromServices] OrganizerRegistrationService registrationService,

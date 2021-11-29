@@ -4,6 +4,7 @@ using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Test.Utility;
 using NamesOutOfAHat2.Utility;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
@@ -19,25 +20,31 @@ namespace NamesOutOfAHat2.Service.Tests
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
             var registrationService = new OrganizerRegistrationService(memoryCache);
 
-            Hat orginalHat = new()
+            var hatId = Guid.NewGuid();
+            var organizer = "joe".ToPerson().ToParticipant();
+            var code = "1234";
+
+            Hat hat = new()
             {
-                Organizer = "joe".ToPerson().ToParticipant()
+                Id = hatId,
+                Organizer = organizer
             };
 
-            Hat newHat = new()
+            OrganizerRegistration registration = new()
             {
-                Id = orginalHat.Id,
-                Organizer = "joe".ToPerson().ToParticipant()
+                HatId = hatId,
+                OrganizerEmail = organizer.Person.Email,
+                VerificationCode = code
             };
 
-            registrationService.Register(orginalHat, "1234");
+            registrationService.Register(hat, code);
 
             var service = new OrganizerVerificationService(memoryCache);
 
             // act
-            var result = service.Verify(newHat, "1234");
+            var result = service.Verify(registration);
 
-            memoryCache.TryGetValue(orginalHat.Id, out OrganizerRegistration value);
+            memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
 
             // assert
             result.Should().BeTrue();
@@ -49,16 +56,30 @@ namespace NamesOutOfAHat2.Service.Tests
         {
             // arrange
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            var registrationService = new OrganizerRegistrationService(memoryCache);
 
-            Hat orginalHat = new()
+            var organizer = "joe".ToPerson().ToParticipant();
+            var code = "1234";
+
+            Hat hat = new()
             {
-                Organizer = "joe".ToPerson().ToParticipant()
+                Id = Guid.NewGuid(),
+                Organizer = organizer
+            };
+
+            registrationService.Register(hat, code);
+
+            OrganizerRegistration registration = new()
+            {
+                HatId = Guid.NewGuid(),
+                OrganizerEmail = organizer.Person.Email,
+                VerificationCode = code
             };
 
             var service = new OrganizerVerificationService(memoryCache);
 
             // act
-            var result = service.Verify(orginalHat, "1234");
+            var result = service.Verify(registration);
 
             // assert
             result.Should().BeFalse();
@@ -71,19 +92,28 @@ namespace NamesOutOfAHat2.Service.Tests
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
             var registrationService = new OrganizerRegistrationService(memoryCache);
 
+            var hatId = Guid.NewGuid();
+            var code = "1234";
+
             Hat hat = new()
             {
+                Id = hatId,
                 Organizer = "joe".ToPerson().ToParticipant()
             };
 
-            registrationService.Register(hat, "1234");
+            OrganizerRegistration registration = new()
+            {
+                HatId = hatId,
+                OrganizerEmail = "sam".ToPerson().Email,
+                VerificationCode = code
+            };
 
-            hat.Organizer.Person.Email = "joe2@gmail.com";
+            registrationService.Register(hat, code);
 
             var service = new OrganizerVerificationService(memoryCache);
 
             // act
-            var result = service.Verify(hat, "1234");
+            var result = service.Verify(registration);
 
             // assert
             result.Should().BeFalse();
@@ -96,9 +126,20 @@ namespace NamesOutOfAHat2.Service.Tests
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
             var registrationService = new OrganizerRegistrationService(memoryCache);
 
+            var hatId = Guid.NewGuid();
+            var organizer = "joe".ToPerson().ToParticipant();
+
             Hat hat = new()
             {
-                Organizer = "joe".ToPerson().ToParticipant()
+                Id = hatId,
+                Organizer = organizer
+            };
+
+            OrganizerRegistration registration = new()
+            {
+                HatId = hatId,
+                OrganizerEmail = organizer.Person.Email,
+                VerificationCode = "2345"
             };
 
             registrationService.Register(hat, "1234");
@@ -106,7 +147,7 @@ namespace NamesOutOfAHat2.Service.Tests
             var service = new OrganizerVerificationService(memoryCache);
 
             // act
-            var result = service.Verify(hat, "1235");
+            var result = service.Verify(registration);
 
             // assert
             result.Should().BeFalse();
