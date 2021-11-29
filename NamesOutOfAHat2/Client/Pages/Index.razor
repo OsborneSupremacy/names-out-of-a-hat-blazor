@@ -39,9 +39,9 @@
                     <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
                 }
 
-                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <ButtonArea>
                     <PrimaryButton ClickedCallback="ShakeUpTheHat" Text="Shake Up The Hat" />
-                </div>
+                </ButtonArea>
             }
 
             @if (Mode.In(Modes.ShowingErrors))
@@ -85,7 +85,7 @@
 
             @if (Mode.In(Modes.EmailComposition))
             {
-                <EmailPreview Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
+                <EmailPreview Hat="@Hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.Success))
