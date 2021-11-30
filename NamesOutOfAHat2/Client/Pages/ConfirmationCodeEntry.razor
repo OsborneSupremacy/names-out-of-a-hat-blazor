@@ -1,4 +1,5 @@
 ﻿@using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Utility
 
 @inject NavigationManager NavigationManager
 @inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
@@ -34,20 +35,15 @@
     {
         _invalidCode = false;
 
-        OrganizerRegistration registration = new()
-        {
-            HatId = Hat.Id,
-            OrganizerEmail = Hat.Organizer?.Person.Email ?? string.Empty,
-            VerificationCode = _code,
-            Verified = false
-        };
-
-        var result = await ClientHttpService.VerifyAsync(NavigationManager, registration);
+        var result = await ClientHttpService.VerifyAsync(NavigationManager, Hat.ToRegistration(_code));
 
         if (result.success)
             await NextCallback.InvokeAsync();
         else
+        {
+            await Task.Delay(3000);
             _invalidCode = true;
+        }
     }
 
     [Parameter, EditorRequired]

@@ -15,6 +15,18 @@ namespace NamesOutOfAHat2.Server.Service
             _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         }
 
+        public bool CheckVerified(OrganizerRegistration registrationIn)
+        {
+            if (registrationIn is null) return false;
+
+            if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
+                return false;
+
+            // email address doesn't match
+            return (registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail)
+                && registrationOut.Verified);
+        }
+
         public bool Verify(OrganizerRegistration registrationIn)
         {
             if (registrationIn is null) return false;

@@ -1,16 +1,25 @@
 ﻿@inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientMessenger
 @inject NavigationManager NavigationManager
 
+@using NamesOutOfAHat2.Utility
 @using NamesOutOfAHat2.Model
 
-<SectionHeading Text="We Need to Verify the Email Address of the Organizer" Lead="We're not going to add you to any email lists. This is only to prevent abuse." />
-
-<p class="lead">A code will be sent to @Hat.Organizer.Person.Name at @Hat.Organizer.Person.Email.</p>
-
-<ButtonArea>
-    <PrimaryButton ClickedCallback="SendCodeAndAdvance" Text="Looks Good. Send the Code!" />
-    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
-</ButtonArea>
+@if(!_alreadyVerified)
+{
+    <SectionHeading Text="We Need to Verify the Email Address of the Organizer" Lead="We're not going to add you to any email lists. This is only to prevent abuse." />
+    <p class="lead">A code will be sent to @Hat.Organizer.Person.Name at @Hat.Organizer.Person.Email.</p>
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="SendCodeAndAdvance" Text="Looks Good. Send the Code!" />
+        <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+    </ButtonArea>
+} else
+{
+    <SectionHeading Text="The Organizer's Email Address Has Been Verified" />
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="AdvanceSkipNextStep" Text="Great! Continue." />
+        <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+    </ButtonArea>
+}
 
 @code {
 
@@ -21,7 +30,21 @@
     public EventCallback NextCallback { get; set; }
 
     [Parameter, EditorRequired]
+    public EventCallback NextSkipStepCallback { get; set; }
+
+    [Parameter, EditorRequired]
     public EventCallback PreviousCallback { get; set; }
+
+    private bool _alreadyVerified = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (success, details) = await ClientMessenger.CheckVerifiedAsync(NavigationManager, Hat.ToRegistration());
+        _alreadyVerified = success;
+    }
+
+    async Task AdvanceSkipNextStep() => 
+        await NextSkipStepCallback.InvokeAsync();
 
     async Task SendCodeAndAdvance()
     {

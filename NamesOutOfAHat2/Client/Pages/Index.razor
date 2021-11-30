@@ -75,7 +75,7 @@
 
             @if (Mode.In(Modes.SendVerifyEmail))
             {
-                <SendVerificationEmail Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
+                <SendVerificationEmail Hat="@Hat" NextCallback="NextMode" NextSkipStepCallback="NextModeSkipStep" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.ConfirmationCodeEntry))
@@ -145,6 +145,13 @@
 
     async Task NextMode()
     {
+        Mode++;
+        await SaveToLocalStorage();
+    }
+
+    async Task NextModeSkipStep()
+    {
+        Mode++;
         Mode++;
         await SaveToLocalStorage();
     }
