@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Service;
 
 namespace NamesOutOfAHat2.Server.Controllers
@@ -15,8 +16,9 @@ namespace NamesOutOfAHat2.Server.Controllers
             [FromServices] ValidationService validationService,
             [FromServices] EligibilityValidationService eligibilityValidationService,
             [FromServices] EmailStagingService emailStagingService,
+            [FromServices] OrganizerVerificationService organizerVerificationService,
             [FromServices] IEmailService emailService,
-            [FromBody]Hat hat
+            [FromBody] Hat hat
             )
         {
             var (isValid, errors) = validationService.Validate(hat);
@@ -29,12 +31,15 @@ namespace NamesOutOfAHat2.Server.Controllers
             if (!isValid)
                 return new BadRequestObjectResult(errors);
 
+            if(!organizerVerificationService.CheckVerified(hat.Id, hat.Organizer.Person.Email))
+                return new BadRequestObjectResult(errors);
+
             var emails = await emailStagingService.StageEmailsAsync(hat);
 
             var emailErrors = new List<string>();
 
             var tasks = new List<Task>();
-#if !DEBUG
+#if DEBUG
             foreach (var email in emails)
             {
                 tasks.Add(

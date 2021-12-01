@@ -33,7 +33,7 @@ namespace NamesOutOfAHat2.Service
 
             e.Add($"Dear {participant},");
             e.Add(GetSubject(hat));
-            e.Add("The person you have been randomly assigned is:");
+            e.Add("The person whose name was picked out of a hat for you is:");
             e.Add($"<b>{pickedName}</b>");
 
             if (!string.IsNullOrWhiteSpace(hat.PriceRange))
@@ -58,9 +58,9 @@ namespace NamesOutOfAHat2.Service
         private string GetSubject(Hat hat)
         {
             if (!string.IsNullOrWhiteSpace(hat.Name))
-                return $"Thank you for participating in {hat.Name}!";
+                return $"🎩 Thank you for participating in {hat.Name}! 🎩";
             else
-                return $"{hat.Organizer.Person.Name} has added you to a gift exchange!";
+                return $"🎩 {hat.Organizer.Person.Name} has added you to a gift exchange! 🎩";
         }
     }
 }

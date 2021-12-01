@@ -35,6 +35,22 @@ builder.Services.AddResponseCompression(opts =>
 
 builder.Services.AddControllers();
 
+builder.Services.AddSwaggerDocument(config =>
+{
+    config.PostProcess = document =>
+    {
+        document.Info.Version = "v1";
+        document.Info.Title = "Names Out Of A Hat";
+        document.Info.Description = "A web application to facilitate a \"names out of hat\" type gift exchange, written with Blazor.";
+        document.Info.Contact = new NSwag.OpenApiContact
+        {
+            Name = "Ben Osborne",
+            Email = "ben@osbornesupremacy.com",
+            Url = "https://github.com/OsborneSupremacy"
+        };
+    };
+});
+
 builder.Services.Configure<ConfigKeys>(
     config.GetSection(nameof(ConfigKeys)));
 
@@ -48,6 +64,9 @@ builder.Services.RegisterServicesInAssembly(typeof(ValidationService));
 builder.Services.RegisterServicesInAssembly(typeof(SendGridEmailService));
 
 var app = builder.Build();
+
+app.UseStaticFiles();
+app.UseOpenApi();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
