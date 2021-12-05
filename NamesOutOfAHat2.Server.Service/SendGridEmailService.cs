@@ -15,14 +15,22 @@ namespace NamesOutOfAHat2.Server.Service
 
         private readonly string _senderEmail = string.Empty;
 
+        private readonly bool _sendEmails = false;
+
         public SendGridEmailService(ConfigKeys configKeys)
         {
             _apiKey = configKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(configKeys));
             _senderEmail = configKeys?.GetValueOrDefault("senderEmail") ?? throw new ArgumentNullException(nameof(configKeys));
+
+            if (!bool.TryParse(configKeys?.GetValueOrDefault("sendEmails"), out _))
+                _sendEmails = false;
         }
 
         public async Task<(bool success, string details)> SendAsync(EmailParts emailParts)
         {
+            if (!_sendEmails)
+                return (false, "The application is currently configured to not send emails.");
+
             var response = await new SendGridClient(_apiKey)
                 .SendEmailAsync(
                     MailHelper

@@ -79,15 +79,14 @@ Add the key plus your authorized email address to **NamesOutOfAHat2\Server\appse
 ```json
   "configKeys": {
     "sendgrid": "SendGrid API key",
-    "senderEmail" : "you@email.com"
+    "senderEmail" : "you@email.com",
+    "sendEmails" : true
   }
 ```
 
 ### Debugging
 
-In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run in.
-
-As a precaution, the application will not send actual emails when running in Debug configuration.
+In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run ut.
 
 ## Hosting
 
@@ -96,6 +95,7 @@ If hosting on Azure, I recommend that you create an App Configuration with your 
 ```
 configKeys:senderEmail
 configKeys:sendgrid
+configKeys:sendEmails
 ```
 
 In your Azure App Service, you would need just one application setting, pointing to your App Configuration endpoint. That settings should be named `AZURE_CONFIG_CONNECTIONSTRING`. You would get the value from your Azure App Configuration (Access Keys --> Connection String).

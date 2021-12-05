@@ -39,9 +39,8 @@ namespace NamesOutOfAHat2.Server.Controllers
             var emailErrors = new List<string>();
 
             var tasks = new List<Task>();
-#if !DEBUG
-            foreach (var email in emails)
-            {
+
+            emails.ForEach(email => {
                 tasks.Add(
                     emailService.SendAsync(email)
                         .ContinueWith(async (task) => {
@@ -50,8 +49,8 @@ namespace NamesOutOfAHat2.Server.Controllers
                                 emailErrors.Add(details);
                         })
                 );
-            }
-#endif
+            });
+
             await Task.WhenAll(tasks);
 
             if (emailErrors.Any())
