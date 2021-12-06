@@ -34,5 +34,10 @@ namespace NamesOutOfAHat2.Utility
             return s.ToString();
         }
 
+        public static bool ToBoolOrDefault(this string? input, bool defaultValue)
+        {
+            if (bool.TryParse(input, out var result)) return result;
+            return defaultValue;
+        }
     }
 }

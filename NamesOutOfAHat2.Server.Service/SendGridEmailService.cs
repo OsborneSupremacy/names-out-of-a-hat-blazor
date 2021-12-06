@@ -22,8 +22,8 @@ namespace NamesOutOfAHat2.Server.Service
             _apiKey = configKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(configKeys));
             _senderEmail = configKeys?.GetValueOrDefault("senderEmail") ?? throw new ArgumentNullException(nameof(configKeys));
 
-            if (!bool.TryParse(configKeys?.GetValueOrDefault("sendEmails"), out _))
-                _sendEmails = false;
+            _sendEmails = (configKeys?.GetValueOrDefault("sendEmails", "false") ?? "false")
+                .ToBoolOrDefault(false);
         }
 
         public async Task<(bool success, string details)> SendAsync(EmailParts emailParts)
