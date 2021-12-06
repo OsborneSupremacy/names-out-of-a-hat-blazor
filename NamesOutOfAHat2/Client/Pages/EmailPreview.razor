@@ -25,9 +25,8 @@
 </ButtonArea>
 
 @code {
-
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; }
+    public Hat Hat { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }

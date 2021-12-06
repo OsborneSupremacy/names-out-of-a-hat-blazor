@@ -12,7 +12,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach(var participant in Hat.Participants)
+        @foreach(var participant in Hat?.Participants ?? Enumerable.Empty<Participant>())
         {
             <tr>
                 <td>@participant.Person.Name</td>
@@ -29,9 +29,8 @@
 </ButtonArea>
 
 @code {
-
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; }
+    public Hat Hat { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }

@@ -7,7 +7,7 @@ namespace NamesOutOfAHat2.Utility
     {
         public static IServiceCollection RegisterServicesInAssembly(this IServiceCollection serviceCollection, Type type)
         {
-            var services = Assembly.GetAssembly(type)
+            var services = Assembly.GetAssembly(type)!
                 .GetTypes()
                 .Where(x => !x.IsAbstract)
                 .Where(x => x.IsPublic)

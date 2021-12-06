@@ -109,7 +109,7 @@
 
     Modes Mode = Modes.Default;
 
-    string ErrorDetails;
+    string ErrorDetails = default!;
 
     enum Modes : int
     {
@@ -231,7 +231,7 @@
         await Storage.SetLocalStorage("hat", hatJson);
     }
 
-    List<string> Errors;
+    List<string> Errors = default!;
 
     async Task ShakeUpTheHat()
     {

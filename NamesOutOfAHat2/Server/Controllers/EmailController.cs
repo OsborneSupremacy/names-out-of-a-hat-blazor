@@ -31,7 +31,7 @@ namespace NamesOutOfAHat2.Server.Controllers
             if (!isValid)
                 return new BadRequestObjectResult(errors);
 
-            if(!organizerVerificationService.CheckVerified(hat.Id, hat.Organizer.Person.Email))
+            if(!organizerVerificationService.CheckVerified(hat.Id, hat.Organizer?.Person.Email ?? string.Empty))
                 return new BadRequestObjectResult(errors);
 
             var emails = await emailStagingService.StageEmailsAsync(hat);
