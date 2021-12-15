@@ -10,26 +10,6 @@ namespace NamesOutOfAHat2.Server.Controllers
     public class EmailController : ControllerBase
     {
         [HttpPost]
-        [Route("api/emailpreview")]
-        [Produces("application/json")]
-        [ProducesResponseType(200)]
-        public ActionResult<string> GetEmailPreview(
-            [FromServices] ValidationService validationService,
-            [FromServices] EmailStagingService emailStagingService,
-            [FromBody] Hat hat
-            )
-        {
-            var (isValid, errors) = validationService.Validate(hat);
-
-            if (!isValid)
-                return new BadRequestObjectResult(errors);
-
-            var email = emailStagingService.GenerateEmail(hat);
-
-            return new OkObjectResult(email);
-        }
-
-        [HttpPost]
         [Route("api/email")]
         [Produces("application/json")]
         public async Task<IActionResult> SendAsync(

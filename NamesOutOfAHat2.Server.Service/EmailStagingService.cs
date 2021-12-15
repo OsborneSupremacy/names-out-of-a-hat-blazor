@@ -1,8 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Service;
 using NamesOutOfAHat2.Utility;
-using System.Text;
-using System.Web;
 
 namespace NamesOutOfAHat2.Server.Service
 {
@@ -11,9 +10,12 @@ namespace NamesOutOfAHat2.Server.Service
     {
         private readonly Settings _settings;
 
-        public EmailStagingService(Settings settings)
+        private readonly EmailCompositionService _emailCompositionService;
+
+        public EmailStagingService(Settings settings, EmailCompositionService emailCompositionService)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _emailCompositionService = emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
         }
 
         public Task<List<EmailParts>> StageEmailsAsync(Hat hat)
@@ -24,50 +26,11 @@ namespace NamesOutOfAHat2.Server.Service
                 emails.Add(new EmailParts()
                 { 
                     RecipientEmail = participant.Person.Email,
-                    Subject = GetSubject(hat),
-                    HtmlBody = GenerateEmail(hat, participant.Person.Name, participant.PickedRecipient?.Name ?? string.Empty)
+                    Subject = _emailCompositionService.GetSubject(hat),
+                    HtmlBody = _emailCompositionService.GenerateEmail(hat, participant.Person.Name, participant.PickedRecipient?.Name ?? string.Empty, _settings.SiteUrl)
                 });
 
             return Task.FromResult(emails);
         }
-
-        public string GenerateEmail(Hat hat) =>
-            GenerateEmail(hat, "{Participant Name}", "{Picked Name}");
-
-        protected string GenerateEmail(Hat hat, string participant, string pickedName)
-        {
-            var e = new List<string>();
-
-            e.Add($"Dear {participant},");
-            e.Add(GetSubject(hat));
-            e.Add("The person whose name was picked out of a hat for you is:");
-            e.Add($"<b>{pickedName}</b>");
-
-            if (!string.IsNullOrWhiteSpace(hat.PriceRange))
-                e.Add($"Please purchase a gift in the range of {HttpUtility.HtmlEncode(hat.PriceRange)}.");
-
-            if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
-                e.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation));
-
-            e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer?.Person.Email ?? string.Empty}"">{hat.Organizer?.Person.Name ?? string.Empty}</a>");
-            e.Add("<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>");
-            e.Add($"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>");
-
-            var s = new StringBuilder();
-            foreach(var i in e)
-            {
-                s.Append(i);
-                s.AppendLine("<br /><br />");
-            }
-
-            return s.ToString();
-        }
-
-        private string GetSubject(Hat hat) => 
-            string.IsNullOrWhiteSpace(hat.Name) switch
-            {
-                true => $"🎩 {hat.Organizer?.Person.Name ?? string.Empty} has added you to a gift exchange! 🎩",
-                _ => $"🎩 Thank you for participating in {hat.Name}! 🎩"
-            };
     }
 }

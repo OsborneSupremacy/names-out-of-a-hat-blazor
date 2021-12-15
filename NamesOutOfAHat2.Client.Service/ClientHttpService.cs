@@ -28,12 +28,6 @@ namespace NamesOutOfAHat2.Client.Service
         public async Task<(bool success, string details)> SendAsync(NavigationManager navigationManager, Hat hat) => 
             await SendAsync(navigationManager, hat, "api/email");
 
-        public async Task<string> GetEmailPreviewAsync(NavigationManager navigationManager, Hat hat)
-        {
-            var (_, details) = await SendAsync(navigationManager, hat, "api/emailpreview");
-            return (details);
-        }
-
         public async Task<(bool success, string details)> SendAsync<T>(NavigationManager navigationManager, T input, string relativeUrl)
         {
             var client = _clientFactory.CreateClient();

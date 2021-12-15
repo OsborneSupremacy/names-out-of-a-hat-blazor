@@ -1,13 +1,13 @@
 ﻿@using NamesOutOfAHat2.Model
 
 @inject NavigationManager NavigationManager
-@inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
+@inject NamesOutOfAHat2.Service.EmailCompositionService EmailCompositionService;
 
 <SectionHeading Text="Here is the Email That Will Be Sent to Participants" />
 
 <hr>
 <p class="mb-0" style="text-align: left;">
-    @((MarkupString)EmailPreviewText)
+    @((MarkupString)EmailCompositionService.GenerateEmail(Hat, "{Participant Name}", "{Picked Name}", string.Empty))
 </p>
 <hr>
 <div class="mb-3">
@@ -34,7 +34,4 @@
 
     [Parameter, EditorRequired]
     public EventCallback PreviousCallback { get; set; }
-
-    [Parameter, EditorRequired]
-    public string EmailPreviewText { get; set; } = default!;
 }
