@@ -4,24 +4,31 @@ using NamesOutOfAHat2.Utility;
 using System.Text;
 using System.Web;
 
-namespace NamesOutOfAHat2.Service
+namespace NamesOutOfAHat2.Server.Service
 {
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class EmailStagingService
     {
-        public async Task<List<EmailParts>> StageEmailsAsync(Hat hat)
+        private readonly Settings _settings;
+
+        public EmailStagingService(Settings settings)
+        {
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        }
+
+        public Task<List<EmailParts>> StageEmailsAsync(Hat hat)
         {
             var emails = new List<EmailParts>();
 
-            foreach(var participant in hat.Participants)
+            foreach(var participant in hat.Participants ?? Enumerable.Empty<Participant>())
                 emails.Add(new EmailParts()
                 { 
                     RecipientEmail = participant.Person.Email,
                     Subject = GetSubject(hat),
-                    HtmlBody = GenerateEmail(hat, participant.Person.Name, participant.PickedRecipient.Name)
+                    HtmlBody = GenerateEmail(hat, participant.Person.Name, participant.PickedRecipient?.Name ?? string.Empty)
                 });
 
-            return emails;
+            return Task.FromResult(emails);
         }
 
         public string GenerateEmail(Hat hat) =>
@@ -42,8 +49,9 @@ namespace NamesOutOfAHat2.Service
             if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
                 e.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation));
 
-            e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer.Person.Email}"">{hat.Organizer.Person.Name}</a>");
+            e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer?.Person.Email ?? string.Empty}"">{hat.Organizer?.Person.Name ?? string.Empty}</a>");
             e.Add("<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>");
+            e.Add($"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>");
 
             var s = new StringBuilder();
             foreach(var i in e)
@@ -55,12 +63,11 @@ namespace NamesOutOfAHat2.Service
             return s.ToString();
         }
 
-        private string GetSubject(Hat hat)
-        {
-            if (!string.IsNullOrWhiteSpace(hat.Name))
-                return $"🎩 Thank you for participating in {hat.Name}! 🎩";
-            else
-                return $"🎩 {hat.Organizer.Person.Name} has added you to a gift exchange! 🎩";
-        }
+        private string GetSubject(Hat hat) => 
+            string.IsNullOrWhiteSpace(hat.Name) switch
+            {
+                true => $"🎩 {hat.Organizer?.Person.Name ?? string.Empty} has added you to a gift exchange! 🎩",
+                _ => $"🎩 Thank you for participating in {hat.Name}! 🎩"
+            };
     }
 }

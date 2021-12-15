@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NamesOutOfAHat2.Model;
@@ -26,13 +25,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddSignalR();
-builder.Services.AddResponseCompression(opts =>
-{
-    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        new[] { "application/octet-stream" });
-});
-
 builder.Services.AddControllers();
 
 builder.Services.AddSwaggerDocument(config =>
@@ -50,6 +42,11 @@ builder.Services.AddSwaggerDocument(config =>
         };
     };
 });
+
+builder.Services.Configure<Settings>(config.GetSection(nameof(Settings)));
+
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IOptions<Settings>>().Value);
 
 builder.Services.Configure<ConfigKeys>(
     config.GetSection(nameof(ConfigKeys)));

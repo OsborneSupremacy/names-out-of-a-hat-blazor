@@ -1,12 +1,13 @@
 ﻿@using NamesOutOfAHat2.Model
 
-@inject NamesOutOfAHat2.Service.EmailStagingService EmailStagingService
+@inject NavigationManager NavigationManager
+@inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
 
 <SectionHeading Text="Here is the Email That Will Be Sent to Participants" />
 
 <hr>
 <p class="mb-0" style="text-align: left;">
-    @((MarkupString)EmailStagingService.GenerateEmail(Hat))
+    @((MarkupString)EmailPreviewText)
 </p>
 <hr>
 <div class="mb-3">
@@ -33,4 +34,7 @@
 
     [Parameter, EditorRequired]
     public EventCallback PreviousCallback { get; set; }
+
+    [Parameter, EditorRequired]
+    public string EmailPreviewText { get; set; } = default!;
 }

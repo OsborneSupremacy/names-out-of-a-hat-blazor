@@ -85,7 +85,7 @@
 
             @if (Mode.In(Modes.EmailComposition))
             {
-                <EmailPreview Hat="@Hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
+                <EmailPreview Hat="@Hat" EmailPreviewText="@EmailPreviewText" NextCallback="Finalize" PreviousCallback="PreviousMode" />
             }
 
             @if (Mode.In(Modes.Success))
@@ -108,6 +108,8 @@
     Hat Hat = new ();
 
     Modes Mode = Modes.Default;
+
+    string EmailPreviewText = default!;
 
     string ErrorDetails = default!;
 
@@ -145,7 +147,11 @@
 
     async Task NextMode()
     {
+        if ((Mode  + 1) == Modes.EmailComposition)
+            EmailPreviewText = await ClientHttpService.GetEmailPreviewAsync(NavigationManager, Hat);
+
         Mode++;
+
         await SaveToLocalStorage();
     }
 

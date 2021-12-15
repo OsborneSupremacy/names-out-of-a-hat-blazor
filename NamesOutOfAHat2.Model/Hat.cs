@@ -20,7 +20,7 @@ namespace NamesOutOfAHat2.Model
         [MaxLength(255)]
         public string? PriceRange { get; set; } = default!;
 
-        public Participant? Organizer { get; set;  }
+        public Participant? Organizer { get; set; }
 
         [Required, 
             MinLength(3, ErrorMessage = "A gift exchange like this needs at least three people"), 

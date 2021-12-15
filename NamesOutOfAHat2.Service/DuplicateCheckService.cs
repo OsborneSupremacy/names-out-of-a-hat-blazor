@@ -52,10 +52,10 @@ namespace NamesOutOfAHat2.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class NameDuplicateCheckService : DuplicateCheckService, IDuplicateCheckService
     {
-        protected static Func<IList<Person>, IEnumerable<string>> _nameSelector = (IList<Person> people) =>
+        protected readonly static Func<IList<Person>, IEnumerable<string>> _nameSelector = (IList<Person> people) =>
             people.Select(x => x.Name.TrimNullSafe());
 
-        protected static Func<Person, string, bool> _nameEquals = (Person person, string value) =>
+        protected readonly static Func<Person, string, bool> _nameEquals = (Person person, string value) =>
             person.Name.ContentEquals(value);
 
         public (bool duplicatesExist, IList<string> errorMessages) Execute(IList<Person> people)
@@ -76,10 +76,10 @@ namespace NamesOutOfAHat2.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class EmailDuplicateCheckService : DuplicateCheckService, IDuplicateCheckService
     {
-        protected static Func<IList<Person>, IEnumerable<string>> _emailSelector = (IList<Person> people) =>
+        protected readonly static Func<IList<Person>, IEnumerable<string>> _emailSelector = (IList<Person> people) =>
             people.Select(x => x.Email.TrimNullSafe());
 
-        protected static Func<Person, string, bool> _emailEquals = (Person person, string value) =>
+        protected readonly static Func<Person, string, bool> _emailEquals = (Person person, string value) =>
             person.Email.ContentEquals(value);
 
         public (bool duplicatesExist, IList<string> errorMessages) Execute(IList<Person> people)
@@ -105,10 +105,10 @@ namespace NamesOutOfAHat2.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class IdDuplicateCheckService : DuplicateCheckService, IDuplicateCheckService
     {
-        protected static Func<IList<Person>, IEnumerable<Guid>> _idSelector = (IList<Person> people) =>
+        protected readonly static Func<IList<Person>, IEnumerable<Guid>> _idSelector = (IList<Person> people) =>
             people.Select(x => x.Id);
 
-        protected static Func<Person, Guid, bool> _idEquals = (Person person, Guid value) =>
+        protected readonly static Func<Person, Guid, bool> _idEquals = (Person person, Guid value) =>
             person.Id.Equals(value);
 
         public (bool duplicatesExist, IList<string> errorMessages) Execute(IList<Person> people)

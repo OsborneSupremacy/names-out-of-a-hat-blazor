@@ -8,14 +8,21 @@ namespace NamesOutOfAHat2.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class VerificationEmailStagingService
     {
-        public async Task<EmailParts> StageEmailAsync(Hat hat, string code)
+        private readonly Settings _settings;
+
+        public VerificationEmailStagingService(Settings settings)
+        {
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        }
+
+        public Task<EmailParts> StageEmailAsync(Hat hat, string code)
         {
             var e = new List<string>();
 
-            e.Add($"Dear {hat.Organizer.Person.Name},");
+            e.Add($"Dear {hat.Organizer?.Person.Name},");
             e.Add("Your 🎩 Names Out Of A Hat 🎩 verification code is:");
             e.Add($"<b>{code}</b>");
-            e.Add("-Names Out Of A Hat Administrator");
+            e.Add($"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>");
 
             var s = new StringBuilder();
             foreach (var i in e)
@@ -24,12 +31,12 @@ namespace NamesOutOfAHat2.Service
                 s.AppendLine("<br /><br />");
             }
 
-            return new EmailParts()
+            return Task.FromResult(new EmailParts()
             {
-                RecipientEmail = hat.Organizer.Person.Email,
+                RecipientEmail = hat.Organizer?.Person?.Email ?? string.Empty,
                 Subject = "🎩 Names Out Of A Hat 🎩 Verification Code",
                 HtmlBody = s.ToString()
-            };
+            });
         }
     }
 }

@@ -17,10 +17,11 @@ namespace NamesOutOfAHat2.Service.Tests
         public async void SentAsync_Should_Work()
         {
             // arrange
+            var settings = new Settings() { SenderEmail = "namesoutofahat@osbornesupremacy.com" };
+
             var configKeys = new ConfigKeys()
             {
-                { "sendGrid", "Paste the real API key here" },
-                { "senderEmail", "ben@osbornesupremacy.com" }
+                { "sendGrid", "Paste the real API key here" }
             };
 
             var emailParts = new EmailParts()
@@ -30,7 +31,7 @@ namespace NamesOutOfAHat2.Service.Tests
                 HtmlBody = "<p>This is an html test.</p>"
             };
 
-            var service = new SendGridEmailService(configKeys);
+            var service = new SendGridEmailService(settings, configKeys);
 
             // act
             Func<Task> serviceDelegate = async () =>
