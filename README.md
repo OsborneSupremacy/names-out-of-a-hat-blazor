@@ -31,7 +31,7 @@ Here are all of the advantages that I can think of that a web application has ov
 * The drawing can be done remotely.
 * A participant cannot draw their own name or the name of any _ineligible_ person (e.g. their spouse.)
 * The list of ineligible recipients is flexible.
-    * For groups with a small number of people, it's very possible that someone can draw the same name 2 or mores years in a row. This can be prevented by marking a recipient as ineligible for certain participants.
+    * For groups with a small number of people, it's very possible that someone can draw the same name 2 or more years in a row. This can be prevented by marking a recipient as ineligible for certain participants.
 * It is completely fair (not that fairness is a major concern when it comes to gift exchanges). Both the order in which people draw names, and the drawing of the names, is down randomly.
 * Gift exchanges with complex resolutions can be found.
 
@@ -74,28 +74,39 @@ The application uses SendGrid to send emails. This is abstracted with `IEmailSer
 
 If you do want to use SendGrid, you'll need an API key. You can register for a free one at [https://app.sendgrid.com/](https://app.sendgrid.com/).
 
-Add the key plus your authorized email address to **NamesOutOfAHat2\Server\appsettings.json** (or your user secrets, when running locally):
+Add the key to **NamesOutOfAHat2\Server\appsettings.json** (or your user secrets, when running locally):
 
 ```json
   "configKeys": {
-    "sendgrid": "SendGrid API key",
-    "senderEmail" : "you@email.com",
-    "sendEmails" : true
+    "sendgrid": "SendGrid API key"
   }
 ```
 
+In addition, you will need to modify values of the `settings` object as follows:
+
+* `siteUrl`. The URL of the deployed instance of this application. I know that the application can find this, but I thought it was simple enough to store it here.
+* `senderName`. The name that you want to appear as the sender of the email.
+* `senderEmail`. The email address you want to appear as the sender of the email. You will need to authorize SendGrid to use that email address.
+* `sendEmails`. Whether to _really_ send emails. I have three reasons for having this setting.
+
+    1. When running / testing the application locally, I don't want to send/recieve emails.
+    2. I want to be able to test the application in production without sending emails.
+    3. I want to ensure that anyone else running this application doesn't inadvertently send emails (which is why it is off by default).
+
 ### Debugging
 
-In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run ut.
+In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run it.
 
 ## Hosting
 
-If hosting on Azure, I recommend that you create an App Configuration with your SendGrid keys. The names of the keys would be:
+If hosting on Azure, I recommend that you create an App Configuration with your SendGrid keys and settings. The names of the keys would be:
 
 ```
-configKeys:senderEmail
 configKeys:sendgrid
-configKeys:sendEmails
+settings:senderName
+settings:senderEmail
+settings:sendEmails
+settings:siteUrl
 ```
 
 In your Azure App Service, you would need just one application setting, pointing to your App Configuration endpoint. That settings should be named `AZURE_CONFIG_CONNECTIONSTRING`. You would get the value from your Azure App Configuration (Access Keys --> Connection String).
