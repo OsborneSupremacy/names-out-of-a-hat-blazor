@@ -45,8 +45,8 @@ namespace NamesOutOfAHat2.Service
         public string GetSubject(Hat hat) =>
             string.IsNullOrWhiteSpace(hat.Name) switch
             {
-                true => $"🎩 {hat.Organizer?.Person.Name ?? string.Empty} has added you to a gift exchange! 🎩",
-                _ => $"🎩 Thank you for participating in {hat.Name}! 🎩"
+                true => $"{hat.Organizer?.Person.Name ?? string.Empty} has added you to a gift exchange!",
+                _ => $"Thank you for participating in {hat.Name}!"
             };
     }
 }

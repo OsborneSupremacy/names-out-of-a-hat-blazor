@@ -1,14 +1,21 @@
-﻿<SectionHeading Text="Oh, no. Something went wrong!" Lead="Sorry, but something went wrong. I don't have great error handling yet, but the details of the error are below." />
+﻿
+@if(Visible)
+{
+    <SectionHeading Visible="true" Text="Oh, no. Something went wrong!" Lead="Sorry, but something went wrong. I don't have great error handling yet, but the details of the error are below." />
 
-<div class="alert alert-danger" role="alert">
-    @ErrorDetails
-</div>
+    <div class="alert alert-danger" role="alert">
+        @ErrorDetails
+    </div>
 
-<ButtonArea>
-    <PrimaryButton ClickedCallback="NextCallback" Text="Try Again" />
-</ButtonArea>
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="NextCallback" Text="Try Again" />
+    </ButtonArea>
+}
 
 @code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
     public string ErrorDetails { get; set; }

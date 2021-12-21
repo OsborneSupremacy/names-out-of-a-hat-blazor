@@ -1,0 +1,70 @@
+﻿
+@inject NamesOutOfAHat2.Service.HatService HatService
+@inject NamesOutOfAHat2.Service.ValidationService ValidationService
+@inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
+@inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
+
+@using NamesOutOfAHat2.Model
+
+@if(Visible)
+{
+    @foreach (var participant in Hat.Participants)
+    {
+        <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
+    }
+
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="ShakeUpTheHat" Text="Shake Up The Hat" />
+    </ButtonArea>
+}
+
+@code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback SaveCallback { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback NextCallback { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback ShowErrorsCallback { get; set; }
+
+    async void ParticipantEdited(Participant participant)
+    {
+        StateHasChanged();
+        await SaveCallback.InvokeAsync();
+    }
+
+    async void ParticipantRemoved(Participant participant)
+    {
+        Hat = HatService.RemoveParticipant(Hat, participant);
+        StateHasChanged();
+        await SaveCallback.InvokeAsync();
+    }
+
+    async Task ShakeUpTheHat()
+    {
+        await SaveCallback.InvokeAsync();
+
+        var (isValid, errors) = ValidationService.Validate(Hat);
+
+        if (isValid)
+            (isValid, errors) = EligibilityValidationService.Validate(Hat);
+
+        if (isValid)
+            (isValid, errors, Hat) = HatShakerService.ShakeMultiple(Hat, 100);
+
+        Hat.Errors = errors!.ToList();
+
+        if (!isValid)
+            await ShowErrorsCallback.InvokeAsync();
+        else
+            await NextCallback.InvokeAsync();
+    }
+}

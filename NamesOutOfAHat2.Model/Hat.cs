@@ -7,10 +7,14 @@ namespace NamesOutOfAHat2.Model
         public Hat()
         {
             Id = Guid.NewGuid();
+            Participants = new List<Participant>();
+            Errors = new List<string>();
         }
 
         [Required]
         public Guid Id { get; set; } = default!;
+
+        public List<string> Errors { get; set; } = default!;
 
         public string? Name { get; set; } = default!;
 
@@ -26,6 +30,6 @@ namespace NamesOutOfAHat2.Model
             MinLength(3, ErrorMessage = "A gift exchange like this needs at least three people"), 
             MaxLength(30, ErrorMessage = "30 is the maximum number of gift exchange participants.")
         ]
-        public IList<Participant>? Participants { get; set; }
+        public IList<Participant> Participants { get; set; }
     }
 }

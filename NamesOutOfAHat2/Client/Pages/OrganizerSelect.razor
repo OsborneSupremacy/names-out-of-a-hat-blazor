@@ -1,36 +1,42 @@
 ﻿@using NamesOutOfAHat2.Model
 
-<SectionHeading Text="Select The Gift Exchange Organizer" />
-
-@if (Hat.Organizer is not null) {
-    <p class="lead">@Hat.Organizer.Person.Name is the Organizer</p>
-}
-@foreach(var participant in Hat.Participants)
+@if(Visible)
 {
-    <div style="cursor: pointer" class="@GetClass(participant.Person.Id)" role="alert" @onclick="(() => SetOrganizer(participant))">
-        @participant.Person.Name
-    </div>
-}
+    <SectionHeading Visible="true" Text="Select The Gift Exchange Organizer" />
 
-<ButtonArea>
-    @if (Hat.Organizer is not null)
+    @if (Hat.Organizer is not null) 
     {
-        <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Continue." />
+        <p class="lead">@Hat.Organizer.Person.Name is the Organizer</p>
     }
-    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
-</ButtonArea>
+    @foreach(var participant in Hat.Participants)
+    {
+        <div style="cursor: pointer" class="@GetClass(participant.Person.Id)" role="alert" @onclick="(() => SetOrganizer(participant))">
+            @participant.Person.Name
+        </div>
+    }
+
+    <ButtonArea>
+        @if (Hat.Organizer is not null)
+        {
+            <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Continue." />
+        }
+        <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+    </ButtonArea>
+}
 
 @code {
 
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; }
+    public bool Visible { get; set; }
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback PreviousCallback { get; set; }
-
 
     private string GetClass(Guid id)
     {

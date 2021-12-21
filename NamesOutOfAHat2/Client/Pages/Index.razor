@@ -1,8 +1,5 @@
 ﻿@page "/"
 @inject NamesOutOfAHat2.Interface.ILocalStorageService Storage
-@inject NamesOutOfAHat2.Service.ValidationService ValidationService
-@inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
-@inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 @inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
 @inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
@@ -15,10 +12,7 @@
     <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
         <div class="col-lg-12 p-3 p-lg-5 pt-lg-3">
 
-            @if (Mode.In(Modes.Default, Modes.Adding))
-            {
-                <SectionHeading Text="Put everyone's name in the hat!" />
-            }
+            <SectionHeading Visible="@Mode.In(Modes.Default, Modes.Adding)" Text="Put everyone's name in the hat!" />
 
             @if (Mode.In(Modes.Default))
             {
@@ -27,76 +21,30 @@
                 </p>
             }
 
-            @if (Mode.In(Modes.Adding))
-            {
-                <AddParticipant Person="@Person" PersonAddedCallback="@PersonAdded" CancelCallback="@DefaultMode" />
-            }
+            <AddParticipant Visible="@Mode.In(Modes.Adding)" Person="Person" PersonAddedCallback="PersonAdded" CancelCallback="DefaultMode" />
 
-            @if (Mode.In(Modes.Default) && (Hat.Participants?.Any() ?? false))
-            {
-                @foreach (var participant in Hat.Participants)
-                {
-                    <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
-                }
+            <ParticipantList 
+                Visible="@(Mode.In(Modes.Default) && (Hat.Participants.Any()))" 
+                SaveCallback="Save" 
+                Hat="Hat"
+                NextCallback="VerificationMode"
+                ShowErrorsCallback="HatErrorsMode" />
 
-                <ButtonArea>
-                    <PrimaryButton ClickedCallback="ShakeUpTheHat" Text="Shake Up The Hat" />
-                </ButtonArea>
-            }
+            <HatErrors Visible="@Mode.In(Modes.ShowingErrors)" Hat="Hat" NextCallback="DefaultMode" />
 
-            @if (Mode.In(Modes.ShowingErrors))
-            {
-                <SectionHeading Text="There is a problem with the hat." />
+            <Verification Visible="@Mode.In(Modes.Verification)" Hat="Hat" NextCallback="NextMode" PreviousCallback="DefaultMode" />
 
-                <div class="alert alert-danger" role="alert">
-                    @if (Errors.Any())
-                    {
-                        <ul>
-                            @foreach (var error in Errors)
-                            {
-                                <li>@error</li>
-                            }
-                        </ul>
-                    }
-                </div>
+            <OrganizerSelect Visible="@Mode.In(Modes.Organizer)" Hat="Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
 
-                <BackButton ClickedCallback="DefaultMode" Text="Go Back" />
-            }
+            <SendVerificationEmail Visible="@Mode.In(Modes.SendVerifyEmail)" Hat="Hat" NextCallback="NextMode" NextSkipStepCallback="NextModeSkipStep" PreviousCallback="PreviousMode" />
 
-            @if (Mode.In(Modes.Verification))
-            {
-                <Verification Hat="@Hat" NextCallback="NextMode" PreviousCallback="DefaultMode" />
-            }
+            <ConfirmationCodeEntry Visible="@Mode.In(Modes.ConfirmationCodeEntry)" Hat="Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
 
-            @if (Mode.In(Modes.Organizer))
-            {
-                <OrganizerSelect Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
-            }
+            <EmailPreview Visible="@Mode.In(Modes.EmailComposition)" Hat="Hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
 
-            @if (Mode.In(Modes.SendVerifyEmail))
-            {
-                <SendVerificationEmail Hat="@Hat" NextCallback="NextMode" NextSkipStepCallback="NextModeSkipStep" PreviousCallback="PreviousMode" />
-            }
+            <Success Visible="@Mode.In(Modes.Success)" Hat="Hat" NextCallback="DefaultMode" />
 
-            @if (Mode.In(Modes.ConfirmationCodeEntry))
-            {
-                <ConfirmationCodeEntry Hat="@Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
-            }
-
-            @if (Mode.In(Modes.EmailComposition))
-            {
-                <EmailPreview Hat="@Hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
-            }
-
-            @if (Mode.In(Modes.Success))
-            {
-                <Success Hat="@Hat" NextCallback="DefaultMode" />
-            }
-
-            @if(Mode.In(Modes.Failure))
-            {
-                <ErrorDisplay ErrorDetails="@ErrorDetails" NextCallback="DefaultMode" />
-            }
+            <ErrorDisplay Visible="@Mode.In(Modes.Failure)"  ErrorDetails="ErrorDetails" NextCallback="DefaultMode" />
 
         </div>
     </div>
@@ -170,7 +118,23 @@
         await SaveToLocalStorage();
     }
 
+    async Task VerificationMode()
+    {
+        Mode = Modes.Verification;
+        await SaveToLocalStorage();
+    }
+
+    async Task HatErrorsMode()
+    {
+        SwitchMode(Modes.ShowingErrors);
+    }
+
     void SwitchMode(Modes mode) => Mode = mode;
+
+    async void Save()
+    {
+        await SaveToLocalStorage();
+    }
 
     async void ParticipantEdited(Participant participant)
     {
@@ -219,7 +183,7 @@
             return (false, hat);
         }
 
-        if (!hat?.Participants?.Any() ?? false)
+        if (!hat?.Participants.Any() ?? false)
             return (false, hat);
 
         hat = HatService.ReconstructParticipants(hat!);
@@ -231,28 +195,6 @@
     {
         var hatJson = JsonSerializer.Serialize(Hat);
         await Storage.SetLocalStorage("hat", hatJson);
-    }
-
-    List<string> Errors = default!;
-
-    async Task ShakeUpTheHat()
-    {
-        await SaveToLocalStorage();
-
-        var (isValid, errors) = ValidationService.Validate(Hat);
-
-        if (isValid)
-            (isValid, errors) = EligibilityValidationService.Validate(Hat);
-
-        if (isValid)
-            (isValid, errors, Hat) = HatShakerService.ShakeMultiple(Hat, 100);
-
-        Errors = errors!.ToList();
-
-        if (!isValid)
-            SwitchMode(Modes.ShowingErrors);
-        else
-            SwitchMode(Modes.Verification);
     }
 
     async Task Finalize()

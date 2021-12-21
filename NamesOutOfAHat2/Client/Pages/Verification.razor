@@ -1,34 +1,41 @@
 ﻿@using NamesOutOfAHat2.Model
 @using NamesOutOfAHat2.Utility
 
-<SectionHeading Text="The Hat Was Shaken, and Names Were Picked Successfully!" Lead="Does everything below look good?" />
+@if(Visible)
+{
+    <SectionHeading Visible="true" Text="The Hat Was Shaken, and Names Were Picked Successfully!" Lead="Does everything below look good?" />
 
-<table class="table table-striped" style="text-align: left" >
-    <thead>
-        <tr>
-            <th scope="col">Participant Name</th>
-            <th scope="col">Participant Email</th>
-            <th scope="col">Picked Name</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach(var participant in Hat?.Participants ?? Enumerable.Empty<Participant>())
-        {
+    <table class="table table-striped" style="text-align: left" >
+        <thead>
             <tr>
-                <td>@participant.Person.Name</td>
-                <td>@participant.Person.Email</td>
-                <td>@participant.WriteEligibleRecipients()</td>
+                <th scope="col">Participant Name</th>
+                <th scope="col">Participant Email</th>
+                <th scope="col">Picked Name</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach(var participant in Hat.Participants)
+            {
+                <tr>
+                    <td>@participant.Person.Name</td>
+                    <td>@participant.Person.Email</td>
+                    <td>@participant.WriteEligibleRecipients()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 
-<ButtonArea>
-    <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Continue." />
-    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
-</ButtonArea>
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Continue." />
+        <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+    </ButtonArea>
+}
 
 @code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
     [Parameter, EditorRequired]
     public Hat Hat { get; set; } = default!;
 

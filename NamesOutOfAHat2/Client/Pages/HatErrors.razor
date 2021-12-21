@@ -1,0 +1,32 @@
+﻿@using NamesOutOfAHat2.Model
+
+@if(Visible)
+{
+    <SectionHeading Visible="true" Text="There is a problem with the hat." />
+
+    <div class="alert alert-danger" role="alert">
+        @if (Hat.Errors.Any())
+        {
+            <ul>
+                @foreach (var error in Hat.Errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        }
+    </div>
+
+    <BackButton ClickedCallback="NextCallback" Text="Go Back" />
+}
+
+@code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback NextCallback { get; set; }
+}

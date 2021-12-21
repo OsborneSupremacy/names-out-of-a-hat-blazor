@@ -4,25 +4,31 @@
 @inject NavigationManager NavigationManager
 @inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
 
-<SectionHeading Text="Enter Your Confirmation Code" Lead="Please be patient as your code is delivered via email. Check your junk mail and other folders." />
-
-<div class="mb-3">
-    <input type="text" class="form-control" @bind-value="_code" placeholder="Verification Code" ng-maxlength="100" />
-</div>
-
-@if(_invalidCode)
+@if(Visible)
 {
-    <div class="alert alert-danger" role="alert">
-        Invalid Code
+    <SectionHeading Visible="true" Text="Enter Your Confirmation Code" Lead="Please be patient as your code is delivered via email. Check your junk mail and other folders." />
+
+    <div class="mb-3">
+        <input type="text" class="form-control" @bind-value="_code" placeholder="Verification Code" ng-maxlength="100" />
     </div>
+
+    @if(_invalidCode)
+    {
+        <div class="alert alert-danger" role="alert">
+            Invalid Code
+        </div>
+    }
+
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="VerifyAsync" Text="Verify" />
+        <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+    </ButtonArea>
 }
 
-<ButtonArea>
-    <PrimaryButton ClickedCallback="VerifyAsync" Text="Verify" />
-    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
-</ButtonArea>
-
 @code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
     public Hat Hat { get; set; }

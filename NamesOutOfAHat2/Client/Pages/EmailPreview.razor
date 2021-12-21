@@ -3,29 +3,36 @@
 @inject NavigationManager NavigationManager
 @inject NamesOutOfAHat2.Service.EmailCompositionService EmailCompositionService;
 
-<SectionHeading Text="Here is the Email That Will Be Sent to Participants" />
+@if(Visible)
+{
+    <SectionHeading Visible="true" Text="Here is the Email That Will Be Sent to Participants" />
 
-<hr>
-<p class="mb-0" style="text-align: left;">
-    @((MarkupString)EmailCompositionService.GenerateEmail(Hat, "{Participant Name}", "{Picked Name}", string.Empty))
-</p>
-<hr>
-<div class="mb-3">
-    <input type="text" class="form-control" @bind-value="Hat.Name" placeholder="Gift Exchange Name (optional)" ng-maxlength="500" />
-</div>
-<div class="mb-3">
-    <input type="text" class="form-control" @bind-value="Hat.PriceRange" placeholder="Gift Price Range (optional)" ng-maxlength="500" />
-</div>
-<div class="mb-3"> 
-    <input type="text" class="form-control" @bind-value="Hat.AdditionalInformation" placeholder="Additional Info (optional)" ng-maxlength="1000" />
-</div>
+    <hr>
+    <p class="mb-0" style="text-align: left;">
+        @((MarkupString)EmailCompositionService.GenerateEmail(Hat, "{Participant Name}", "{Picked Name}", string.Empty))
+    </p>
+    <hr>
+    <div class="mb-3">
+        <input type="text" class="form-control" @bind-value="Hat.Name" placeholder="Gift Exchange Name (optional)" ng-maxlength="500" />
+    </div>
+    <div class="mb-3">
+        <input type="text" class="form-control" @bind-value="Hat.PriceRange" placeholder="Gift Price Range (optional)" ng-maxlength="500" />
+    </div>
+    <div class="mb-3"> 
+        <input type="text" class="form-control" @bind-value="Hat.AdditionalInformation" placeholder="Additional Info (optional)" ng-maxlength="1000" />
+    </div>
 
-<ButtonArea>
-    <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Send Emails!" />
-    <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
-</ButtonArea>
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Send Emails!" />
+        <BackButton ClickedCallback="PreviousCallback" Text="Go Back" />
+    </ButtonArea>
+}
 
 @code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
     [Parameter, EditorRequired]
     public Hat Hat { get; set; } = default!;
 
