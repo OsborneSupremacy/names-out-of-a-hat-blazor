@@ -12,7 +12,7 @@ namespace NamesOutOfAHat2.Service.Tests
     public class SendGridEmailServiceTests
     {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        [Fact(Skip = "Not a permament test")]
+        [Fact(Skip = "Not a permanent test")]
 #pragma warning restore xUnit1004 // Test methods should not be skipped
         public async void SentAsync_Should_Work()
         {
