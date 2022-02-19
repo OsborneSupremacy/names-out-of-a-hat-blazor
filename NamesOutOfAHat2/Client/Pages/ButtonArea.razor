@@ -1,10 +1,15 @@
-﻿<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-    @ChildContent
-</div>
+﻿@if (Visible)
+{
+    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+        @ChildContent
+    </div>
+}
 
 @code {
 
     [Parameter]
-    public RenderFragment ChildContent { get; set; }
+    public bool Visible { get; set; } = true;
 
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
 }

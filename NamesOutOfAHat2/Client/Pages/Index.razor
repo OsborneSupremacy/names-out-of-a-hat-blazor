@@ -12,16 +12,14 @@
     <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
         <div class="col-lg-12 p-3 p-lg-5 pt-lg-3">
 
-            <GdprConsent Visible="Mode.In(Modes.Gdpr)" NextCallback="InitializeHat" />
+            <GdprConsent Visible="Mode.In(Modes.Gdpr)" NextCallback="SaveGdprConsentToLocalStorage" />
 
             <SectionHeading Visible="@Mode.In(Modes.Default, Modes.Adding)" Text="Put everyone's name in the hat!" />
 
-            @if (Mode.In(Modes.Default))
-            {
-                <p>
-                    <button type="button" @onclick="AddMode" class="btn btn-primary">Add a Participant</button>
-                </p>
-            }
+
+            <ButtonArea Visible="Mode.In(Modes.Default)">
+                <button type="button" @onclick="AddMode" class="btn btn-primary">Add a Participant</button>
+            </ButtonArea>
 
             <AddParticipant Visible="@Mode.In(Modes.Adding)" Person="Person" PersonAddedCallback="PersonAdded" CancelCallback="DefaultMode" />
 
@@ -189,6 +187,7 @@
     {
         await Storage.SetLocalStorage("gdprConsent", true.ToString());
         await NextMode();
+        await InitializeHat();
     }
 
     async Task<(bool success, Hat? hat)> TryLoadHatFromLocalStorageAsync()
