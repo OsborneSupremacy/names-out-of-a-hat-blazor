@@ -3,6 +3,7 @@ using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Service;
+using System.Collections.Concurrent;
 
 namespace NamesOutOfAHat2.Server.Controllers
 {
@@ -36,7 +37,7 @@ namespace NamesOutOfAHat2.Server.Controllers
 
             var emails = await emailStagingService.StageEmailsAsync(hat);
 
-            var emailErrors = new List<string>();
+            var emailErrors = new ConcurrentBag<string>();
 
             var tasks = new List<Task>();
 
