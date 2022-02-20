@@ -53,7 +53,8 @@ namespace NamesOutOfAHat2.Service
         /// the hat from local storage isn't exactly the same as the hat that was saved
         /// because through serialization / deserialization, participant people are no
         /// longer the same objects as recipient people.
-        /// To get them to be the same object, rebuild recipient lists/// </summary>
+        /// To get them to be the same object, rebuild recipient lists
+        /// </summary>
         /// <returns></returns>
         public Hat ReconstructParticipants(Hat hat)
         {

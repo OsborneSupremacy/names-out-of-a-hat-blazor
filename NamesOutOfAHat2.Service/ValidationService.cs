@@ -39,7 +39,7 @@ namespace NamesOutOfAHat2.Service
                 0 => (false, errorToList("A gift exchange like this needs at least three people")),
                 1 => (false, errorToList("One person makes for a lonely gift exchange. Add at least two more people.")),
                 2 => (false, errorToList("If your gift exchange has exactly two people, they're going to get each other's name. No reason to pick names out of a hat! Add at least one more person.")),
-                > _max => (false, errorToList($"{_max} people is the maximum. How did this get past frontend validation ? Are you trying to hack this app?")),
+                > _max => (false, errorToList($"{_max} people is the maximum. How did this get past frontend validation? Are you trying to hack this app?")),
                 _ => (true, Enumerable.Empty<string>().ToList())
             };
 

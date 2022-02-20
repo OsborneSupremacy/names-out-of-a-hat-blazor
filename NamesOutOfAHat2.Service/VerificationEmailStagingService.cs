@@ -17,14 +17,15 @@ namespace NamesOutOfAHat2.Service
 
         public Task<EmailParts> StageEmailAsync(Hat hat, string code)
         {
-            var e = new List<string>();
+            List<string> e = new() 
+            {
+                $"Dear {hat.Organizer?.Person.Name},",
+                "Your 🎩 Names Out Of A Hat 🎩 verification code is:",
+                $"<b>{code}</b>",
+                $"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>"
+            };
 
-            e.Add($"Dear {hat.Organizer?.Person.Name},");
-            e.Add("Your 🎩 Names Out Of A Hat 🎩 verification code is:");
-            e.Add($"<b>{code}</b>");
-            e.Add($"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>");
-
-            var s = new StringBuilder();
+            StringBuilder s = new();
             foreach (var i in e)
             {
                 s.Append(i);
