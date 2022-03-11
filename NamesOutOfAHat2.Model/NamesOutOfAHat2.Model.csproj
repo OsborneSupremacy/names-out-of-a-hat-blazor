@@ -10,4 +10,9 @@
 		<Exec Command="dotnet format" />
 	</Target>
 
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
+	  <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
+	</ItemGroup>
+
 </Project>
