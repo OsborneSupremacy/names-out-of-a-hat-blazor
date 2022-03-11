@@ -31,31 +31,39 @@ namespace NamesOutOfAHat2.Utility
         }
 
         public static IServiceCollection AddService(
-            this IServiceCollection serviceCollection, 
-            Type service, 
-            ServiceLifetime serviceLifetime) {
+            this IServiceCollection serviceCollection,
+            Type service,
+            ServiceLifetime serviceLifetime)
+        {
 
             Func<Type, IServiceCollection> addDelegate = serviceLifetime switch
             {
-                ServiceLifetime.Transient => (Type service) => { return serviceCollection.AddTransient(service); },
-                ServiceLifetime.Singleton => (Type service) => { return serviceCollection.AddSingleton(service); },
-                ServiceLifetime.Scoped => (Type service) => { return serviceCollection.AddScoped(service); },
+                ServiceLifetime.Transient => (Type service) => { return serviceCollection.AddTransient(service); }
+                ,
+                ServiceLifetime.Singleton => (Type service) => { return serviceCollection.AddSingleton(service); }
+                ,
+                ServiceLifetime.Scoped => (Type service) => { return serviceCollection.AddScoped(service); }
+                ,
                 _ => throw new NotSupportedException()
             };
             return addDelegate(service);
         }
 
         public static IServiceCollection AddService(
-            this IServiceCollection serviceCollection, 
-            Type serviceType, 
-            Type implementationType, 
-            ServiceLifetime serviceLifetime) {
+            this IServiceCollection serviceCollection,
+            Type serviceType,
+            Type implementationType,
+            ServiceLifetime serviceLifetime)
+        {
 
             Func<Type, Type, IServiceCollection> addDelegate = serviceLifetime switch
             {
-                ServiceLifetime.Transient => (Type serviceType, Type implementationType) => { return serviceCollection.AddTransient(serviceType, implementationType); },
-                ServiceLifetime.Singleton => (Type serviceType, Type implementationType) => { return serviceCollection.AddSingleton(serviceType, implementationType); },
-                ServiceLifetime.Scoped => (Type serviceType, Type implementationType) => { return serviceCollection.AddScoped(serviceType, implementationType); },
+                ServiceLifetime.Transient => (Type serviceType, Type implementationType) => { return serviceCollection.AddTransient(serviceType, implementationType); }
+                ,
+                ServiceLifetime.Singleton => (Type serviceType, Type implementationType) => { return serviceCollection.AddSingleton(serviceType, implementationType); }
+                ,
+                ServiceLifetime.Scoped => (Type serviceType, Type implementationType) => { return serviceCollection.AddScoped(serviceType, implementationType); }
+                ,
                 _ => throw new NotSupportedException()
             };
             return addDelegate(serviceType, implementationType);

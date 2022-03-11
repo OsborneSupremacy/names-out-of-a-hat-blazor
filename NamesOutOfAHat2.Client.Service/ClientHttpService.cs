@@ -25,7 +25,7 @@ namespace NamesOutOfAHat2.Client.Service
         public async Task<(bool success, string details)> SendVerificationAsync(NavigationManager navigationManager, Hat hat) =>
             await SendAsync(navigationManager, hat, "api/verify-register");
 
-        public async Task<(bool success, string details)> SendAsync(NavigationManager navigationManager, Hat hat) => 
+        public async Task<(bool success, string details)> SendAsync(NavigationManager navigationManager, Hat hat) =>
             await SendAsync(navigationManager, hat, "api/email");
 
         public async Task<(bool success, string details)> SendAsync<T>(NavigationManager navigationManager, T input, string relativeUrl)

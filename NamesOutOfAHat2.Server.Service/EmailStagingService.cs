@@ -22,9 +22,9 @@ namespace NamesOutOfAHat2.Server.Service
         {
             var emails = new List<EmailParts>();
 
-            foreach(var participant in hat.Participants ?? Enumerable.Empty<Participant>())
+            foreach (var participant in hat.Participants ?? Enumerable.Empty<Participant>())
                 emails.Add(new EmailParts()
-                { 
+                {
                     RecipientEmail = participant.Person.Email,
                     Subject = _emailCompositionService.GetSubject(hat),
                     HtmlBody = _emailCompositionService.GenerateEmail(hat, participant.Person.Name, participant.PickedRecipient?.Name ?? string.Empty, _settings.SiteUrl)

@@ -34,7 +34,7 @@ namespace NamesOutOfAHat2.Service
 
             foreach (var person in people)
             {
-                if(!participants
+                if (!participants
                     .Where(x => x.Person.Id != person.Id)
                     .SelectMany(x => x.Recipients)
                     .Where(x => x.Eligible && x.Person.Id == person.Id)

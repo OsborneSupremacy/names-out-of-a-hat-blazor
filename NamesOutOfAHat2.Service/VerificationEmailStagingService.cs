@@ -17,7 +17,7 @@ namespace NamesOutOfAHat2.Service
 
         public Task<EmailParts> StageEmailAsync(Hat hat, string code)
         {
-            List<string> e = new() 
+            List<string> e = new()
             {
                 $"Dear {hat.Organizer?.Person.Name},",
                 "Your 🎩 Names Out Of A Hat 🎩 verification code is:",

@@ -33,16 +33,16 @@ namespace NamesOutOfAHat2.Server.Service
                 .SendEmailAsync(
                     MailHelper
                         .CreateSingleEmail(
-                        new EmailAddress(_settings.SenderEmail, _settings.SenderName), 
-                        new EmailAddress(emailParts.RecipientEmail), 
-                        emailParts.Subject, 
-                        string.Empty, 
+                        new EmailAddress(_settings.SenderEmail, _settings.SenderName),
+                        new EmailAddress(emailParts.RecipientEmail),
+                        emailParts.Subject,
+                        string.Empty,
                         emailParts.HtmlBody)
                 );
 
             if (response.IsSuccessStatusCode)
                 return (true, string.Empty);
-            
+
             var details = $"Error sending email to {emailParts.RecipientEmail}. Code: {response.StatusCode}";
 
             return (false, details);

@@ -21,7 +21,7 @@ namespace NamesOutOfAHat2.Service.Tests
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
             Hat hat = new()
-            { 
+            {
                 Organizer = "joe".ToPerson().ToParticipant()
             };
 
@@ -83,7 +83,8 @@ namespace NamesOutOfAHat2.Service.Tests
             // act
             Func<Task> serviceDelegate = async () =>
             {
-                await Task.Run(() => {
+                await Task.Run(() =>
+                {
                     service.Register(hat, "1234");
                 });
             };

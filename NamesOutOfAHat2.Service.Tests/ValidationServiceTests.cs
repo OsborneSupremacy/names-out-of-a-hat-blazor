@@ -53,7 +53,7 @@ namespace NamesOutOfAHat2.Service.Tests
             IList<Participant> input = new List<Participant>();
 
             int x = 0;
-            while(x++ < personCount)
+            while (x++ < personCount)
                 input.Add(new Participant());
 
             autoFixture.Freeze<Mock<IComponentModelValidationService>>()
@@ -78,7 +78,7 @@ namespace NamesOutOfAHat2.Service.Tests
             // arrange
             var autoFixture = new Fixture().AddAutoMoqCustomization();
             var cmvs = autoFixture.Freeze<Mock<IComponentModelValidationService>>();
-            
+
             cmvs.Setup(x => x.ValidateList(It.IsAny<IList<Participant>>()))
                 .Returns((true, Enumerable.Empty<string>().ToList()));
 
@@ -87,7 +87,7 @@ namespace NamesOutOfAHat2.Service.Tests
                 .AddScoped<IDuplicateCheckService>(provider => new MockDuplicateCheckService(duplicatesExist))
                 .AddScoped(provider => cmvs.Object)
                 .BuildServiceProvider();
-            
+
             IList<Participant> input = new List<Participant>();
 
             int x = 0;
@@ -115,8 +115,8 @@ namespace NamesOutOfAHat2.Service.Tests
             }
 
             private List<string> ErrorMessages =>
-                DuplicatesExist 
-                    ? new List<string>() { "Duplicates exist" } 
+                DuplicatesExist
+                    ? new List<string>() { "Duplicates exist" }
                     : Enumerable.Empty<string>().ToList();
 
             public (bool duplicatesExist, IList<string> errorMessages) Execute(IList<Person> people)

@@ -16,7 +16,7 @@ configBuilder.AddUserSecrets<Program>(true);
 var azureConfigConnectionString = Environment
     .GetEnvironmentVariable("AZURE_CONFIG_CONNECTIONSTRING") ?? string.Empty;
 
-if(!string.IsNullOrWhiteSpace(azureConfigConnectionString))
+if (!string.IsNullOrWhiteSpace(azureConfigConnectionString))
     configBuilder.AddAzureAppConfiguration(azureConfigConnectionString);
 
 var config = configBuilder.Build();
@@ -84,7 +84,8 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseEndpoints(endpoints => {
+app.UseEndpoints(endpoints =>
+{
     endpoints.MapControllers();
 });
 

@@ -26,8 +26,8 @@ namespace NamesOutOfAHat2.Service
 
             e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer?.Person.Email ?? string.Empty}"">{hat.Organizer?.Person.Name ?? string.Empty}</a>");
             e.Add("<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>");
-            
-            if(string.IsNullOrWhiteSpace(siteUrl))
+
+            if (string.IsNullOrWhiteSpace(siteUrl))
                 e.Add($"-<b>Names Out Of A Hat</b>");
             else
                 e.Add($"-<a href=\"{siteUrl}\">Names Out Of A Hat</a>");

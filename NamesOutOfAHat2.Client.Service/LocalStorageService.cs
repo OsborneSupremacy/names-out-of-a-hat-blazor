@@ -8,7 +8,7 @@ namespace NamesOutOfAHat2.Client.Service
     [ServiceLifetime(ServiceLifetime.Scoped)]
     public class LocalStorageService : Interface.ILocalStorageService
     {
-        private readonly blazored.ILocalStorageService _storage; 
+        private readonly blazored.ILocalStorageService _storage;
 
         public LocalStorageService(blazored.ILocalStorageService storage)
         {
@@ -18,7 +18,7 @@ namespace NamesOutOfAHat2.Client.Service
         public async Task<string> GetFromLocalStorage(string key) =>
             await _storage.GetItemAsStringAsync(key);
 
-        public async Task SetLocalStorage(string key, string value) => 
+        public async Task SetLocalStorage(string key, string value) =>
             await _storage.SetItemAsStringAsync(key, value);
     }
 }

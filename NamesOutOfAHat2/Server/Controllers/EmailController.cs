@@ -32,7 +32,7 @@ namespace NamesOutOfAHat2.Server.Controllers
             if (!isValid)
                 return new BadRequestObjectResult(errors);
 
-            if(!organizerVerificationService.CheckVerified(hat.Id, hat.Organizer?.Person.Email ?? string.Empty))
+            if (!organizerVerificationService.CheckVerified(hat.Id, hat.Organizer?.Person.Email ?? string.Empty))
                 return new BadRequestObjectResult(errors);
 
             var emails = await emailStagingService.StageEmailsAsync(hat);
@@ -41,10 +41,12 @@ namespace NamesOutOfAHat2.Server.Controllers
 
             var tasks = new List<Task>();
 
-            emails.ForEach(email => {
+            emails.ForEach(email =>
+            {
                 tasks.Add(
                     emailService.SendAsync(email)
-                        .ContinueWith(async (task) => {
+                        .ContinueWith(async (task) =>
+                        {
                             var (success, details) = await task;
                             if (!success)
                                 emailErrors.Add(details);

@@ -45,7 +45,7 @@ namespace NamesOutOfAHat2.Server.Service
                 return false;
 
             // email address doesn't match
-            if(!registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
+            if (!registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
                 return false;
 
             // code doesn't match

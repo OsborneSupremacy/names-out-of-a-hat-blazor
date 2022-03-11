@@ -8,7 +8,8 @@ namespace NamesOutOfAHat2.Utility
            !string.IsNullOrWhiteSpace(input?.Name ?? string.Empty) ? input!.Name : "Participant";
 
         public static Participant ToParticipant(this Person input, IList<Recipient> recipients) =>
-            new() { 
+            new()
+            {
                 Person = input,
                 Recipients = recipients
             };

@@ -1,27 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <UserSecretsId>a2331b33-fee6-433e-8124-209665dfc554</UserSecretsId>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+		<UserSecretsId>a2331b33-fee6-433e-8124-209665dfc554</UserSecretsId>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.2" PrivateAssets="all" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.3" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.3" PrivateAssets="all" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\NamesOutOfAHat2.Client.Service\NamesOutOfAHat2.Client.Service.csproj" />
-    <ProjectReference Include="..\..\NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj" />
-    <ProjectReference Include="..\..\NamesOutOfAHat2.Service\NamesOutOfAHat2.Service.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\NamesOutOfAHat2.Client.Service\NamesOutOfAHat2.Client.Service.csproj" />
+		<ProjectReference Include="..\..\NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj" />
+		<ProjectReference Include="..\..\NamesOutOfAHat2.Service\NamesOutOfAHat2.Service.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
-  </ItemGroup>
+	<ItemGroup>
+		<ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+	</ItemGroup>
+
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+		<Exec Command="dotnet format" />
+	</Target>
 
 </Project>

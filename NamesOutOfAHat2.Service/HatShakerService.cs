@@ -24,7 +24,7 @@ namespace NamesOutOfAHat2.Service
             bool isValid = false;
             var errors = new List<string>();
 
-            foreach(var seed in randomSeeds)
+            foreach (var seed in randomSeeds)
             {
 #if DEBUG      
                 Debug.WriteLine(seed);
@@ -58,7 +58,7 @@ namespace NamesOutOfAHat2.Service
                     .Where(x => !pickedList.Contains(x.Person.Id))
                     .ToList();
 
-                if(!eligibleRecipients.Any())
+                if (!eligibleRecipients.Any())
                 {
                     errors.Add($"Could not find an eligible recipient for {participant.Person.Name} that was not already taken");
                     break;
@@ -68,7 +68,7 @@ namespace NamesOutOfAHat2.Service
                 pickedList.Add(participant.PickedRecipient.Id);
             }
 
-            if(errors.Any())
+            if (errors.Any())
                 participants.ForEach(x => x.PickedRecipient = null);
 
             return (!errors.Any(), errors, hat);

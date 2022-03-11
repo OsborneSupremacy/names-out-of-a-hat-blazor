@@ -14,7 +14,7 @@ namespace NamesOutOfAHat2.Service.Tests
         {
             // arrange
             var items = new List<TestItem>()
-            { 
+            {
                 new TestItem(),
                 new TestItem() { TestValue = "Hello"}
             };
@@ -30,7 +30,7 @@ namespace NamesOutOfAHat2.Service.Tests
         }
 
         [Fact]
-        public void Validate_Should_Pass_When_All_Items_Valid() 
+        public void Validate_Should_Pass_When_All_Items_Valid()
         {
             // arrange
             var items = new List<TestItem>()

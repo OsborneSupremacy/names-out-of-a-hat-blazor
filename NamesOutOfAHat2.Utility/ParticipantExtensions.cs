@@ -4,7 +4,7 @@ namespace NamesOutOfAHat2.Utility
 {
     public static class ParticipantExtensions
     {
-        public static string WriteEligibleRecipients(this Participant input) => 
+        public static string WriteEligibleRecipients(this Participant input) =>
             input
                 .Recipients
                 .Where(x => x.Eligible)
