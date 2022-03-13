@@ -11,8 +11,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.3" />
-		<PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="4.5.1" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.14.0" />
 		<PackageReference Include="NSwag.AspNetCore" Version="13.15.10" />
@@ -23,8 +21,5 @@
 		<ProjectReference Include="..\..\NamesOutOfAHat2.Server.Service\NamesOutOfAHat2.Server.Service.csproj" />
 		<ProjectReference Include="..\Client\NamesOutOfAHat2.Client.csproj" />
 	</ItemGroup>
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-		<Exec Command="dotnet format" />
-	</Target>
 
 </Project>

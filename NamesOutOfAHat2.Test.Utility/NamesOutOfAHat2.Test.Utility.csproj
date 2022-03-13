@@ -8,15 +8,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="AutoFixture.AutoMoq" Version="4.17.0" />
-		<PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
 		<PackageReference Include="System.ComponentModel.TypeConverter" Version="4.3.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj" />
 	</ItemGroup>
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-		<Exec Command="dotnet format" />
-	</Target>
+
 </Project>

@@ -7,8 +7,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
 		<PackageReference Include="SendGrid" Version="9.26.0" />
 	</ItemGroup>
@@ -18,7 +16,5 @@
 		<ProjectReference Include="..\NamesOutOfAHat2.Service\NamesOutOfAHat2.Service.csproj" />
 		<ProjectReference Include="..\NamesOutOfAHat2.Utility\NamesOutOfAHat2.Utility.csproj" />
 	</ItemGroup>
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-		<Exec Command="dotnet format" />
-	</Target>
+
 </Project>

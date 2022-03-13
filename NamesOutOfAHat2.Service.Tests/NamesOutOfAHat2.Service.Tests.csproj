@@ -9,8 +9,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="FluentAssertions" Version="6.5.1" />
-		<PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
 		<PackageReference Include="System.ComponentModel.TypeConverter" Version="4.3.0" />
@@ -33,8 +31,5 @@
 		<ProjectReference Include="..\NamesOutOfAHat2.Test.Utility\NamesOutOfAHat2.Test.Utility.csproj" />
 		<ProjectReference Include="..\NamesOutOfAHat2.Utility\NamesOutOfAHat2.Utility.csproj" />
 	</ItemGroup>
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-		<Exec Command="dotnet format" />
-	</Target>
 
 </Project>
