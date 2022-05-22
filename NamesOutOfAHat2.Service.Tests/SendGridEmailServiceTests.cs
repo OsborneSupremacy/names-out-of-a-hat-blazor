@@ -6,41 +6,40 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace NamesOutOfAHat2.Service.Tests
+namespace NamesOutOfAHat2.Service.Tests;
+
+[ExcludeFromCodeCoverage]
+public class SendGridEmailServiceTests
 {
-    [ExcludeFromCodeCoverage]
-    public class SendGridEmailServiceTests
-    {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        [Fact(Skip = "Not a permanent test")]
+    [Fact(Skip = "Not a permanent test")]
 #pragma warning restore xUnit1004 // Test methods should not be skipped
-        public async void SentAsync_Should_Work()
+    public async void SentAsync_Should_Work()
+    {
+        // arrange
+        var settings = new Settings() { SenderEmail = "namesoutofahat@osbornesupremacy.com" };
+
+        var configKeys = new ConfigKeys()
         {
-            // arrange
-            var settings = new Settings() { SenderEmail = "namesoutofahat@osbornesupremacy.com" };
+            { "sendGrid", "Paste the real API key here" }
+        };
 
-            var configKeys = new ConfigKeys()
-            {
-                { "sendGrid", "Paste the real API key here" }
-            };
+        var emailParts = new EmailParts()
+        {
+            RecipientEmail = "osborne.ben@gmail.com",
+            Subject = "Test Sendgrid Email",
+            HtmlBody = "<p>This is an html test.</p>"
+        };
 
-            var emailParts = new EmailParts()
-            {
-                RecipientEmail = "osborne.ben@gmail.com",
-                Subject = "Test Sendgrid Email",
-                HtmlBody = "<p>This is an html test.</p>"
-            };
+        var service = new SendGridEmailService(settings, configKeys);
 
-            var service = new SendGridEmailService(settings, configKeys);
+        // act
+        Func<Task> serviceDelegate = async () =>
+        {
+            await service.SendAsync(emailParts);
+        };
 
-            // act
-            Func<Task> serviceDelegate = async () =>
-            {
-                await service.SendAsync(emailParts);
-            };
-
-            // assert
-            await serviceDelegate.Should().NotThrowAsync<Exception>();
-        }
+        // assert
+        await serviceDelegate.Should().NotThrowAsync<Exception>();
     }
 }

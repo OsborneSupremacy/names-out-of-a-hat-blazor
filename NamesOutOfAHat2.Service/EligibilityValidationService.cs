@@ -2,47 +2,46 @@
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Utility;
 
-namespace NamesOutOfAHat2.Service
+namespace NamesOutOfAHat2.Service;
+
+[ServiceLifetime(ServiceLifetime.Scoped)]
+public class EligibilityValidationService
 {
-    [ServiceLifetime(ServiceLifetime.Scoped)]
-    public class EligibilityValidationService
+    public (bool isValid, IList<string> errors) Validate(Hat hat)
     {
-        public (bool isValid, IList<string> errors) Validate(Hat hat)
+        var errors = new List<string>();
+
+        var participants = hat.Participants?.ToList() ?? Enumerable.Empty<Participant>().ToList();
+
+        foreach (var participant in participants)
         {
-            var errors = new List<string>();
-
-            var participants = hat.Participants?.ToList() ?? Enumerable.Empty<Participant>().ToList();
-
-            foreach (var participant in participants)
+            if (!(participant.Recipients?.Any() ?? false))
             {
-                if (!(participant.Recipients?.Any() ?? false))
-                {
-                    errors.Add($"{participant.Person.Name} has no possible recipients");
-                    continue;
-                }
-                if (!(participant.Recipients?.Any(x => x.Eligible) ?? false))
-                {
-                    errors.Add($"{participant.Person.Name} has no eligible recipients");
-                    continue;
-                }
+                errors.Add($"{participant.Person.Name} has no possible recipients");
+                continue;
             }
-
-            if (errors.Any())
-                return (false, errors);
-
-            var people = participants.Select(x => x.Person).ToList();
-
-            foreach (var person in people)
+            if (!(participant.Recipients?.Any(x => x.Eligible) ?? false))
             {
-                if (!participants
-                    .Where(x => x.Person.Id != person.Id)
-                    .SelectMany(x => x.Recipients)
-                    .Where(x => x.Eligible && x.Person.Id == person.Id)
-                    .Any())
-                    errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
+                errors.Add($"{participant.Person.Name} has no eligible recipients");
+                continue;
             }
-
-            return (!errors.Any(), errors);
         }
+
+        if (errors.Any())
+            return (false, errors);
+
+        var people = participants.Select(x => x.Person).ToList();
+
+        foreach (var person in people)
+        {
+            if (!participants
+                .Where(x => x.Person.Id != person.Id)
+                .SelectMany(x => x.Recipients)
+                .Where(x => x.Eligible && x.Person.Id == person.Id)
+                .Any())
+                errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
+        }
+
+        return (!errors.Any(), errors);
     }
 }

@@ -9,88 +9,87 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace NamesOutOfAHat2.Service.Tests
+namespace NamesOutOfAHat2.Service.Tests;
+
+[ExcludeFromCodeCoverage]
+public class OrganizerRegistrationServiceTests
 {
-    [ExcludeFromCodeCoverage]
-    public class OrganizerRegistrationServiceTests
+    [Fact]
+    public void Expected_Behavior()
     {
-        [Fact]
-        public void Expected_Behavior()
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+        Hat hat = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            Organizer = "joe".ToPerson().ToParticipant()
+        };
 
-            Hat hat = new()
-            {
-                Organizer = "joe".ToPerson().ToParticipant()
-            };
+        var service = new OrganizerRegistrationService(memoryCache);
 
-            var service = new OrganizerRegistrationService(memoryCache);
+        // act
+        service.Register(hat, "1234");
 
-            // act
-            service.Register(hat, "1234");
+        // assert
+        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
 
-            // assert
-            memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
+        value.Should().NotBeNull();
+        value.HatId.Should().Be(hat.Id);
+        value.OrganizerEmail.Should().Be("joe@gmail.com");
+        value.VerificationCode.Should().Be("1234");
+    }
 
-            value.Should().NotBeNull();
-            value.HatId.Should().Be(hat.Id);
-            value.OrganizerEmail.Should().Be("joe@gmail.com");
-            value.VerificationCode.Should().Be("1234");
-        }
+    [Fact]
+    public void Should_Displace_Existing()
+    {
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-        [Fact]
-        public void Should_Displace_Existing()
+        Hat hat = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            Organizer = "joe".ToPerson().ToParticipant()
+        };
 
-            Hat hat = new()
-            {
-                Organizer = "joe".ToPerson().ToParticipant()
-            };
+        var service = new OrganizerRegistrationService(memoryCache);
 
-            var service = new OrganizerRegistrationService(memoryCache);
+        // act
+        service.Register(hat, "1234");
+        hat.Organizer = "sam".ToPerson().ToParticipant();
+        service.Register(hat, "5678");
 
-            // act
-            service.Register(hat, "1234");
-            hat.Organizer = "sam".ToPerson().ToParticipant();
-            service.Register(hat, "5678");
+        // assert
+        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
 
-            // assert
-            memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
+        value.Should().NotBeNull();
+        value.HatId.Should().Be(hat.Id);
+        value.OrganizerEmail.Should().Be("sam@gmail.com");
+        value.VerificationCode.Should().Be("5678");
+    }
 
-            value.Should().NotBeNull();
-            value.HatId.Should().Be(hat.Id);
-            value.OrganizerEmail.Should().Be("sam@gmail.com");
-            value.VerificationCode.Should().Be("5678");
-        }
+    [Fact]
+    public async void Should_Fail_When_Not_Valid()
+    {
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-        [Fact]
-        public async void Should_Fail_When_Not_Valid()
+        Hat hat = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            Id = Guid.Empty,
+            Organizer = "joe".ToPerson().ToParticipant()
+        };
 
-            Hat hat = new()
+        var service = new OrganizerRegistrationService(memoryCache);
+
+        // act
+        Func<Task> serviceDelegate = async () =>
+        {
+            await Task.Run(() =>
             {
-                Id = Guid.Empty,
-                Organizer = "joe".ToPerson().ToParticipant()
-            };
+                service.Register(hat, "1234");
+            });
+        };
 
-            var service = new OrganizerRegistrationService(memoryCache);
-
-            // act
-            Func<Task> serviceDelegate = async () =>
-            {
-                await Task.Run(() =>
-                {
-                    service.Register(hat, "1234");
-                });
-            };
-
-            // assert
-            await serviceDelegate.Should().ThrowAsync<ArgumentException>();
-        }
+        // assert
+        await serviceDelegate.Should().ThrowAsync<ArgumentException>();
     }
 }

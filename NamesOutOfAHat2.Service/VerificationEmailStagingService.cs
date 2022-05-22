@@ -3,41 +3,40 @@ using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Utility;
 using System.Text;
 
-namespace NamesOutOfAHat2.Service
+namespace NamesOutOfAHat2.Service;
+
+[ServiceLifetime(ServiceLifetime.Scoped)]
+public class VerificationEmailStagingService
 {
-    [ServiceLifetime(ServiceLifetime.Scoped)]
-    public class VerificationEmailStagingService
+    private readonly Settings _settings;
+
+    public VerificationEmailStagingService(Settings settings)
     {
-        private readonly Settings _settings;
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+    }
 
-        public VerificationEmailStagingService(Settings settings)
+    public Task<EmailParts> StageEmailAsync(Hat hat, string code)
+    {
+        List<string> e = new()
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            $"Dear {hat.Organizer?.Person.Name},",
+            "Your 🎩 Names Out Of A Hat 🎩 verification code is:",
+            $"<b>{code}</b>",
+            $"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>"
+        };
+
+        StringBuilder s = new();
+        foreach (var i in e)
+        {
+            s.Append(i);
+            s.AppendLine("<br /><br />");
         }
 
-        public Task<EmailParts> StageEmailAsync(Hat hat, string code)
+        return Task.FromResult(new EmailParts()
         {
-            List<string> e = new()
-            {
-                $"Dear {hat.Organizer?.Person.Name},",
-                "Your 🎩 Names Out Of A Hat 🎩 verification code is:",
-                $"<b>{code}</b>",
-                $"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>"
-            };
-
-            StringBuilder s = new();
-            foreach (var i in e)
-            {
-                s.Append(i);
-                s.AppendLine("<br /><br />");
-            }
-
-            return Task.FromResult(new EmailParts()
-            {
-                RecipientEmail = hat.Organizer?.Person?.Email ?? string.Empty,
-                Subject = "🎩 Names Out Of A Hat 🎩 Verification Code",
-                HtmlBody = s.ToString()
-            });
-        }
+            RecipientEmail = hat.Organizer?.Person?.Email ?? string.Empty,
+            Subject = "🎩 Names Out Of A Hat 🎩 Verification Code",
+            HtmlBody = s.ToString()
+        });
     }
 }
