@@ -81,7 +81,7 @@ public class OrganizerRegistrationServiceTests
         var service = new OrganizerRegistrationService(memoryCache);
 
         // act
-        Func<Task> serviceDelegate = async () =>
+        var serviceDelegate = async () =>
         {
             await Task.Run(() =>
             {

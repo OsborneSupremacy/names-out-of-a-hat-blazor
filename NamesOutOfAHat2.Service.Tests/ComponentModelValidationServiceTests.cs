@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using NamesOutOfAHat2.Utility;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
@@ -22,11 +23,11 @@ public class ComponentModelValidationServiceTests
         var service = new ComponentModelValidationService();
 
         // act
-        var (isValid, results) = service.ValidateList(items);
+        var result = service.ValidateList(items);
 
         // assert
-        isValid.Should().BeFalse();
-        results.Count.Should().Be(1);
+        result.IsSuccess.Should().BeFalse();
+        result.GetErrors().Count.Should().Be(1);
     }
 
     [Fact]
@@ -42,10 +43,10 @@ public class ComponentModelValidationServiceTests
         var service = new ComponentModelValidationService();
 
         // act
-        var (isValid, _) = service.ValidateList(items);
+        var result = service.ValidateList(items);
 
         // assert
-        isValid.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -56,10 +57,10 @@ public class ComponentModelValidationServiceTests
         var service = new ComponentModelValidationService();
 
         // act
-        var (isValid, _) = service.ValidateList(items);
+        var result = service.ValidateList(items);
 
         // assert
-        isValid.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
     }
 
     public record TestItem

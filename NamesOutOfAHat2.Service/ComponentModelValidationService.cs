@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using LanguageExt.Common;
+using Microsoft.Extensions.DependencyInjection;
 using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Utility;
 using System.ComponentModel.DataAnnotations;
@@ -9,26 +10,26 @@ namespace NamesOutOfAHat2.Service;
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class ComponentModelValidationService : IComponentModelValidationService
 {
-    public (bool isValid, IList<string> errors) Validate<T>(T item)
+    public Result<bool> Validate<T>(T item)
     {
         var results = new List<ValidationResult>();
         var isValid = Validator
             .TryValidateObject(item, new ValidationContext(item), results, true);
         if (!isValid)
-            return (false, results.Select(x => x.ErrorMessage ?? string.Empty).ToList());
-        return (true, Enumerable.Empty<string>().ToList());
+            return new Result<bool>(new MultiException(results.Select(x => x.ErrorMessage ?? string.Empty).ToList()));
+        return true;
     }
 
-    public (bool isValid, IList<string> errors) ValidateList<T>(IList<T> items)
+    public Result<bool> ValidateList<T>(IList<T> items)
     {
         // basic component model validation
         foreach (var item in items)
         {
             if (item == null) continue;
-            var (isValid, errors) = Validate(item);
-            if (!isValid)
-                return (false, errors);
+            var result = Validate(item);
+            if (!result.IsSuccess)
+                return result;
         }
-        return (true, Enumerable.Empty<string>().ToList());
+        return true;
     }
 }

@@ -3,6 +3,7 @@ using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Server.Service;
 using NamesOutOfAHat2.Service;
+using NamesOutOfAHat2.Utility;
 using System.Collections.Concurrent;
 
 namespace NamesOutOfAHat2.Server.Controllers;
@@ -22,18 +23,18 @@ public class EmailController : ControllerBase
         [FromBody] Hat hat
         )
     {
-        var (isValid, errors) = validationService.Validate(hat);
+        var result = validationService.Validate(hat);
 
-        if (!isValid)
-            return new BadRequestObjectResult(errors);
+        if (!result.IsSuccess)
+            return new BadRequestObjectResult(result.GetErrors());
 
-        (isValid, errors) = eligibilityValidationService.Validate(hat);
+        result = eligibilityValidationService.Validate(hat);
 
-        if (!isValid)
-            return new BadRequestObjectResult(errors);
+        if (!result.IsSuccess)
+            return new BadRequestObjectResult(result.GetErrors());
 
         if (!organizerVerificationService.CheckVerified(hat.Id, hat.Organizer?.Person.Email ?? string.Empty))
-            return new BadRequestObjectResult(errors);
+            return new BadRequestObjectResult("Sender email address is not verfieid");
 
         var emails = await emailStagingService.StageEmailsAsync(hat);
 

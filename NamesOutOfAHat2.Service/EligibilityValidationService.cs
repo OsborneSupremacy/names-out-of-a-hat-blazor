@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using LanguageExt.Common;
+using Microsoft.Extensions.DependencyInjection;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Utility;
 
@@ -7,7 +8,7 @@ namespace NamesOutOfAHat2.Service;
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class EligibilityValidationService
 {
-    public (bool isValid, IList<string> errors) Validate(Hat hat)
+    public Result<bool> Validate(Hat hat)
     {
         var errors = new List<string>();
 
@@ -28,7 +29,7 @@ public class EligibilityValidationService
         }
 
         if (errors.Any())
-            return (false, errors);
+            return new Result<bool>(new MultiException(errors));
 
         var people = participants.Select(x => x.Person).ToList();
 
@@ -42,6 +43,9 @@ public class EligibilityValidationService
                 errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
         }
 
-        return (!errors.Any(), errors);
+        if (errors.Any())
+            return new Result<bool>(new MultiException(errors));
+
+        return true;
     }
 }

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -27,11 +28,12 @@ public class DuplicateCheckServiceTests
         var service = new NameDuplicateCheckService();
 
         // act
-        var (duplicatesExist, errorMessages) = service.Execute(input);
+        var result = service.Execute(input);
 
         // assert
-        duplicatesExist.Should().BeTrue();
-        errorMessages.Count.Should().Be(2);
+        result.IsSuccess.Should().BeFalse();
+
+        result.GetErrors().Count.Should().Be(2);
     }
 
     [Fact]
@@ -51,10 +53,10 @@ public class DuplicateCheckServiceTests
         var service = new NameDuplicateCheckService();
 
         // act
-        var (duplicatesExist, _) = service.Execute(input);
+        var result = service.Execute(input);
 
         // assert
-        duplicatesExist.Should().BeFalse();
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -74,11 +76,11 @@ public class DuplicateCheckServiceTests
         var service = new EmailDuplicateCheckService();
 
         // act
-        var (duplicatesExist, errorMessages) = service.Execute(input);
+        var result = service.Execute(input);
 
         // assert
-        duplicatesExist.Should().BeTrue();
-        errorMessages.Count.Should().Be(2);
+        result.IsSuccess.Should().BeFalse();
+        result.GetErrors().Count.Should().Be(2);
     }
 
     [Fact]
@@ -98,10 +100,10 @@ public class DuplicateCheckServiceTests
         var service = new EmailDuplicateCheckService();
 
         // act
-        var (duplicatesExist, _) = service.Execute(input);
+        var result = service.Execute(input);
 
         // assert
-        duplicatesExist.Should().BeFalse();
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -124,11 +126,13 @@ public class DuplicateCheckServiceTests
         var service = new IdDuplicateCheckService();
 
         // act
-        var (duplicatesExist, errorMessages) = service.Execute(input);
+        var result = service.Execute(input);
+
+        var errors = result.GetErrors();
 
         // assert
-        duplicatesExist.Should().BeTrue();
-        errorMessages.Count.Should().Be(2);
+        result.IsSuccess.Should().BeFalse();
+        result.GetErrors().Count.Should().Be(1);
     }
 
     [Fact]
@@ -148,9 +152,9 @@ public class DuplicateCheckServiceTests
         var service = new IdDuplicateCheckService();
 
         // act
-        var (duplicatesExist, _) = service.Execute(input);
+        var result = service.Execute(input);
 
         // assert
-        duplicatesExist.Should().BeFalse();
+        result.IsSuccess.Should().BeTrue();
     }
 }

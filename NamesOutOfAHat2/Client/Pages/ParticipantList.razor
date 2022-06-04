@@ -5,6 +5,8 @@
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 
 @using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Utility
+@using LanguageExt.Common
 
 @if(Visible)
 {
@@ -52,17 +54,23 @@
     {
         await SaveCallback.InvokeAsync();
 
-        var (isValid, errors) = ValidationService.Validate(Hat);
+        var result = ValidationService.Validate(Hat);
 
-        if (isValid)
-            (isValid, errors) = EligibilityValidationService.Validate(Hat);
+        if (result.IsSuccess)
+            result = EligibilityValidationService.Validate(Hat);
 
-        if (isValid)
-            (isValid, errors, Hat) = HatShakerService.ShakeMultiple(Hat, 100);
+        if (!result.IsSuccess)
+        {
+            Hat.Errors = result.GetErrors();
+            await ShowErrorsCallback.InvokeAsync();
+            return;
+        }
 
-        Hat.Errors = errors!.ToList();
+        var shakeResult = HatShakerService.ShakeMultiple(Hat, 100);
 
-        if (!isValid)
+        Hat.Errors = shakeResult.GetErrors();
+
+        if (!shakeResult.IsSuccess)
             await ShowErrorsCallback.InvokeAsync();
         else
             await NextCallback.InvokeAsync();

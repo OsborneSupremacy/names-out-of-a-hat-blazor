@@ -21,8 +21,8 @@ public class OrganizerVerificationService
             return false;
 
         // email address doesn't match
-        return (registrationOut.OrganizerEmail.ContentEquals(organizerEmail)
-            && registrationOut.Verified);
+        return registrationOut.OrganizerEmail.ContentEquals(organizerEmail)
+            && registrationOut.Verified;
     }
 
     public bool CheckVerified(OrganizerRegistration registrationIn)

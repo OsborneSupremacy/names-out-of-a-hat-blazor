@@ -31,12 +31,12 @@ public class EligibilityValidationServiceTests
         var service = autoFixture.Create<EligibilityValidationService>();
 
         // act
-        var (isValid, errors) = service.Validate(hat);
+        var result = service.Validate(hat);
 
         // assert
-        isValid.Should().BeFalse();
-        errors.Count().Should().Be(1);
-        errors.Single().Should().Contain("sam");
+        result.IsSuccess.Should().BeFalse();
+        result.GetErrors().Count().Should().Be(1);
+        result.GetErrors().Single().Should().Contain(expected: "sam");
     }
 
     [Fact]
@@ -58,10 +58,10 @@ public class EligibilityValidationServiceTests
         var service = autoFixture.Create<EligibilityValidationService>();
 
         // act
-        var (isValid, _) = service.Validate(hat);
+        var result = service.Validate(hat);
 
         // assert
-        isValid.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
     }
 
 
@@ -84,12 +84,12 @@ public class EligibilityValidationServiceTests
         var service = autoFixture.Create<EligibilityValidationService>();
 
         // act
-        var (isValid, errors) = service.Validate(hat);
+        var result = service.Validate(hat);
 
         // assert
-        isValid.Should().BeFalse();
-        errors.Count().Should().Be(1);
-        errors.Single().Should().Contain("joe");
+        result.IsSuccess.Should().BeFalse();
+        result.GetErrors().Count().Should().Be(1);
+        result.GetErrors().Single().Should().Contain("joe");
     }
 
     [Fact]
@@ -111,12 +111,11 @@ public class EligibilityValidationServiceTests
         var service = autoFixture.Create<EligibilityValidationService>();
 
         // act
-        var (isValid, errors) = service.Validate(hat);
+        var result = service.Validate(hat);
 
         // assert
-        isValid.Should().BeFalse();
-        errors.Count().Should().Be(1);
-        errors.Single().Should().Contain("joe");
+        result.IsSuccess.Should().BeFalse();
+        result.GetErrors().Count().Should().Be(1);
+        result.GetErrors().Single().Should().Contain("joe");
     }
-
 }

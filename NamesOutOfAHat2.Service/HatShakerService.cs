@@ -3,13 +3,15 @@ using Bogus;
 using NamesOutOfAHat2.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
+using LanguageExt;
+using LanguageExt.Common;
 
 namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class HatShakerService
 {
-    public (bool isValid, List<string> errors, Hat hat) ShakeMultiple(Hat hat, int count)
+    public Result<Hat> ShakeMultiple(Hat hat, int count)
     {
         var randomSeeds = new List<int>();
 
@@ -19,31 +21,30 @@ public class HatShakerService
         return ShakeMultiple(hat, randomSeeds);
     }
 
-    public (bool isValid, List<string> errors, Hat hat) ShakeMultiple(Hat hat, List<int> randomSeeds)
+    public Result<Hat> ShakeMultiple(Hat hat, List<int> randomSeeds)
     {
-        bool isValid = false;
-        var errors = new List<string>();
+        var hatOut = new Result<Hat>();
 
         foreach (var seed in randomSeeds)
         {
-#if DEBUG      
+#if DEBUG
             Debug.WriteLine(seed);
 #endif
-            (isValid, errors, hat) = Shake(hat, seed);
-            if (isValid)
-                break;
+            hatOut = Shake(hat, seed);
+            if (hatOut.IsSuccess)
+                return hatOut;
         }
 
-        return (isValid, errors, hat);
+        return hatOut;
     }
 
-    public (bool isValid, List<string> errors, Hat hat) Shake(Hat hat, int randomSeed)
+    public Result<Hat> Shake(Hat hat, int randomSeed)
     {
         Randomizer.Seed = new Random(randomSeed);
         var faker = new Faker();
 
         var participants = hat.Participants.ToList();
-        var pickedList = new HashSet<Guid>();
+        var pickedList = new System.Collections.Generic.HashSet<Guid>();
 
         var errors = new List<string>();
 
@@ -68,9 +69,10 @@ public class HatShakerService
             pickedList.Add(participant.PickedRecipient.Id);
         }
 
-        if (errors.Any())
-            participants.ForEach(x => x.PickedRecipient = null);
+        if (!errors.Any())
+            return hat;
 
-        return (!errors.Any(), errors, hat);
+        participants.ForEach(x => x.PickedRecipient = null);
+        return new Result<Hat>(new MultiException(errors));
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using LanguageExt.Common;
+using Microsoft.Extensions.DependencyInjection;
 using NamesOutOfAHat2.Interface;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Utility;
@@ -20,42 +21,41 @@ public class ValidationService
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
     }
 
-    public (bool isValid, IList<string> errors) Validate(Hat hat)
+    public Result<bool> Validate(Hat hat)
     {
-        var (isValid, errors) = _componentModelValidationService.Validate(hat);
-        if (!isValid) return (false, errors);
+        var result = _componentModelValidationService.Validate(hat);
+        if(!result.IsSuccess) return result;
 
         return Validate(hat.Participants);
     }
 
-    public (bool isValid, IList<string> errors) Validate(IList<Participant> participants)
+    public Result<bool> Validate(IList<Participant> participants)
     {
-        var (isValid, errors) = _componentModelValidationService.ValidateList(participants);
-        if (!isValid) return (false, errors);
+        var result = _componentModelValidationService.ValidateList(participants);
+        if (!result.IsSuccess) return result;
 
         // validate count
-        (isValid, errors) = participants.Count switch
+        var (isValid, error) = participants.Count switch
         {
-            0 => (false, errorToList("A gift exchange like this needs at least three people")),
-            1 => (false, errorToList("One person makes for a lonely gift exchange. Add at least two more people.")),
-            2 => (false, errorToList("If your gift exchange has exactly two people, they're going to get each other's name. No reason to pick names out of a hat! Add at least one more person.")),
-            > _max => (false, errorToList($"{_max} people is the maximum. How did this get past frontend validation? Are you trying to hack this app?")),
-            _ => (true, Enumerable.Empty<string>().ToList())
+            0 => (false, "A gift exchange like this needs at least three people"),
+            1 => (false, "One person makes for a lonely gift exchange. Add at least two more people."),
+            2 => (false, "If your gift exchange has exactly two people, they're going to get each other's name. No reason to pick names out of a hat! Add at least one more person."),
+            > _max => (false, $"{_max} people is the maximum. How did this get past frontend validation? Are you trying to hack this app?"),
+            _ => (true, string.Empty)
         };
 
-        if (!isValid) return (false, errors);
+        if (!isValid)
+            return new Result<bool>(new MultiException(error));
 
         var duplicateCheckServices = _serviceProvider.GetServices<IDuplicateCheckService>();
 
         foreach (var duplicateCheckService in duplicateCheckServices)
         {
-            var (duplicatesExist, duplicateErrors) = duplicateCheckService.Execute(participants.Select(x => x.Person).ToList());
-            if (duplicatesExist) return (false, duplicateErrors);
+            var duplicatesCheckResult = duplicateCheckService.Execute(participants.Select(x => x.Person).ToList());
+            if (!duplicatesCheckResult.IsSuccess)
+                return duplicatesCheckResult;
         }
 
-        return (true, Enumerable.Empty<string>().ToList());
-
-        static IList<string> errorToList(string error) =>
-            new List<string>() { error };
+        return true;
     }
 }
