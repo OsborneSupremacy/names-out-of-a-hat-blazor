@@ -1,13 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using AutoFixture;
-using FluentAssertions;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Test.Utility;
-using NamesOutOfAHat2.Utility;
-using Xunit;
-
-namespace NamesOutOfAHat2.Service.Tests;
+﻿namespace NamesOutOfAHat2.Service.Tests;
 
 [ExcludeFromCodeCoverage]
 public class EligibilityValidationServiceTests

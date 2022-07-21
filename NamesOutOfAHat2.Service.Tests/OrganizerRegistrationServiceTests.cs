@@ -1,13 +1,5 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.Extensions.Caching.Memory;
-using NamesOutOfAHat2.Model;
+﻿using Microsoft.Extensions.Caching.Memory;
 using NamesOutOfAHat2.Server.Service;
-using NamesOutOfAHat2.Test.Utility;
-using NamesOutOfAHat2.Utility;
-using Xunit;
 
 namespace NamesOutOfAHat2.Service.Tests;
 

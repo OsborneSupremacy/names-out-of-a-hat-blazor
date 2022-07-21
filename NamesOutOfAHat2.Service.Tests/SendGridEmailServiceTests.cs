@@ -1,10 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
-using FluentAssertions;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Server.Service;
-using Xunit;
+﻿using NamesOutOfAHat2.Server.Service;
 
 namespace NamesOutOfAHat2.Service.Tests;
 

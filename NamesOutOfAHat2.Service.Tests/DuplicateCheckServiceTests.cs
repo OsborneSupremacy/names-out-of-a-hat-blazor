@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using FluentAssertions;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Utility;
-using Xunit;
-
-namespace NamesOutOfAHat2.Service.Tests;
+﻿namespace NamesOutOfAHat2.Service.Tests;
 
 [ExcludeFromCodeCoverage]
 public class DuplicateCheckServiceTests

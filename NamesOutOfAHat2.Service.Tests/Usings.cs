@@ -1,0 +1,12 @@
+﻿global using System;
+global using System.Collections.Generic;
+global using System.ComponentModel.DataAnnotations;
+global using System.Diagnostics.CodeAnalysis;
+global using System.Linq;
+global using System.Threading.Tasks;
+global using AutoFixture;
+global using FluentAssertions;
+global using NamesOutOfAHat2.Model;
+global using NamesOutOfAHat2.Test.Utility;
+global using NamesOutOfAHat2.Utility;
+global using Xunit;
