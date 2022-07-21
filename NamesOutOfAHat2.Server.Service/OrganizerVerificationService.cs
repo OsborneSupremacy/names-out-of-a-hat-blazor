@@ -3,61 +3,62 @@ using Microsoft.Extensions.DependencyInjection;
 using NamesOutOfAHat2.Model;
 using NamesOutOfAHat2.Utility;
 
-namespace NamesOutOfAHat2.Server.Service;
-
-[ServiceLifetime(ServiceLifetime.Scoped)]
-public class OrganizerVerificationService
+namespace NamesOutOfAHat2.Server.Service
 {
-    private readonly MemoryCache _memoryCache;
-
-    public OrganizerVerificationService(MemoryCache memoryCache)
+    [ServiceLifetime(ServiceLifetime.Scoped)]
+    public class OrganizerVerificationService
     {
-        _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-    }
+        private readonly MemoryCache _memoryCache;
 
-    public bool CheckVerified(Guid hatId, string organizerEmail)
-    {
-        if (!_memoryCache.TryGetValue(hatId, out OrganizerRegistration registrationOut))
-            return false;
+        public OrganizerVerificationService(MemoryCache memoryCache)
+        {
+            _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+        }
 
-        // email address doesn't match
-        return registrationOut.OrganizerEmail.ContentEquals(organizerEmail)
-            && registrationOut.Verified;
-    }
+        public bool CheckVerified(Guid hatId, string organizerEmail)
+        {
+            if (!_memoryCache.TryGetValue(hatId, out OrganizerRegistration registrationOut))
+                return false;
 
-    public bool CheckVerified(OrganizerRegistration registrationIn)
-    {
-        if (registrationIn is null) return false;
+            // email address doesn't match
+            return registrationOut.OrganizerEmail.ContentEquals(organizerEmail)
+                && registrationOut.Verified;
+        }
 
-        if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
-            return false;
+        public bool CheckVerified(OrganizerRegistration registrationIn)
+        {
+            if (registrationIn is null) return false;
 
-        // email address doesn't match
-        return (registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail)
-            && registrationOut.Verified);
-    }
+            if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
+                return false;
 
-    public bool Verify(OrganizerRegistration registrationIn)
-    {
-        if (registrationIn is null) return false;
+            // email address doesn't match
+            return (registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail)
+                && registrationOut.Verified);
+        }
 
-        if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
-            return false;
+        public bool Verify(OrganizerRegistration registrationIn)
+        {
+            if (registrationIn is null) return false;
 
-        // email address doesn't match
-        if (!registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
-            return false;
+            if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
+                return false;
 
-        // code doesn't match
-        if (!registrationOut.VerificationCode.ContentEquals(registrationIn.VerificationCode))
-            return false;
+            // email address doesn't match
+            if (!registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
+                return false;
 
-        var cacheEntryOptions = new MemoryCacheEntryOptions()
-            .SetSlidingExpiration(TimeSpan.FromDays(7));
+            // code doesn't match
+            if (!registrationOut.VerificationCode.ContentEquals(registrationIn.VerificationCode))
+                return false;
 
-        registrationOut.Verified = true;
-        _memoryCache.Set(registrationIn.HatId, registrationOut, cacheEntryOptions);
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromDays(7));
 
-        return true;
+            registrationOut.Verified = true;
+            _memoryCache.Set(registrationIn.HatId, registrationOut, cacheEntryOptions);
+
+            return true;
+        }
     }
 }

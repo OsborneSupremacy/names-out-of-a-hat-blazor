@@ -1,19 +1,20 @@
-﻿namespace NamesOutOfAHat2.Utility;
-
-public class MultiException : Exception
+﻿namespace NamesOutOfAHat2.Utility
 {
-    public IList<string> Errors { get; set; }
-
-    public MultiException(IList<string> errors)
+    public class MultiException : Exception
     {
-        Errors = errors ?? throw new ArgumentNullException(nameof(errors));
-    }
+        public IList<string> Errors { get; set; }
 
-    public MultiException(string error)
-    {
-        Errors = new List<string>
+        public MultiException(IList<string> errors)
+        {
+            Errors = errors ?? throw new ArgumentNullException(nameof(errors));
+        }
+
+        public MultiException(string error)
+        {
+            Errors = new List<string>
         {
             error
         };
+        }
     }
 }

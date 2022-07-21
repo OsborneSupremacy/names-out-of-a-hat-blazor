@@ -1,25 +1,26 @@
 ﻿using NamesOutOfAHat2.Model;
 
-namespace NamesOutOfAHat2.Utility;
-
-public static class HatExtensions
+namespace NamesOutOfAHat2.Utility
 {
-    public static Hat AddParticipant(this Hat input, Participant participant)
+    public static class HatExtensions
     {
-        input.Participants ??= new List<Participant>();
-        input.Participants.Add(participant);
-        return input;
-    }
-
-    public static OrganizerRegistration ToRegistration(this Hat input, string code) =>
-        new OrganizerRegistration
+        public static Hat AddParticipant(this Hat input, Participant participant)
         {
-            HatId = input.Id,
-            OrganizerEmail = input.Organizer?.Person.Email ?? string.Empty,
-            VerificationCode = code,
-            Verified = false
-        };
+            input.Participants ??= new List<Participant>();
+            input.Participants.Add(participant);
+            return input;
+        }
 
-    public static OrganizerRegistration ToRegistration(this Hat input) =>
-        input.ToRegistration(string.Empty);
+        public static OrganizerRegistration ToRegistration(this Hat input, string code) =>
+            new()
+            {
+                HatId = input.Id,
+                OrganizerEmail = input.Organizer?.Person.Email ?? string.Empty,
+                VerificationCode = code,
+                Verified = false
+            };
+
+        public static OrganizerRegistration ToRegistration(this Hat input) =>
+            input.ToRegistration(string.Empty);
+    }
 }

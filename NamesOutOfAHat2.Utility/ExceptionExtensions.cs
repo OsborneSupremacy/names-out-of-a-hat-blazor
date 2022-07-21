@@ -1,12 +1,13 @@
-﻿namespace NamesOutOfAHat2.Utility;
-
-public static class ExceptionExtensions
+﻿namespace NamesOutOfAHat2.Utility
 {
-    public static List<string> GetErrors(this Exception exception)
+    public static class ExceptionExtensions
     {
-        if (exception is MultiException multiException)
-            return multiException.Errors.ToList();
+        public static List<string> GetErrors(this Exception exception)
+        {
+            if (exception is MultiException multiException)
+                return multiException.Errors.ToList();
 
-        throw new NotImplementedException($"Cannot get errors from exception type, {exception.GetType()}");
+            throw new NotImplementedException($"Cannot get errors from exception type, {exception.GetType()}");
+        }
     }
 }

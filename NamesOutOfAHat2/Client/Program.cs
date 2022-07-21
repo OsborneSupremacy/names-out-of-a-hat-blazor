@@ -1,10 +1,10 @@
+﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using NamesOutOfAHat2.Client;
+using NamesOutOfAHat2.Client.Service;
 using NamesOutOfAHat2.Service;
 using NamesOutOfAHat2.Utility;
-using Blazored.LocalStorage;
-using NamesOutOfAHat2.Client.Service;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

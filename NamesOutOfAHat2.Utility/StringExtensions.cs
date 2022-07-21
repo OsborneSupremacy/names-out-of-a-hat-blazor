@@ -1,42 +1,43 @@
 ﻿using System.Text;
 
-namespace NamesOutOfAHat2.Utility;
-
-public static class StringExtensions
+namespace NamesOutOfAHat2.Utility
 {
-    public static string TrimNullSafe(this string input)
+    public static class StringExtensions
     {
-        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-        return input.Trim();
-    }
-
-    public static bool ContentEquals(this string input, string value) =>
-        input.TrimNullSafe().Equals(value.TrimNullSafe(), StringComparison.OrdinalIgnoreCase);
-
-    public static string ToNaturalLanguageList(this IEnumerable<string> input)
-    {
-        var s = new StringBuilder();
-
-        var values = input.ToList();
-
-        for (int x = 0; x < values.Count; x++)
+        public static string TrimNullSafe(this string input)
         {
-            if (x > 0)
-            {
-                if (x == (values.Count - 1))
-                    s.Append(" or ");
-                else
-                    s.Append(", ");
-            }
-            s.Append(values[x]);
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            return input.Trim();
         }
 
-        return s.ToString();
-    }
+        public static bool ContentEquals(this string input, string value) =>
+            input.TrimNullSafe().Equals(value.TrimNullSafe(), StringComparison.OrdinalIgnoreCase);
 
-    public static bool ToBoolOrDefault(this string? input, bool defaultValue)
-    {
-        if (bool.TryParse(input, out var result)) return result;
-        return defaultValue;
+        public static string ToNaturalLanguageList(this IEnumerable<string> input)
+        {
+            var s = new StringBuilder();
+
+            var values = input.ToList();
+
+            for (int x = 0; x < values.Count; x++)
+            {
+                if (x > 0)
+                {
+                    if (x == (values.Count - 1))
+                        s.Append(" or ");
+                    else
+                        s.Append(", ");
+                }
+                s.Append(values[x]);
+            }
+
+            return s.ToString();
+        }
+
+        public static bool ToBoolOrDefault(this string? input, bool defaultValue)
+        {
+            if (bool.TryParse(input, out var result)) return result;
+            return defaultValue;
+        }
     }
 }

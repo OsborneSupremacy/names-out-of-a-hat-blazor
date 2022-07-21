@@ -1,12 +1,13 @@
-﻿namespace NamesOutOfAHat2.Utility;
-
-[AttributeUsage(AttributeTargets.Class)]
-public class RegistrationTargetAttribute : Attribute
+﻿namespace NamesOutOfAHat2.Utility
 {
-    public RegistrationTargetAttribute(Type type)
+    [AttributeUsage(AttributeTargets.Class)]
+    public class RegistrationTargetAttribute : Attribute
     {
-        Type = type ?? throw new ArgumentNullException(nameof(type));
-    }
+        public RegistrationTargetAttribute(Type type)
+        {
+            Type = type ?? throw new ArgumentNullException(nameof(type));
+        }
 
-    public Type Type { get; }
+        public Type Type { get; }
+    }
 }

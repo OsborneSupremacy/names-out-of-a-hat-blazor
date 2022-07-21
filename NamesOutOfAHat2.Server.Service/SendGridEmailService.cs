@@ -5,46 +5,47 @@ using NamesOutOfAHat2.Utility;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace NamesOutOfAHat2.Server.Service;
-
-[RegistrationTarget(typeof(IEmailService))]
-[ServiceLifetime(ServiceLifetime.Scoped)]
-public class SendGridEmailService : IEmailService
+namespace NamesOutOfAHat2.Server.Service
 {
-    private readonly string _apiKey = string.Empty;
-
-    private readonly Settings _settings;
-
-    public SendGridEmailService(
-        Settings settings,
-        ConfigKeys configKeys
-        )
+    [RegistrationTarget(typeof(IEmailService))]
+    [ServiceLifetime(ServiceLifetime.Scoped)]
+    public class SendGridEmailService : IEmailService
     {
-        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        _apiKey = configKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(configKeys));
-    }
+        private readonly string _apiKey = string.Empty;
 
-    public async Task<(bool success, string details)> SendAsync(EmailParts emailParts)
-    {
-        if (!_settings.SendEmails)
-            return (false, "The application is currently configured to not send emails.");
+        private readonly Settings _settings;
 
-        var response = await new SendGridClient(_apiKey)
-            .SendEmailAsync(
-                MailHelper
-                    .CreateSingleEmail(
-                    new EmailAddress(_settings.SenderEmail, _settings.SenderName),
-                    new EmailAddress(emailParts.RecipientEmail),
-                    emailParts.Subject,
-                    string.Empty,
-                    emailParts.HtmlBody)
-            );
+        public SendGridEmailService(
+            Settings settings,
+            ConfigKeys configKeys
+            )
+        {
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _apiKey = configKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(configKeys));
+        }
 
-        if (response.IsSuccessStatusCode)
-            return (true, string.Empty);
+        public async Task<(bool success, string details)> SendAsync(EmailParts emailParts)
+        {
+            if (!_settings.SendEmails)
+                return (false, "The application is currently configured to not send emails.");
 
-        var details = $"Error sending email to {emailParts.RecipientEmail}. Code: {response.StatusCode}";
+            var response = await new SendGridClient(_apiKey)
+                .SendEmailAsync(
+                    MailHelper
+                        .CreateSingleEmail(
+                        new EmailAddress(_settings.SenderEmail, _settings.SenderName),
+                        new EmailAddress(emailParts.RecipientEmail),
+                        emailParts.Subject,
+                        string.Empty,
+                        emailParts.HtmlBody)
+                );
 
-        return (false, details);
+            if (response.IsSuccessStatusCode)
+                return (true, string.Empty);
+
+            var details = $"Error sending email to {emailParts.RecipientEmail}. Code: {response.StatusCode}";
+
+            return (false, details);
+        }
     }
 }
