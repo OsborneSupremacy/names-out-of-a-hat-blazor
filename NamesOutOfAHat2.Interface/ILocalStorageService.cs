@@ -1,9 +1,8 @@
-﻿namespace NamesOutOfAHat2.Interface
-{
-    public interface ILocalStorageService
-    {
-        public Task<string> GetFromLocalStorage(string key);
+﻿namespace NamesOutOfAHat2.Interface;
 
-        public Task SetLocalStorage(string key, string value);
-    }
+public interface ILocalStorageService
+{
+    public Task<string> GetFromLocalStorage(string key);
+
+    public Task SetLocalStorage(string key, string value);
 }

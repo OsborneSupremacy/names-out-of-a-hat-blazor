@@ -8,149 +8,148 @@ using NamesOutOfAHat2.Test.Utility;
 using NamesOutOfAHat2.Utility;
 using Xunit;
 
-namespace NamesOutOfAHat2.Service.Tests
+namespace NamesOutOfAHat2.Service.Tests;
+
+[ExcludeFromCodeCoverage]
+public class OrganizerVerificationServiceTests
 {
-    [ExcludeFromCodeCoverage]
-    public class OrganizerVerificationServiceTests
+    [Fact]
+    public void Should_Succeed_When_Everything_Matches()
     {
-        [Fact]
-        public void Should_Succeed_When_Everything_Matches()
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
+        var registrationService = new OrganizerRegistrationService(memoryCache);
+
+        var hatId = Guid.NewGuid();
+        var organizer = "joe".ToPerson().ToParticipant();
+        var code = "1234";
+
+        Hat hat = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
-            var registrationService = new OrganizerRegistrationService(memoryCache);
+            Id = hatId,
+            Organizer = organizer
+        };
 
-            var hatId = Guid.NewGuid();
-            var organizer = "joe".ToPerson().ToParticipant();
-            var code = "1234";
-
-            Hat hat = new()
-            {
-                Id = hatId,
-                Organizer = organizer
-            };
-
-            OrganizerRegistration registration = new()
-            {
-                HatId = hatId,
-                OrganizerEmail = organizer.Person.Email,
-                VerificationCode = code
-            };
-
-            registrationService.Register(hat, code);
-
-            var service = new OrganizerVerificationService(memoryCache);
-
-            // act
-            var result = service.Verify(registration);
-
-            memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
-
-            // assert
-            result.Should().BeTrue();
-            value.Verified.Should().BeTrue();
-        }
-
-        [Fact]
-        public void Should_Fail_When_HatId_Not_Found()
+        OrganizerRegistration registration = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
-            var registrationService = new OrganizerRegistrationService(memoryCache);
+            HatId = hatId,
+            OrganizerEmail = organizer.Person.Email,
+            VerificationCode = code
+        };
 
-            var organizer = "joe".ToPerson().ToParticipant();
-            var code = "1234";
+        registrationService.Register(hat, code);
 
-            Hat hat = new()
-            {
-                Id = Guid.NewGuid(),
-                Organizer = organizer
-            };
+        var service = new OrganizerVerificationService(memoryCache);
 
-            registrationService.Register(hat, code);
+        // act
+        var result = service.Verify(registration);
 
-            OrganizerRegistration registration = new()
-            {
-                HatId = Guid.NewGuid(),
-                OrganizerEmail = organizer.Person.Email,
-                VerificationCode = code
-            };
+        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
 
-            var service = new OrganizerVerificationService(memoryCache);
+        // assert
+        result.Should().BeTrue();
+        value.Verified.Should().BeTrue();
+    }
 
-            // act
-            var result = service.Verify(registration);
+    [Fact]
+    public void Should_Fail_When_HatId_Not_Found()
+    {
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
+        var registrationService = new OrganizerRegistrationService(memoryCache);
 
-            // assert
-            result.Should().BeFalse();
-        }
+        var organizer = "joe".ToPerson().ToParticipant();
+        var code = "1234";
 
-        [Fact]
-        public void Should_Fail_When_Organizer_Email_Doesnt_Match()
+        Hat hat = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
-            var registrationService = new OrganizerRegistrationService(memoryCache);
+            Id = Guid.NewGuid(),
+            Organizer = organizer
+        };
 
-            var hatId = Guid.NewGuid();
-            var code = "1234";
+        registrationService.Register(hat, code);
 
-            Hat hat = new()
-            {
-                Id = hatId,
-                Organizer = "joe".ToPerson().ToParticipant()
-            };
-
-            OrganizerRegistration registration = new()
-            {
-                HatId = hatId,
-                OrganizerEmail = "sam".ToPerson().Email,
-                VerificationCode = code
-            };
-
-            registrationService.Register(hat, code);
-
-            var service = new OrganizerVerificationService(memoryCache);
-
-            // act
-            var result = service.Verify(registration);
-
-            // assert
-            result.Should().BeFalse();
-        }
-
-        [Fact]
-        public void Should_Fail_When_Verification_Code_Doesnt_Match()
+        OrganizerRegistration registration = new()
         {
-            // arrange
-            var memoryCache = new MemoryCache(new MemoryCacheOptions());
-            var registrationService = new OrganizerRegistrationService(memoryCache);
+            HatId = Guid.NewGuid(),
+            OrganizerEmail = organizer.Person.Email,
+            VerificationCode = code
+        };
 
-            var hatId = Guid.NewGuid();
-            var organizer = "joe".ToPerson().ToParticipant();
+        var service = new OrganizerVerificationService(memoryCache);
 
-            Hat hat = new()
-            {
-                Id = hatId,
-                Organizer = organizer
-            };
+        // act
+        var result = service.Verify(registration);
 
-            OrganizerRegistration registration = new()
-            {
-                HatId = hatId,
-                OrganizerEmail = organizer.Person.Email,
-                VerificationCode = "2345"
-            };
+        // assert
+        result.Should().BeFalse();
+    }
 
-            registrationService.Register(hat, "1234");
+    [Fact]
+    public void Should_Fail_When_Organizer_Email_Doesnt_Match()
+    {
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
+        var registrationService = new OrganizerRegistrationService(memoryCache);
 
-            var service = new OrganizerVerificationService(memoryCache);
+        var hatId = Guid.NewGuid();
+        var code = "1234";
 
-            // act
-            var result = service.Verify(registration);
+        Hat hat = new()
+        {
+            Id = hatId,
+            Organizer = "joe".ToPerson().ToParticipant()
+        };
 
-            // assert
-            result.Should().BeFalse();
-        }
+        OrganizerRegistration registration = new()
+        {
+            HatId = hatId,
+            OrganizerEmail = "sam".ToPerson().Email,
+            VerificationCode = code
+        };
+
+        registrationService.Register(hat, code);
+
+        var service = new OrganizerVerificationService(memoryCache);
+
+        // act
+        var result = service.Verify(registration);
+
+        // assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Should_Fail_When_Verification_Code_Doesnt_Match()
+    {
+        // arrange
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
+        var registrationService = new OrganizerRegistrationService(memoryCache);
+
+        var hatId = Guid.NewGuid();
+        var organizer = "joe".ToPerson().ToParticipant();
+
+        Hat hat = new()
+        {
+            Id = hatId,
+            Organizer = organizer
+        };
+
+        OrganizerRegistration registration = new()
+        {
+            HatId = hatId,
+            OrganizerEmail = organizer.Person.Email,
+            VerificationCode = "2345"
+        };
+
+        registrationService.Register(hat, "1234");
+
+        var service = new OrganizerVerificationService(memoryCache);
+
+        // act
+        var result = service.Verify(registration);
+
+        // assert
+        result.Should().BeFalse();
     }
 }

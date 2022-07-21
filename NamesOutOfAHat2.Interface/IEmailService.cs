@@ -1,9 +1,8 @@
 ﻿using NamesOutOfAHat2.Model;
 
-namespace NamesOutOfAHat2.Interface
+namespace NamesOutOfAHat2.Interface;
+
+public interface IEmailService
 {
-    public interface IEmailService
-    {
-        public Task<(bool success, string details)> SendAsync(EmailParts emailParts);
-    }
+    public Task<(bool success, string details)> SendAsync(EmailParts emailParts);
 }
