@@ -1,10 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using LanguageExt.Common;
-using Microsoft.Extensions.DependencyInjection;
-using NamesOutOfAHat2.Interface;
-using NamesOutOfAHat2.Utility;
-
-namespace NamesOutOfAHat2.Service;
+﻿namespace NamesOutOfAHat2.Service;
 
 [RegistrationTarget(typeof(IComponentModelValidationService))]
 [ServiceLifetime(ServiceLifetime.Scoped)]

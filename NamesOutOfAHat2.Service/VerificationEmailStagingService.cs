@@ -1,9 +1,4 @@
-﻿using System.Text;
-using Microsoft.Extensions.DependencyInjection;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Utility;
-
-namespace NamesOutOfAHat2.Service;
+﻿namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class VerificationEmailStagingService
