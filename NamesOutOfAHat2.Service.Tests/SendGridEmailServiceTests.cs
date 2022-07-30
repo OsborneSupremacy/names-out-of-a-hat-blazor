@@ -11,12 +11,13 @@ public class SendGridEmailServiceTests
     public async void SentAsync_Should_Work()
     {
         // arrange
-        var settings = new Settings() { SenderEmail = "namesoutofahat@osbornesupremacy.com" };
+        var settings = new Settings() { SenderEmail = "nw@namesoutofahat.com", SendEmails = true };
 
         var configKeys = new ConfigKeys()
     {
-        { "sendGrid", "Paste the real API key here" }
+        { "sendGrid", "Copy the real API key here" }
     };
+
 
         var emailParts = new EmailParts()
         {
@@ -27,13 +28,10 @@ public class SendGridEmailServiceTests
 
         var service = new SendGridEmailService(settings, configKeys);
 
-        // act
-        Func<Task> serviceDelegate = async () =>
-        {
-            await service.SendAsync(emailParts);
-        };
+        var result = await service.SendAsync(emailParts);
 
         // assert
-        await serviceDelegate.Should().NotThrowAsync<Exception>();
+        result.details.Should().BeNullOrEmpty();
+        result.success.Should().BeTrue();
     }
 }
