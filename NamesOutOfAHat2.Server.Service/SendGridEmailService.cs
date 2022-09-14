@@ -1,11 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using NamesOutOfAHat2.Interface;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Utility;
-using SendGrid;
-using SendGrid.Helpers.Mail;
-
-namespace NamesOutOfAHat2.Server.Service;
+﻿namespace NamesOutOfAHat2.Server.Service;
 
 [RegistrationTarget(typeof(IEmailService))]
 [ServiceLifetime(ServiceLifetime.Scoped)]
@@ -24,10 +17,10 @@ public class SendGridEmailService : IEmailService
         _apiKey = configKeys?.GetValueOrDefault("sendGrid") ?? throw new ArgumentNullException(nameof(configKeys));
     }
 
-    public async Task<(bool success, string details)> SendAsync(EmailParts emailParts)
+    public async Task<Result<bool>> SendAsync(EmailParts emailParts)
     {
         if (!_settings.SendEmails)
-            return (false, "The application is currently configured to not send emails.");
+            return new Result<bool>(new InvalidOperationException("The application is currently configured to not send emails."));
 
         var response = await new SendGridClient(_apiKey)
             .SendEmailAsync(
@@ -41,10 +34,10 @@ public class SendGridEmailService : IEmailService
             );
 
         if (response.IsSuccessStatusCode)
-            return (true, string.Empty);
+            return true;
 
         var details = $"Error sending email to {emailParts.RecipientEmail}. Code: {response.StatusCode}";
 
-        return (false, details);
+        return new Result<bool>(new AggregateException(details));
     }
 }

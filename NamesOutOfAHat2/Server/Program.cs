@@ -1,11 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Server.Service;
-using NamesOutOfAHat2.Service;
-using NamesOutOfAHat2.Utility;
-
-var configBuilder = new ConfigurationBuilder()
+﻿var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json");
 

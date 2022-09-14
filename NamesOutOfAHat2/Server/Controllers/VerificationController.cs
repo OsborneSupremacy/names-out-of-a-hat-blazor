@@ -1,11 +1,4 @@
-﻿using Bogus;
-using Microsoft.AspNetCore.Mvc;
-using NamesOutOfAHat2.Interface;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Server.Service;
-using NamesOutOfAHat2.Service;
-
-namespace NamesOutOfAHat2.Server.Controllers;
+﻿namespace NamesOutOfAHat2.Server.Controllers;
 
 [ApiController]
 public class VerificationController : ControllerBase

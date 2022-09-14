@@ -1,12 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.AspNetCore.Mvc;
-using NamesOutOfAHat2.Interface;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Server.Service;
-using NamesOutOfAHat2.Service;
-using NamesOutOfAHat2.Utility;
-
-namespace NamesOutOfAHat2.Server.Controllers;
+﻿namespace NamesOutOfAHat2.Server.Controllers;
 
 [ApiController]
 public class EmailController : ControllerBase
@@ -42,18 +34,19 @@ public class EmailController : ControllerBase
 
         var tasks = new List<Task>();
 
-        emails.ForEach(email =>
-        {
-            tasks.Add(
-                emailService.SendAsync(email)
-                    .ContinueWith(async (task) =>
+        foreach(var email in emails)
+            _ = (await emailService.SendAsync(email))
+                .Match(
+                    result =>
                     {
-                        var (success, details) = await task;
-                        if (!success)
-                            emailErrors.Add(details);
-                    })
-            );
-        });
+                        return true;
+                    },
+                    error =>
+                    {
+                        emailErrors.Add(error.Message);
+                        return false;
+                    }
+                );
 
         await Task.WhenAll(tasks);
 

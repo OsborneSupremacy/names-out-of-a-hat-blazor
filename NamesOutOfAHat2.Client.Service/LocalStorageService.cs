@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using NamesOutOfAHat2.Utility;
-using blazored = Blazored.LocalStorage;
+﻿using blazored = Blazored.LocalStorage;
 
 namespace NamesOutOfAHat2.Client.Service;
 

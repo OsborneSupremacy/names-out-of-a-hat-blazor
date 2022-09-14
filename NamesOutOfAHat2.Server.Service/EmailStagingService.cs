@@ -1,9 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Service;
-using NamesOutOfAHat2.Utility;
-
-namespace NamesOutOfAHat2.Server.Service;
+﻿namespace NamesOutOfAHat2.Server.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class EmailStagingService

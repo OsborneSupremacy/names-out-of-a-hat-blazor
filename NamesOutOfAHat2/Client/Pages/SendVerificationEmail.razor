@@ -45,8 +45,20 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var (success, details) = await ClientMessenger.CheckVerifiedAsync(NavigationManager, Hat.ToRegistration());
-        _alreadyVerified = success;
+        var result = await ClientMessenger.CheckVerifiedAsync(NavigationManager, Hat.ToRegistration());
+
+        result.Match
+        (
+            success =>
+            {
+                _alreadyVerified = success;
+                return true;
+            },
+            error =>
+            {
+                return false;
+            }
+        );
     }
 
     async Task AdvanceSkipNextStep() => 
@@ -54,11 +66,20 @@
 
     async Task SendCodeAndAdvance()
     {
-        var (success, details) = await ClientMessenger.SendVerificationAsync(NavigationManager, Hat);
+        var result = await ClientMessenger.SendVerificationAsync(NavigationManager, Hat);
 
-        if (success)
-            await NextCallback.InvokeAsync();
-
-        // TODO: Invoke an error callback on error
+        await result.Match
+        (
+            async success =>
+            {
+                await NextCallback.InvokeAsync();
+                return true;
+            },
+            error =>
+            {
+                // TODO: Invoke an error callback on error
+                return Task.FromResult(false);
+            }
+        );
     }
 }

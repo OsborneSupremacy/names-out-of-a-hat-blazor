@@ -162,15 +162,24 @@
 
     async Task SendCodeAndAdvance()
     {
-        var (success, details) = await ClientHttpService.SendVerificationAsync(NavigationManager, Hat);
+        var result = await ClientHttpService
+            .SendVerificationAsync(NavigationManager, Hat);
 
-        if(success)
-            await NextMode();
-        else
-        {
-            ErrorDetails = details;
-            SwitchMode(Modes.Failure);
-        }
+        await result
+            .Match
+            (
+                async success =>
+                {
+                    await NextMode();
+                    return true;
+                },
+                error =>
+                {
+                    ErrorDetails = error.Message;
+                    SwitchMode(Modes.Failure);
+                    return Task.FromResult(false);
+                }
+            );
     }
 
     async Task<bool> TryLoadGdprConsentFromLocalStorage()
@@ -216,16 +225,22 @@
     async Task Finalize()
     {
         await SaveHatToLocalStorage();
-        var (success, details) = await ClientHttpService.SendAsync(NavigationManager, Hat);
 
-        if(success)
-        {
-            SwitchMode(Modes.Success);
-        } else
-        {
-            ErrorDetails = details;
-            SwitchMode(Modes.Failure);
-        }
+        var result = await ClientHttpService.SendAsync(NavigationManager, Hat);
+
+        result.Match
+        (
+            success =>
+            {
+                SwitchMode(Modes.Success);
+                return true;
+            },
+            error =>
+            {
+                ErrorDetails = error.Message;
+                SwitchMode(Modes.Failure);
+                return false;
+            }
+        );
     }
-
 }

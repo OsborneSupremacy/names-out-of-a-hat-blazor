@@ -41,15 +41,23 @@
     {
         _invalidCode = false;
 
-        var result = await ClientHttpService.VerifyAsync(NavigationManager, Hat.ToRegistration(_code));
+        var result = await ClientHttpService
+            .VerifyAsync(NavigationManager, Hat.ToRegistration(_code));
 
-        if (result.success)
-            await NextCallback.InvokeAsync();
-        else
-        {
-            await Task.Delay(3000);
-            _invalidCode = true;
-        }
+        await result
+            .Match(
+                async success =>
+                { 
+                    await NextCallback.InvokeAsync();
+                    return true;
+                },
+                async error =>
+                {
+                    await Task.Delay(3000);
+                    _invalidCode = true;
+                    return false;
+                }
+        );
     }
 
     [Parameter, EditorRequired]

@@ -1,8 +1,4 @@
-﻿using System.Net.Http.Json;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.DependencyInjection;
-using NamesOutOfAHat2.Model;
-using NamesOutOfAHat2.Utility;
+﻿using LanguageExt.Common;
 
 namespace NamesOutOfAHat2.Client.Service;
 
@@ -16,19 +12,19 @@ public class ClientHttpService
         _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
     }
 
-    public async Task<(bool success, string details)> VerifyAsync(NavigationManager navigationManager, OrganizerRegistration registration) =>
+    public async Task<Result<bool>> VerifyAsync(NavigationManager navigationManager, OrganizerRegistration registration) =>
         await SendAsync(navigationManager, registration, "api/verify");
 
-    public async Task<(bool success, string details)> CheckVerifiedAsync(NavigationManager navigationManager, OrganizerRegistration registration) =>
+    public async Task<Result<bool>> CheckVerifiedAsync(NavigationManager navigationManager, OrganizerRegistration registration) =>
         await SendAsync(navigationManager, registration, "api/verify-check");
 
-    public async Task<(bool success, string details)> SendVerificationAsync(NavigationManager navigationManager, Hat hat) =>
+    public async Task<Result<bool>> SendVerificationAsync(NavigationManager navigationManager, Hat hat) =>
         await SendAsync(navigationManager, hat, "api/verify-register");
 
-    public async Task<(bool success, string details)> SendAsync(NavigationManager navigationManager, Hat hat) =>
+    public async Task<Result<bool>> SendAsync(NavigationManager navigationManager, Hat hat) =>
         await SendAsync(navigationManager, hat, "api/email");
 
-    public async Task<(bool success, string details)> SendAsync<T>(NavigationManager navigationManager, T input, string relativeUrl)
+    public async Task<Result<bool>> SendAsync<T>(NavigationManager navigationManager, T input, string relativeUrl)
     {
         var client = _clientFactory.CreateClient();
 
@@ -38,6 +34,8 @@ public class ClientHttpService
 
         var responseContent = await response.Content.ReadAsStringAsync();
 
-        return (response.IsSuccessStatusCode, responseContent);
+        return response.IsSuccessStatusCode
+            ? true
+            : new Result<bool>(new AggregateException(responseContent));
     }
 }

@@ -31,7 +31,6 @@ public class SendGridEmailServiceTests
         var result = await service.SendAsync(emailParts);
 
         // assert
-        result.details.Should().BeNullOrEmpty();
-        result.success.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
     }
 }
