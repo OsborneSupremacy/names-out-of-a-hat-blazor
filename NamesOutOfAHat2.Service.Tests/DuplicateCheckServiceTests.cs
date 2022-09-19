@@ -92,10 +92,20 @@ public class DuplicateCheckServiceTests
         var service = new EmailDuplicateCheckService();
 
         // act
-        var result = service.Execute(input);
+        var isSuccess = service.Execute(input)
+            .Match(
+                success =>
+                {
+                    return true;
+                },
+                error =>
+                {
+                    return false;
+                }
+            );
 
         // assert
-        result.IsSuccess.Should().BeTrue();
+        isSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -116,13 +126,26 @@ public class DuplicateCheckServiceTests
     };
 
         var service = new IdDuplicateCheckService();
+        List<Exception> errors = null;
 
         // act
-        var result = service.Execute(input);
+        var isSuccess = service.Execute(input)
+            .Match(
+                success =>
+                {
+                    return true;
+                },
+                error =>
+                {
+                    if (error is AggregateException aggregateException)
+                        errors = aggregateException.InnerExceptions.ToList();
+                    return false;
+                }
+            );
 
         // assert
-        result.IsSuccess.Should().BeFalse();
-        result.GetErrors().Count.Should().Be(1);
+        isSuccess.Should().BeFalse();
+        errors.Count.Should().Be(2);
     }
 
     [Fact]

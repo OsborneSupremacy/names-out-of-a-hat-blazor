@@ -39,7 +39,7 @@ public class ValidationService
         };
 
         if (!isValid)
-            return new Result<bool>(new MultiException(error));
+            return new Result<bool>(new ValidationException(error));
 
         var duplicateCheckServices = _serviceProvider.GetServices<IDuplicateCheckService>();
 

@@ -7,10 +7,16 @@ public class ComponentModelValidationService : IComponentModelValidationService
     public Result<bool> Validate<T>(T item)
     {
         var results = new List<ValidationResult>();
+
         var isValid = Validator
             .TryValidateObject(item, new ValidationContext(item), results, true);
+
         if (!isValid)
-            return new Result<bool>(new MultiException(results.Select(x => x.ErrorMessage ?? string.Empty).ToList()));
+        {
+            var exceptions = results.Select(x => new ValidationException(x.ErrorMessage ?? string.Empty));
+            return new Result<bool>(new AggregateException(exceptions));
+        }
+
         return true;
     }
 

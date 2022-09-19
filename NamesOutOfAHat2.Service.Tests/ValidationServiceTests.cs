@@ -16,21 +16,38 @@ public class ValidationServiceTests
 
         IList<Participant> input = new List<Participant>();
 
-        var expectedErrors = new List<string>() { "error1", "error2" };
+        var expectedErrors = new List<ValidationException>() { 
+            new("error1"),
+            new("error2") 
+        };
 
         //
         autoFixture.Freeze<Mock<IComponentModelValidationService>>()
             .Setup(x => x.ValidateList(It.IsAny<IList<Participant>>()))
-            .Returns(new Result<bool>(new MultiException(expectedErrors)));
+            .Returns(new Result<bool>(new AggregateException(expectedErrors)));
+
+        List<Exception> errors = null;
 
         var service = autoFixture.Create<ValidationService>();
 
         // act
-        var result = service.Validate(input);
+        var isSuccess = service.Validate(input)
+            .Match(
+                success =>
+                {
+                    return true;
+                },
+                error =>
+                {
+                    if (error is AggregateException aggregateException)
+                        errors = aggregateException.InnerExceptions.ToList();
+                    return false;
+                }
+            );
 
         // assert
-        result.IsSuccess.Should().BeFalse();
-        result.GetErrors().Should().BeEquivalentTo(expectedErrors);
+        isSuccess.Should().BeFalse();
+        errors.Should().BeEquivalentTo(expectedErrors);
     }
 
     [Theory]
@@ -99,15 +116,15 @@ public class ValidationServiceTests
             DuplicatesExist = returnDuplicatesExist;
         }
 
-        private List<string> ErrorMessages =>
+        private List<ValidationException> ErrorMessages =>
             DuplicatesExist
-                ? new List<string>() { "Duplicates exist" }
-                : Enumerable.Empty<string>().ToList();
+                ? new List<ValidationException>() { new("Duplicates exist") }
+                : Enumerable.Empty<ValidationException>().ToList();
 
         public Result<bool> Execute(IList<Person> people)
         {
             if (DuplicatesExist)
-                return new Result<bool>(new MultiException(ErrorMessages));
+                return new Result<bool>(new AggregateException(ErrorMessages));
             return true;
         }
     }

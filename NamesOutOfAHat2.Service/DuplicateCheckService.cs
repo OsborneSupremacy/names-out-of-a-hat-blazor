@@ -8,17 +8,17 @@ public abstract class DuplicateCheckService
         Func<Person, T, bool> equals
     )
     {
-        var duplicateValues = new List<string>();
+        var duplicateValues = new List<ValidationException>();
         var values = selector(people).ToHashSet();
 
         foreach (var value in values)
             if (people
                 .Where(x => equals(x, value))
                 .Count() > 1)
-                duplicateValues.Add(value?.ToString() ?? string.Empty);
+                duplicateValues.Add(new(value?.ToString() ?? string.Empty));
 
         if (duplicateValues.Any())
-            return new Result<bool>(new MultiException(duplicateValues));
+            return new Result<bool>(new AggregateException(duplicateValues));
 
         return true;
     }
@@ -42,9 +42,11 @@ public class NameDuplicateCheckService : DuplicateCheckService, IDuplicateCheckS
         var errors = result
             .GetErrors()
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(x => $"The name, `{x}` is associated with more than one person in your gift exchange. That could cause confusion for the participants. Please differentiate between the people named `{x}` (middle/last initial, city, etc.)");
+            .Select(
+                x => new ValidationException($"The name, `{x}` is associated with more than one person in your gift exchange. That could cause confusion for the participants. Please differentiate between the people named `{x}` (middle/last initial, city, etc.)")
+            );
 
-        return new Result<bool>(new MultiException(errors.ToList()));
+        return new Result<bool>(new AggregateException(errors));
     }
 }
 
@@ -66,9 +68,11 @@ public class EmailDuplicateCheckService : DuplicateCheckService, IDuplicateCheck
         var errors = result
             .GetErrors()
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(x => $"The email address, `{x}`, is associated with more than one person in your gift exchange. If multiple names are sent to that address, that's going to cause problems. Everyone needs their own address.");
+            .Select(x => 
+                new ValidationException($"The email address, `{x}`, is associated with more than one person in your gift exchange. If multiple names are sent to that address, that's going to cause problems. Everyone needs their own address.")
+            );
 
-        return new Result<bool>(new MultiException(errors.ToList()));
+        return new Result<bool>(new AggregateException(errors));
     }
 }
 
@@ -87,11 +91,6 @@ public class IdDuplicateCheckService : DuplicateCheckService, IDuplicateCheckSer
     protected static readonly Func<Person, Guid, bool> _idEquals = (Person person, Guid value) =>
         person.Id.Equals(value);
 
-    public Result<bool> Execute(IList<Person> people)
-    {
-        var result = ValidateNoDuplicates(people, _idSelector, _idEquals);
-        if (result.IsSuccess) return result;
-
-        return new Result<bool>(new MultiException("We apologize but there in an internal issue with this application."));
-    }
+    public Result<bool> Execute(IList<Person> people) =>
+        ValidateNoDuplicates(people, _idSelector, _idEquals);
 }

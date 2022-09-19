@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Bogus;
 using LanguageExt;
+using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace NamesOutOfAHat2.Service;
 
@@ -42,7 +43,7 @@ public class HatShakerService
         var participants = hat.Participants.ToList();
         var pickedList = new System.Collections.Generic.HashSet<Guid>();
 
-        var errors = new List<string>();
+        var errors = new List<ValidationException>();
 
         // clear all existing picked recipients
         participants.ForEach(x => x.PickedRecipient = null);
@@ -57,7 +58,7 @@ public class HatShakerService
 
             if (!eligibleRecipients.Any())
             {
-                errors.Add($"Could not find an eligible recipient for {participant.Person.Name} that was not already taken");
+                errors.Add(new($"Could not find an eligible recipient for {participant.Person.Name} that was not already taken"));
                 break;
             }
 
@@ -69,6 +70,6 @@ public class HatShakerService
             return hat;
 
         participants.ForEach(x => x.PickedRecipient = null);
-        return new Result<Hat>(new MultiException(errors));
+        return new Result<Hat>(new AggregateException(errors));
     }
 }
