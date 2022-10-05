@@ -15,7 +15,10 @@ COPY ["NamesOutOfAHat2.Service/NamesOutOfAHat2.Service.csproj", "NamesOutOfAHat2
 COPY ["NamesOutOfAHat2.Interface/NamesOutOfAHat2.Interface.csproj", "NamesOutOfAHat2.Interface/"]
 COPY ["NamesOutOfAHat2.Utility/NamesOutOfAHat2.Utility.csproj", "NamesOutOfAHat2.Utility/"]
 
-RUN dotnet nuget add source https://nuget.pkg.github.com/osbornesupremacy/index.json -n github -u osbornesupremacy -p $NUGET_API_KEY --store-password-in-clear-text
+RUN dotnet nuget add source --name github --username github \
+    --password $NUGET_API_KEY --store-password-in-clear-text \
+    https://nuget.pkg.github.com/osbornesupremacy/index.json
+
 RUN dotnet restore "NamesOutOfAHat2/Server/NamesOutOfAHat2.Server.csproj"
 WORKDIR "/src/NamesOutOfAHat2/Server"
 RUN dotnet build "NamesOutOfAHat2.Server.csproj" -c Release -o /app/build
