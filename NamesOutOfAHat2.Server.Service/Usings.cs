@@ -7,4 +7,5 @@ global using LanguageExt.Common;
 global using NamesOutOfAHat2.Interface;
 global using SendGrid;
 global using SendGrid.Helpers.Mail;
+global using OsborneSupremacy.Extensions.Net.DependencyInjection;
 

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using NamesOutOfAHat2.Client;
 using NamesOutOfAHat2.Client.Service;
 using NamesOutOfAHat2.Service;
-using NamesOutOfAHat2.Utility;
+using OsborneSupremacy.Extensions.Net.DependencyInjection;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

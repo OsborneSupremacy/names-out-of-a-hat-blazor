@@ -32,7 +32,7 @@ Here are all of the advantages that I can think of that a web application has ov
 * A participant cannot draw their own name or the name of any _ineligible_ person (e.g. their spouse.)
 * The list of ineligible recipients is flexible.
     * For groups with a small number of people, it's very possible that someone can draw the same name 2 or more years in a row. This can be prevented by marking a recipient as ineligible for certain participants.
-* It is completely fair (not that fairness is a major concern when it comes to gift exchanges). Both the order in which people draw names, and the drawing of the names, is down randomly.
+* It is completely fair (not that fairness is a major concern when it comes to gift exchanges). Both the order in which people draw names, and the drawing of the names, is done randomly.
 * Gift exchanges with complex resolutions can be found.
 
 ### Approach To Drawing Names

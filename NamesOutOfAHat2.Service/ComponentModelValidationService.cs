@@ -22,6 +22,7 @@ public class ComponentModelValidationService : IComponentModelValidationService
 
     public Result<bool> ValidateList<T>(IList<T> items)
     {
+        // TODO: replace this with FluentValidation
         // basic component model validation
         foreach (var item in items)
         {

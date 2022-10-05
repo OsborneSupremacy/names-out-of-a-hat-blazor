@@ -1,4 +1,6 @@
-﻿var configBuilder = new ConfigurationBuilder()
+﻿using OsborneSupremacy.Extensions.Net.DependencyInjection;
+
+var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json");
 
