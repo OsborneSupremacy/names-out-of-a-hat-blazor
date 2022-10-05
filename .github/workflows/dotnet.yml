@@ -19,7 +19,7 @@ jobs:
         dotnet-version: 6.0.x
         source-url: https://nuget.pkg.github.com/osbornesupremacy/index.json
       env:
-          NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
+        NUGET_AUTH_TOKEN: ${{secrets.NUGET_API_KEY}}
 
     - name: Restore dependencies
       run: dotnet restore
@@ -37,7 +37,7 @@ jobs:
 
     - name: Build the Docker image
       run: |
-        docker build . --file ./NamesOutOfAHat2/Server/Dockerfile --tag ghcr.io/osbornesupremacy/namesoutofahat:latest
+        docker build . --file ./NamesOutOfAHat2/Server/Dockerfile --tag ghcr.io/osbornesupremacy/namesoutofahat:latest --build-arg NUGET_API_KEY=${{secrets.NUGET_API_KEY}}
         docker push ghcr.io/osbornesupremacy/namesoutofahat:latest
 
     - uses: azure/webapps-deploy@v2

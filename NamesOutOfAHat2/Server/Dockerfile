@@ -13,7 +13,7 @@ COPY ["NamesOutOfAHat2.Model/NamesOutOfAHat2.Model.csproj", "NamesOutOfAHat2.Mod
 COPY ["NamesOutOfAHat2.Service/NamesOutOfAHat2.Service.csproj", "NamesOutOfAHat2.Service/"]
 COPY ["NamesOutOfAHat2.Interface/NamesOutOfAHat2.Interface.csproj", "NamesOutOfAHat2.Interface/"]
 COPY ["NamesOutOfAHat2.Utility/NamesOutOfAHat2.Utility.csproj", "NamesOutOfAHat2.Utility/"]
-RUN dotnet restore "NamesOutOfAHat2/Server/NamesOutOfAHat2.Server.csproj"
+RUN dotnet restore "NamesOutOfAHat2/Server/NamesOutOfAHat2.Server.csproj" -s "https://nuget.pkg.github.com/osbornesupremacy/index.json" -s "https://api.nuget.org/v3/index.json"
 COPY . .
 WORKDIR "/src/NamesOutOfAHat2/Server"
 RUN dotnet build "NamesOutOfAHat2.Server.csproj" -c Release -o /app/build
