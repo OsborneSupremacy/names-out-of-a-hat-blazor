@@ -15,9 +15,7 @@ COPY ["NamesOutOfAHat2.Service/NamesOutOfAHat2.Service.csproj", "NamesOutOfAHat2
 COPY ["NamesOutOfAHat2.Interface/NamesOutOfAHat2.Interface.csproj", "NamesOutOfAHat2.Interface/"]
 COPY ["NamesOutOfAHat2.Utility/NamesOutOfAHat2.Utility.csproj", "NamesOutOfAHat2.Utility/"]
 
-RUN dotnet new nugetconfig
-RUN dotnet nuget add source https://api.nuget.org/v3/index.json --configfile nuget.config
-RUN dotnet nuget add source https://nuget.pkg.github.com/osbornesupremacy/index.json -n PrivateFeed -u docker -p %NUGET_API_KEY% --store-password-in-clear-text --configfile nuget.config
+RUN dotnet nuget add source https://nuget.pkg.github.com/osbornesupremacy/index.json -n github -u docker -p %NUGET_API_KEY% --store-password-in-clear-text
 
 RUN dotnet restore "NamesOutOfAHat2/Server/NamesOutOfAHat2.Server.csproj"
 WORKDIR "/src/NamesOutOfAHat2/Server"
