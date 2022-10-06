@@ -1,6 +1,4 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-ARG NUGET_API_KEY
-
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 EXPOSE 80
@@ -14,8 +12,6 @@ COPY ["NamesOutOfAHat2.Model/NamesOutOfAHat2.Model.csproj", "NamesOutOfAHat2.Mod
 COPY ["NamesOutOfAHat2.Service/NamesOutOfAHat2.Service.csproj", "NamesOutOfAHat2.Service/"]
 COPY ["NamesOutOfAHat2.Interface/NamesOutOfAHat2.Interface.csproj", "NamesOutOfAHat2.Interface/"]
 COPY ["NamesOutOfAHat2.Utility/NamesOutOfAHat2.Utility.csproj", "NamesOutOfAHat2.Utility/"]
-
-RUN dotnet nuget add source https://nuget.pkg.github.com/osbornesupremacy/index.json -n github -u docker -p %NUGET_API_KEY% --store-password-in-clear-text
 
 RUN dotnet restore "NamesOutOfAHat2/Server/NamesOutOfAHat2.Server.csproj"
 WORKDIR "/src/NamesOutOfAHat2/Server"
