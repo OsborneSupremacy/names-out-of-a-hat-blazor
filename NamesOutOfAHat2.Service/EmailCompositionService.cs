@@ -19,7 +19,7 @@ public class EmailCompositionService
         if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
             e.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation));
 
-        e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer?.Person.Email ?? string.Empty}"">{hat.Organizer?.Person.Name ?? string.Empty}</a>");
+        e.Add($@"If you have any questions, contact <a href=""mailto:{hat.Organizer?.Person.Email ?? string.Empty}"">{hat.Organizer?.Person.Name ?? string.Empty}</a>.");
         e.Add("<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>");
 
         if (string.IsNullOrWhiteSpace(siteUrl))

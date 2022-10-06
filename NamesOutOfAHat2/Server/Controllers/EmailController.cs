@@ -51,7 +51,7 @@ public class EmailController : ControllerBase
         await Task.WhenAll(tasks);
 
         if (emailErrors.Any())
-            return new BadRequestObjectResult(emailErrors);
+            return new BadRequestObjectResult(emailErrors.Distinct());
 
         return new OkResult();
     }

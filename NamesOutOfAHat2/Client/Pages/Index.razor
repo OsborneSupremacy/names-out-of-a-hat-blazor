@@ -39,9 +39,11 @@
 
     <EmailPreview Visible="@Mode.In(Modes.EmailComposition)" Hat="Hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
 
-    <Success Visible="@Mode.In(Modes.Success)" Hat="Hat" NextCallback="DefaultMode" />
+    <Success Visible="@Mode.In(Modes.Success)" Hat="Hat" NextCallback="NextMode" />
 
-    <ErrorDisplay Visible="@Mode.In(Modes.Failure)" ErrorDetails="ErrorDetails" NextCallback="DefaultMode" />
+    <RestartOptions Visible="@Mode.In(Modes.RestartOptions)" Hat="Hat" NextCallback="DefaultMode" ResetCallback="ResetHat" />
+
+    <ErrorDisplay Visible="@Mode.In(Modes.Failure)" ErrorDetails="@ErrorDetails" NextCallback="DefaultMode" />
 
 </div>
 
@@ -66,7 +68,8 @@
         ConfirmationCodeEntry = 6,
         EmailComposition = 7,
         Success = 8,
-        Failure = 9
+        RestartOptions = 9,
+        Failure = 10
     }
 
     protected override async void OnInitialized()
@@ -89,6 +92,12 @@
         }
         else
             AddMode();
+    }
+
+    async Task ResetHat()
+    {
+        Hat = new();
+        await DefaultMode();
     }
 
     void AddMode()

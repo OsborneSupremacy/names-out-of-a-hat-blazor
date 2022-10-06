@@ -1,0 +1,28 @@
+﻿@using NamesOutOfAHat2.Model
+
+@if (Visible)
+{
+    <SectionHeading Visible="true" Text="What do you want to do next?" Lead="You can start from scratch or keep your data." />
+
+    <hr>
+
+    <ButtonArea>
+        <PrimaryButton ClickedCallback="NextCallback" Text="Keep My Data" />
+        <PrimaryButton ClickedCallback="ResetCallback" Text="Start from Scratch" />
+    </ButtonArea>
+}
+
+@code {
+
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
+    [Parameter, EditorRequired]
+    public Hat Hat { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback NextCallback { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback ResetCallback { get; set; }
+}
