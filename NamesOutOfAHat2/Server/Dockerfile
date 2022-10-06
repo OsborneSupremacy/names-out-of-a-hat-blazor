@@ -1,4 +1,5 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 EXPOSE 80
@@ -12,8 +13,8 @@ COPY ["NamesOutOfAHat2.Model/NamesOutOfAHat2.Model.csproj", "NamesOutOfAHat2.Mod
 COPY ["NamesOutOfAHat2.Service/NamesOutOfAHat2.Service.csproj", "NamesOutOfAHat2.Service/"]
 COPY ["NamesOutOfAHat2.Interface/NamesOutOfAHat2.Interface.csproj", "NamesOutOfAHat2.Interface/"]
 COPY ["NamesOutOfAHat2.Utility/NamesOutOfAHat2.Utility.csproj", "NamesOutOfAHat2.Utility/"]
-
 RUN dotnet restore "NamesOutOfAHat2/Server/NamesOutOfAHat2.Server.csproj"
+COPY . .
 WORKDIR "/src/NamesOutOfAHat2/Server"
 RUN dotnet build "NamesOutOfAHat2.Server.csproj" -c Release -o /app/build
 
