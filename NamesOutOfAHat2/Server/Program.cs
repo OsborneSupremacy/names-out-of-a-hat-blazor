@@ -1,4 +1,5 @@
 ﻿using OsborneSupremacy.Extensions.Net.DependencyInjection;
+using OsborneSupremacy.Extensions.AspNet;
 
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -38,16 +39,19 @@ builder.Services.AddSwaggerDocument(config =>
     };
 });
 
-builder.Services.Configure<Settings>(config.GetSection(nameof(Settings)));
+builder
+    .Services
+    .AddSingleton(
+        builder
+            .GetAndValidateTypedSection(nameof(Settings), new SettingsValidator())
+    );
 
-builder.Services.AddSingleton(sp =>
-    sp.GetRequiredService<IOptions<Settings>>().Value);
-
-builder.Services.Configure<ConfigKeys>(
-    config.GetSection(nameof(ConfigKeys)));
-
-builder.Services.AddSingleton(sp =>
-    sp.GetRequiredService<IOptions<ConfigKeys>>().Value);
+builder
+    .Services
+    .AddSingleton(
+        builder
+            .GetTypedSection<ConfigKeys>(nameof(ConfigKeys))
+    );
 
 var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
