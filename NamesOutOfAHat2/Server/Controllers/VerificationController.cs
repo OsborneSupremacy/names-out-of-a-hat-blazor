@@ -45,8 +45,18 @@ public class VerificationController : ControllerBase
 #endif
         registrationService.Register(hat, code);
         var email = await emailStagingService.StageEmailAsync(hat, code);
-        await emailService.SendAsync(email);
 
-        return new OkResult();
+        return (await emailService.SendAsync(email))
+            .Match<IActionResult>
+            (
+                success =>
+                {
+                    return new OkObjectResult(true);
+                },
+                error =>
+                {
+                    return new BadRequestObjectResult(error);
+                }
+            );
     }
 }
