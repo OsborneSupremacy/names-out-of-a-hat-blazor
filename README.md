@@ -99,14 +99,27 @@ In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run it
 
 ## Hosting
 
-If hosting on Azure, I recommend that you create an App Configuration with your SendGrid keys and settings. The names of the keys would be:
+If hosting on Azure, your app service's configuration should contain these settings (from "Advanced Edit"), if/when you want to override the values in appsettings.json.
 
+```json
+  {
+    "name": "configKeys__sendgrid",
+    "value": "your SendGrid API key that you get form https://app.sendgrid.com/",
+    "slotSetting": false
+  },
+  {
+    "name": "settings__sendEmails",
+    "value": true,
+    "slotSetting": false
+  },
+  {
+    "name": "settings__senderEmail",
+    "value": "noreply@namesoutofahat.biz",
+    "slotSetting": false
+  },
+  {
+    "name": "settings__siteUrl",
+    "value": "https://namesoutofahat.biz",
+    "slotSetting": false
+  }
 ```
-configKeys:sendgrid
-settings:senderName
-settings:senderEmail
-settings:sendEmails
-settings:siteUrl
-```
-
-In your Azure App Service, you would need just one application setting, pointing to your App Configuration endpoint. That settings should be named `AZURE_CONFIG_CONNECTIONSTRING`. You would get the value from your Azure App Configuration (Access Keys --> Connection String).

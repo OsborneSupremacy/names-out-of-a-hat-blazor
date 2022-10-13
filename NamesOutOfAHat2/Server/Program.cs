@@ -7,20 +7,11 @@ var configBuilder = new ConfigurationBuilder()
 
 configBuilder.AddUserSecrets<Program>(true);
 
-// If you have a an Azure App config, when running locally, can store it in launchSettings.json
-// On Azure, store it in application settings
-var azureConfigConnectionString = Environment
-    .GetEnvironmentVariable("AZURE_CONFIG_CONNECTIONSTRING") ?? string.Empty;
-
-if (!string.IsNullOrWhiteSpace(azureConfigConnectionString))
-    configBuilder.AddAzureAppConfiguration(azureConfigConnectionString);
-
 var config = configBuilder.Build();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.AddSwaggerDocument(config =>
