@@ -1,6 +1,6 @@
 ﻿namespace NamesOutOfAHat2.Model;
 
-public class OrganizerRegistration
+public record OrganizerRegistration
 {
     public Guid HatId { get; set; } = default!;
 

@@ -21,3 +21,22 @@ public record Participant
     [Required, MinLength(1, ErrorMessage = "Each participant needs at least one possible recipient")]
     public IList<Recipient> Recipients { get; set; } = default!;
 }
+
+/// <summary>
+/// TODO: Use this
+/// </summary>
+public class ParticipantValidator : AbstractValidator<Participant>
+{
+    public ParticipantValidator()
+    {
+        RuleFor(x => x.Person).NotNull();
+        RuleFor(x => x.Recipients)
+            .NotNull();
+
+        When(x => x.Recipients is not null, () => {
+            RuleFor(x => x.Recipients)
+                .Must(x => x.Count >= 1)
+                .WithMessage("Each participant needs at least one possible recipient.");
+        });
+    }
+}

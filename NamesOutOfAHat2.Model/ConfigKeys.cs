@@ -1,5 +1,4 @@
-﻿
-namespace NamesOutOfAHat2.Model;
+﻿namespace NamesOutOfAHat2.Model;
 
 /// <summary>
 /// A dictionary for accessing configuration keys neeeded by the application in appsettings.

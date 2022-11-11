@@ -1,5 +1,6 @@
 ﻿using OsborneSupremacy.Extensions.Net.DependencyInjection;
 using OsborneSupremacy.Extensions.AspNet;
+using FluentValidation;
 
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -49,6 +50,8 @@ var memoryCache = new MemoryCache(new MemoryCacheOptions());
 builder.Services.AddSingleton(memoryCache);
 builder.Services.RegisterServicesInAssembly(typeof(ValidationService));
 builder.Services.RegisterServicesInAssembly(typeof(SendGridEmailService));
+
+builder.Services.AddValidatorsFromAssemblyContaining<SettingsValidator>();
 
 var app = builder.Build();
 

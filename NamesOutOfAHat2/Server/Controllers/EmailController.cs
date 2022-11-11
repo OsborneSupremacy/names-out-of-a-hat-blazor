@@ -32,8 +32,6 @@ public class EmailController : ControllerBase
 
         var emailErrors = new ConcurrentBag<string>();
 
-        var tasks = new List<Task>();
-
         foreach(var email in emails)
             _ = (await emailService.SendAsync(email))
                 .Match(
@@ -47,8 +45,6 @@ public class EmailController : ControllerBase
                         return false;
                     }
                 );
-
-        await Task.WhenAll(tasks);
 
         if (emailErrors.Any())
             return new BadRequestObjectResult(emailErrors.Distinct());

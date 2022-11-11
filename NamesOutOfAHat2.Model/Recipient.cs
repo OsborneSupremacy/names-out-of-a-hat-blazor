@@ -20,3 +20,14 @@ public record Recipient
     [Required]
     public bool Eligible { get; set; }
 }
+
+/// <summary>
+/// TODO: Use this
+/// </summary>
+public class RecipientValidator : AbstractValidator<Recipient>
+{
+    public RecipientValidator()
+    {
+        RuleFor(x => x.Person).NotNull();
+    }
+}

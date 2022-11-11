@@ -1,6 +1,4 @@
-﻿using FluentValidation;
-
-namespace NamesOutOfAHat2.Model;
+﻿namespace NamesOutOfAHat2.Model;
 
 public record Settings
 {
@@ -18,10 +16,11 @@ public class SettingsValidator : AbstractValidator<Settings>
     public SettingsValidator()
     {
         RuleFor(x => x.SenderName).NotEmpty();
-        RuleFor(x => x.SiteUrl).NotEmpty();
         RuleFor(x => x.SiteUrl)
+            .NotEmpty()
             .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _));
-        RuleFor(x => x.SenderEmail).NotEmpty();
-        RuleFor(x => x.SenderEmail).EmailAddress();
+        RuleFor(x => x.SenderEmail)
+            .NotEmpty()
+            .EmailAddress();
     }
 }

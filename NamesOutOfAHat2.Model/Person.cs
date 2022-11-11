@@ -14,3 +14,15 @@ public record Person
     [EmailAddress]
     public string Email { get; set; } = default!;
 }
+
+public class PersonValidator : AbstractValidator<Person>
+{
+    public PersonValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Name).NotEmpty();
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .EmailAddress();
+    }
+}
