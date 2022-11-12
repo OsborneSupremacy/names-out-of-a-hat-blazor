@@ -1,8 +1,8 @@
 # Names Out Of A Hat Blazor
 
-A web application to facilitate a "names out of hat" type gift exchange, written with Blazor.
+A web application to facilitate a "names out of hat" type gift exchange, written with Blazor. You can try it out at [giftexchange.azurewebsites.net](https://giftexchange.azurewebsites.net/).
 
-![Names Out A Hat Screenshot 1](docs/screenshot_01.png)
+![Names Out A Hat Screenshot 1](docs/demo-01.gif)
 
 ## What is a "Names Out Of A Hat" type gift exchange?
 
