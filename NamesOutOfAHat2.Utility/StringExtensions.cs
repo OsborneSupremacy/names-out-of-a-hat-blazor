@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Bogus;
 
 namespace NamesOutOfAHat2.Utility;
 
@@ -38,5 +39,34 @@ public static class StringExtensions
     {
         if (bool.TryParse(input, out var result)) return result;
         return defaultValue;
+    }
+
+    private static readonly List<string> _personEmojis = new() {
+        "😀",
+        "😁",
+        "😆",
+        "🤣",
+        "🥰",
+        "🤩",
+        "😺",
+        "😸",
+        "🤖",
+        "😂",
+        "🤠",
+        "🥳",
+        "😅",
+        "😉",
+        "🤪",
+        "😏",
+        "😼",
+        "🌝",
+        "🌞",
+        "😎"
+    };
+
+    public static string GetPersonEmojiFor(this string input)
+    {
+        Randomizer.Seed = new Random(input.GetHashCode() + input[..1].GetHashCode());
+        return new Faker().PickRandom(_personEmojis);
     }
 }

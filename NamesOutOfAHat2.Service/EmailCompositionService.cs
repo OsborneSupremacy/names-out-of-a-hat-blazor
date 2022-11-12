@@ -10,7 +10,7 @@ public class EmailCompositionService
             $"Dear {participant},",
             GetSubject(hat),
             "The person whose name was picked out of a hat for you is:",
-            $"<b>{pickedName}</b>"
+            $"<b>{pickedName.GetPersonEmojiFor()} {pickedName}</b>"
         };
 
         if (!string.IsNullOrWhiteSpace(hat.PriceRange))
