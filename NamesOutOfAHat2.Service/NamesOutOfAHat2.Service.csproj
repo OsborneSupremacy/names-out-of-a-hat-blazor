@@ -8,10 +8,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Bogus" Version="34.0.2" />
-		<PackageReference Include="LanguageExt.Core" Version="4.2.9" />
+		<PackageReference Include="LanguageExt.Core" Version="4.4.0" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-		<PackageReference Include="Microsoft.JSInterop" Version="7.0.0" />
-		<PackageReference Include="OsborneSupremacy.Extensions.Net.DependencyInjection" Version="1.3.0" />
+		<PackageReference Include="Microsoft.JSInterop" Version="7.0.1" />
+		<PackageReference Include="OsborneSupremacy.Extensions.Net.DependencyInjection" Version="2.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
