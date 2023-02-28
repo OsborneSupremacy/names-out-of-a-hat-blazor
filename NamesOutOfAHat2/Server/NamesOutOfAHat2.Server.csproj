@@ -12,13 +12,13 @@
 	<ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
-		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.4.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.5.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="7.0.3" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="5.2.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
 		<PackageReference Include="NSwag.AspNetCore" Version="13.18.2" />
-		<PackageReference Include="OsborneSupremacy.Extensions.AspNet" Version="2.1.0" />
+		<PackageReference Include="OsborneSupremacy.Extensions.AspNet" Version="3.0.0" />
 		<PackageReference Include="OsborneSupremacy.Extensions.Net.DependencyInjection" Version="2.0.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 	</ItemGroup>
