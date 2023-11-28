@@ -12,11 +12,11 @@ public class Hat
     }
 
     [Required]
-    public Guid Id { get; set; } = default!;
+    public Guid Id { get; set; }
 
-    public List<string> Errors { get; set; } = default!;
+    public List<string> Errors { get; set; }
 
-    public string? Name { get; set; } = default!;
+    public string? Name { get; set; }
 
     [MaxLength(10000)]
     public string? AdditionalInformation { get; set; } = default!;

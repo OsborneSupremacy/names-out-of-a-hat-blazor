@@ -49,14 +49,8 @@ public class VerificationController : ControllerBase
         return (await emailService.SendAsync(email))
             .Match<IActionResult>
             (
-                success =>
-                {
-                    return new OkObjectResult(true);
-                },
-                error =>
-                {
-                    return new BadRequestObjectResult(error);
-                }
+                success => new OkObjectResult(true),
+                error => new BadRequestObjectResult(error)
             );
     }
 }

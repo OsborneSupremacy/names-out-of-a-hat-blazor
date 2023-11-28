@@ -4,7 +4,7 @@
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class SendGridEmailService : IEmailService
 {
-    private readonly string _apiKey = string.Empty;
+    private readonly string _apiKey;
 
     private readonly Settings _settings;
 
@@ -26,11 +26,12 @@ public class SendGridEmailService : IEmailService
             .SendEmailAsync(
                 MailHelper
                     .CreateSingleEmail(
-                    new EmailAddress(_settings.SenderEmail, _settings.SenderName),
-                    new EmailAddress(emailParts.RecipientEmail),
-                    emailParts.Subject,
-                    string.Empty,
-                    emailParts.HtmlBody)
+                        new EmailAddress(_settings.SenderEmail, _settings.SenderName),
+                        new EmailAddress(emailParts.RecipientEmail),
+                        emailParts.Subject,
+                        string.Empty,
+                        emailParts.HtmlBody
+                    )
             );
 
         if (response.IsSuccessStatusCode)
