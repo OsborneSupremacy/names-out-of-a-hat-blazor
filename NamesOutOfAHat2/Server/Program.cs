@@ -8,28 +8,12 @@ var configBuilder = new ConfigurationBuilder()
 
 configBuilder.AddUserSecrets<Program>(true);
 
-var config = configBuilder.Build();
+configBuilder.Build();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-
-builder.Services.AddSwaggerDocument(config =>
-{
-    config.PostProcess = document =>
-    {
-        document.Info.Version = "v1";
-        document.Info.Title = "Names Out Of A Hat";
-        document.Info.Description = "A web application to facilitate a \"names out of hat\" type gift exchange, written with Blazor.";
-        document.Info.Contact = new NSwag.OpenApiContact
-        {
-            Name = "Ben Osborne",
-            Email = "ben@osbornesupremacy.com",
-            Url = "https://github.com/OsborneSupremacy"
-        };
-    };
-});
 
 builder
     .Services
@@ -56,14 +40,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<SettingsValidator>();
 var app = builder.Build();
 
 app.UseStaticFiles();
-app.UseOpenApi();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
@@ -72,15 +51,15 @@ else
 
 app.UseHttpsRedirection();
 
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
-
 app.UseRouting();
 
+#pragma warning disable ASP0014
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
 });
+#pragma warning restore ASP0014
+
 
 app.MapFallbackToFile("index.html");
 
