@@ -1,11 +1,11 @@
 ﻿global using Microsoft.Extensions.Caching.Memory;
-global using Microsoft.Extensions.Options;
 global using NamesOutOfAHat2.Model;
+global using NamesOutOfAHat2.Model.DomainModels;
+global using NamesOutOfAHat2.Model.ViewModels;
 global using NamesOutOfAHat2.Server.Service;
 global using NamesOutOfAHat2.Service;
 global using NamesOutOfAHat2.Utility;
 global using System.Collections.Concurrent;
-global using LanguageExt;
 global using Microsoft.AspNetCore.Mvc;
 global using NamesOutOfAHat2.Interface;
 global using Bogus;

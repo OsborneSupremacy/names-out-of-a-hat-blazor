@@ -1,6 +1,4 @@
-﻿@using NamesOutOfAHat2.Model
-@using NamesOutOfAHat2.Utility
-
+﻿@using NamesOutOfAHat2.Model.ViewModels
 @if(Visible) {
     <EditForm Model="@Person" OnValidSubmit="@CommitParticipantAddAsync">
         <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
@@ -29,17 +27,17 @@
     public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
-    public Person Person { get; set; }
+    public required PersonViewModel Person { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<Person> PersonAddedCallback { get; set; }
+    public EventCallback<PersonViewModel> PersonAddedCallback { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback CancelCallback { get; set; }
 
     public async Task CommitParticipantAddAsync()
     {
-        Person.Id = System.Guid.NewGuid();
+        Person.Id = Guid.NewGuid();
         await PersonAddedCallback.InvokeAsync(Person);
     }
 }

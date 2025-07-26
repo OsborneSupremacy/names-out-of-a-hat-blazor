@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Service.Tests;
+﻿using NamesOutOfAHat2.Test.Utility.Services;
+
+namespace NamesOutOfAHat2.Service.Tests;
 
 [ExcludeFromCodeCoverage]
 public class EligibilityValidationServiceTests
@@ -13,11 +15,11 @@ public class EligibilityValidationServiceTests
         var sue = "sue".ToPerson();
         var sam = "sam".ToPerson();
 
-        var hat = new Hat()
-            .AddParticipant(joe.ToParticipant().Eligible(sue).Ineligible(sam))
-            .AddParticipant(sue.ToParticipant().Eligible(joe).Ineligible(sam))
-            .AddParticipant(sam.ToParticipant().Eligible(joe).Ineligible(sue))
-            ;
+        var hat = new HatBuilder()
+            .WithParticipant(joe.ToParticipant().AddEligibleRecipients(sue).AddIneligibleRecipients(sam))
+            .WithParticipant(sue.ToParticipant().AddEligibleRecipients(joe).AddIneligibleRecipients(sam))
+            .WithParticipant(sam.ToParticipant().AddEligibleRecipients(joe).AddIneligibleRecipients(sue))
+            .Build();
 
         var service = autoFixture.Create<EligibilityValidationService>();
 
@@ -40,11 +42,11 @@ public class EligibilityValidationServiceTests
         var sue = "sue".ToPerson();
         var sam = "sam".ToPerson();
 
-        var hat = new Hat()
-            .AddParticipant(joe.ToParticipant().Eligible(sue, sam))
-            .AddParticipant(sue.ToParticipant().Eligible(joe).Ineligible(sam))
-            .AddParticipant(sam.ToParticipant().Eligible(joe, sue))
-            ;
+        var hat = new HatBuilder()
+            .WithParticipant(joe.ToParticipant().AddEligibleRecipients(sue, sam))
+            .WithParticipant(sue.ToParticipant().AddEligibleRecipients(joe).AddIneligibleRecipients(sam))
+            .WithParticipant(sam.ToParticipant().AddEligibleRecipients(joe, sue))
+            .Build();
 
         var service = autoFixture.Create<EligibilityValidationService>();
 
@@ -66,11 +68,11 @@ public class EligibilityValidationServiceTests
         var sue = "sue".ToPerson();
         var sam = "sam".ToPerson();
 
-        var hat = new Hat()
-            .AddParticipant(joe.ToParticipant())
-            .AddParticipant(sue.ToParticipant().Eligible(joe, sam))
-            .AddParticipant(sam.ToParticipant().Eligible(joe, sue))
-            ;
+        var hat = new HatBuilder()
+            .WithParticipant(joe.ToParticipant())
+            .WithParticipant(sue.ToParticipant().AddEligibleRecipients(joe, sam))
+            .WithParticipant(sam.ToParticipant().AddEligibleRecipients(joe, sue))
+            .Build();
 
         var service = autoFixture.Create<EligibilityValidationService>();
 
@@ -93,11 +95,11 @@ public class EligibilityValidationServiceTests
         var sue = "sue".ToPerson();
         var sam = "sam".ToPerson();
 
-        var hat = new Hat()
-            .AddParticipant(joe.ToParticipant().Ineligible(sue, sam))
-            .AddParticipant(sue.ToParticipant().Eligible(joe, sam))
-            .AddParticipant(sam.ToParticipant().Eligible(joe, sue))
-            ;
+        var hat = new HatBuilder()
+            .WithParticipant(joe.ToParticipant().AddIneligibleRecipients(sue, sam))
+            .WithParticipant(sue.ToParticipant().AddEligibleRecipients(joe, sam))
+            .WithParticipant(sam.ToParticipant().AddEligibleRecipients(joe, sue))
+            .Build();
 
         var service = autoFixture.Create<EligibilityValidationService>();
 

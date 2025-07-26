@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using NamesOutOfAHat2.Model.DomainModels;
 using NamesOutOfAHat2.Server.Service;
+using NamesOutOfAHat2.Test.Utility.Services;
 
 namespace NamesOutOfAHat2.Service.Tests;
 
@@ -20,14 +22,20 @@ public class OrganizerVerificationServiceTests
         Hat hat = new()
         {
             Id = hatId,
-            Organizer = organizer
+            Organizer = organizer,
+            Errors = [],
+            Name = string.Empty,
+            AdditionalInformation = string.Empty,
+            PriceRange = string.Empty,
+            Participants = []
         };
 
         OrganizerRegistration registration = new()
         {
             HatId = hatId,
             OrganizerEmail = organizer.Person.Email,
-            VerificationCode = code
+            VerificationCode = code,
+            Verified = false
         };
 
         registrationService.Register(hat, code);
@@ -54,11 +62,10 @@ public class OrganizerVerificationServiceTests
         var organizer = "joe".ToPerson().ToParticipant();
         var code = "1234";
 
-        Hat hat = new()
-        {
-            Id = Guid.NewGuid(),
-            Organizer = organizer
-        };
+        var hat = new HatBuilder()
+            .WithId(Guid.NewGuid())
+            .WithOrganizer(organizer)
+            .Build();
 
         registrationService.Register(hat, code);
 
@@ -66,7 +73,8 @@ public class OrganizerVerificationServiceTests
         {
             HatId = Guid.NewGuid(),
             OrganizerEmail = organizer.Person.Email,
-            VerificationCode = code
+            VerificationCode = code,
+            Verified = false
         };
 
         var service = new OrganizerVerificationService(memoryCache);
@@ -88,17 +96,17 @@ public class OrganizerVerificationServiceTests
         var hatId = Guid.NewGuid();
         var code = "1234";
 
-        Hat hat = new()
-        {
-            Id = hatId,
-            Organizer = "joe".ToPerson().ToParticipant()
-        };
+        var hat = new HatBuilder()
+            .WithId(hatId)
+            .WithOrganizer("joe".ToPerson().ToParticipant())
+            .Build();
 
         OrganizerRegistration registration = new()
         {
             HatId = hatId,
             OrganizerEmail = "sam".ToPerson().Email,
-            VerificationCode = code
+            VerificationCode = code,
+            Verified = false
         };
 
         registrationService.Register(hat, code);
@@ -122,17 +130,17 @@ public class OrganizerVerificationServiceTests
         var hatId = Guid.NewGuid();
         var organizer = "joe".ToPerson().ToParticipant();
 
-        Hat hat = new()
-        {
-            Id = hatId,
-            Organizer = organizer
-        };
+        var hat = new HatBuilder()
+            .WithId(hatId)
+            .WithOrganizer(organizer)
+            .Build();
 
         OrganizerRegistration registration = new()
         {
             HatId = hatId,
             OrganizerEmail = organizer.Person.Email,
-            VerificationCode = "2345"
+            VerificationCode = "2345",
+            Verified = false
         };
 
         registrationService.Register(hat, "1234");

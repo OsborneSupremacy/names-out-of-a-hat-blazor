@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using NamesOutOfAHat2.Model.DomainModels;
 using NamesOutOfAHat2.Server.Service;
+using NamesOutOfAHat2.Test.Utility.Services;
 
 namespace NamesOutOfAHat2.Service.Tests;
 
@@ -12,10 +14,9 @@ public class OrganizerRegistrationServiceTests
         // arrange
         var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-        Hat hat = new()
-        {
-            Organizer = "joe".ToPerson().ToParticipant()
-        };
+        Hat hat = new HatBuilder()
+            .WithOrganizer("joe".ToPerson().ToParticipant())
+            .Build();
 
         var service = new OrganizerRegistrationService(memoryCache);
 
@@ -37,16 +38,15 @@ public class OrganizerRegistrationServiceTests
         // arrange
         var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-        Hat hat = new()
-        {
-            Organizer = "joe".ToPerson().ToParticipant()
-        };
+        Hat hat = new HatBuilder()
+            .WithOrganizer("joe".ToPerson().ToParticipant())
+            .Build();
 
         var service = new OrganizerRegistrationService(memoryCache);
 
         // act
         service.Register(hat, "1234");
-        hat.Organizer = "sam".ToPerson().ToParticipant();
+        hat = hat with { Organizer = "sam".ToPerson().ToParticipant() };
         service.Register(hat, "5678");
 
         // assert
@@ -59,16 +59,15 @@ public class OrganizerRegistrationServiceTests
     }
 
     [Fact]
-    public async void Should_Fail_When_Not_Valid()
+    public async Task Should_Fail_When_Not_Valid()
     {
         // arrange
         var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-        Hat hat = new()
-        {
-            Id = Guid.Empty,
-            Organizer = "joe".ToPerson().ToParticipant()
-        };
+        var hat = new HatBuilder()
+            .WithId(Guid.Empty)
+            .WithOrganizer("joe".ToPerson().ToParticipant())
+            .Build();
 
         var service = new OrganizerRegistrationService(memoryCache);
 

@@ -1,60 +1,70 @@
 ﻿@page "/"
-@inject NamesOutOfAHat2.Interface.ILocalStorageService Storage
-@inject NamesOutOfAHat2.Client.Service.ClientHttpService ClientHttpService
+@inject Interface.ILocalStorageService Storage
+@inject Service.ClientHttpService ClientHttpService
 @inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
 
 @using System.Text.Json
-@using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Model.DomainModels
+@using NamesOutOfAHat2.Model.ViewModels
 @using NamesOutOfAHat2.Utility
 
 <div class="container my-5">
 
-    <GdprConsent Visible="Mode.In(Modes.Gdpr)" NextCallback="SaveGdprConsentToLocalStorage" />
+    <GdprConsent Visible="_mode.In(Modes.Gdpr)" NextCallback="SaveGdprConsentToLocalStorage" />
 
-    <SectionHeading Visible="@Mode.In(Modes.Default, Modes.Adding)" Text="Put everyone's name in the hat!" />
+    <SectionHeading Visible="@_mode.In(Modes.Default, Modes.Adding)" Text="Put everyone's name in the hat!" />
 
-    <ButtonArea Visible="Mode.In(Modes.Default)">
+    <ButtonArea Visible="_mode.In(Modes.Default)">
         <button type="button" @onclick="AddMode" class="btn btn-primary">Add a Participant</button>
     </ButtonArea>
 
-    <AddParticipant Visible="@Mode.In(Modes.Adding)" Person="Person" PersonAddedCallback="PersonAdded" CancelCallback="DefaultMode" />
+    <AddParticipant Visible="@_mode.In(Modes.Adding)" Person="_person" PersonAddedCallback="PersonAdded" CancelCallback="DefaultMode" />
 
-    <ParticipantList 
-        Visible="@(Mode.In(Modes.Default) && (Hat.Participants.Any()))" 
-        SaveCallback="Save" 
-        Hat="Hat"
+    <ParticipantList
+        Visible="@(_mode.In(Modes.Default) && (_hat.Participants.Any()))"
+        SaveCallback="Save"
+        Hat="_hat"
         NextCallback="VerificationMode"
         ShowErrorsCallback="HatErrorsMode" />
 
-    <HatErrors Visible="@Mode.In(Modes.ShowingErrors)" Hat="Hat" NextCallback="DefaultMode" />
+    <HatErrors Visible="@_mode.In(Modes.ShowingErrors)" Hat="_hat" NextCallback="DefaultMode" />
 
-    <Verification Visible="@Mode.In(Modes.Verification)" Hat="Hat" NextCallback="NextMode" PreviousCallback="DefaultMode" />
+    <Verification Visible="@_mode.In(Modes.Verification)" Hat="_hat" NextCallback="NextMode" PreviousCallback="DefaultMode" />
 
-    <OrganizerSelect Visible="@Mode.In(Modes.Organizer)" Hat="Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
+    <OrganizerSelect Visible="@_mode.In(Modes.Organizer)" Hat="_hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
 
-    <SendVerificationEmail Visible="@Mode.In(Modes.SendVerifyEmail)" Hat="Hat" NextCallback="NextMode" NextSkipStepCallback="NextModeSkipStep" PreviousCallback="PreviousMode" />
+    <SendVerificationEmail Visible="@_mode.In(Modes.SendVerifyEmail)" Hat="_hat" NextCallback="NextMode" NextSkipStepCallback="NextModeSkipStep" PreviousCallback="PreviousMode" />
 
-    <ConfirmationCodeEntry Visible="@Mode.In(Modes.ConfirmationCodeEntry)" Hat="Hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
+    <ConfirmationCodeEntry Visible="@_mode.In(Modes.ConfirmationCodeEntry)" Hat="_hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
 
-    <EmailPreview Visible="@Mode.In(Modes.EmailComposition)" Hat="Hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
+    <EmailPreview Visible="@_mode.In(Modes.EmailComposition)" Hat="_hat" NextCallback="Finalize" PreviousCallback="PreviousMode" />
 
-    <Success Visible="@Mode.In(Modes.Success)" Hat="Hat" NextCallback="NextMode" />
+    <Success Visible="@_mode.In(Modes.Success)" Hat="_hat" NextCallback="NextMode" />
 
-    <RestartOptions Visible="@Mode.In(Modes.RestartOptions)" Hat="Hat" NextCallback="DefaultMode" ResetCallback="ResetHat" />
+    <RestartOptions Visible="@_mode.In(Modes.RestartOptions)" Hat="_hat" NextCallback="DefaultMode" ResetCallback="ResetHat" />
 
-    <ErrorDisplay Visible="@Mode.In(Modes.Failure)" ErrorDetails="@ErrorDetails" NextCallback="DefaultMode" />
+    <ErrorDisplay Visible="@_mode.In(Modes.Failure)" ErrorDetails="@_errorDetails" NextCallback="DefaultMode" />
 
 </div>
 
 @code {
-    Person? Person;
+    PersonViewModel? _person;
 
-    Hat Hat = new ();
+    HatViewModel _hat = new()
+    {
+        Id = Guid.NewGuid(),
+        Organizer = ParticipantViewModels.Empty,
+        Errors = [],
+        Name = string.Empty,
+        AdditionalInformation = string.Empty,
+        PriceRange = string.Empty,
+        Participants = []
+    };
 
-    Modes Mode = Modes.Gdpr;
+    Modes _mode = Modes.Gdpr;
 
-    string ErrorDetails = default!;
+    string _errorDetails = String.Empty;
 
     enum Modes : int
     {
@@ -74,10 +84,10 @@
 
     protected override async void OnInitialized()
     {
-        Mode = Modes.Gdpr;
+        _mode = Modes.Gdpr;
         if (await TryLoadGdprConsentFromLocalStorage())
         {
-            Mode = Modes.Default;
+            _mode = Modes.Default;
             await InitializeHat();
         }
     }
@@ -87,7 +97,7 @@
         var savedHat = await TryLoadHatFromLocalStorageAsync();
         if (savedHat.success)
         {
-            Hat = savedHat.hat!;
+            _hat = savedHat.hat!;
             StateHasChanged();
         }
         else
@@ -96,44 +106,58 @@
 
     async Task ResetHat()
     {
-        Hat = new();
+        _hat = new()
+        {
+            Id = Guid.NewGuid(),
+            Errors = [],
+            Name = string.Empty,
+            Organizer = ParticipantViewModels.Empty,
+            AdditionalInformation = string.Empty,
+            PriceRange = string.Empty,
+            Participants = []
+        };
         await DefaultMode();
     }
 
     void AddMode()
     {
-        Person = new Person() { Id = System.Guid.NewGuid() };
-        Mode = Modes.Adding;
+        _person = new PersonViewModel
+        {
+            Id = Guid.NewGuid(),
+            Email = string.Empty,
+            Name = string.Empty
+        };
+        _mode = Modes.Adding;
     }
 
     async Task NextMode()
     {
-        Mode++;
+        _mode++;
         await SaveHatToLocalStorage();
     }
 
     async Task NextModeSkipStep()
     {
-        Mode++;
-        Mode++;
+        _mode++;
+        _mode++;
         await SaveHatToLocalStorage();
     }
 
     async Task PreviousMode()
     {
-        Mode--;
+        _mode--;
         await SaveHatToLocalStorage();
     }
 
     async Task DefaultMode()
     {
-        Mode = Modes.Default;
+        _mode = Modes.Default;
         await SaveHatToLocalStorage();
     }
 
     async Task VerificationMode()
     {
-        Mode = Modes.Verification;
+        _mode = Modes.Verification;
         await SaveHatToLocalStorage();
     }
 
@@ -142,7 +166,7 @@
         SwitchMode(Modes.ShowingErrors);
     }
 
-    void SwitchMode(Modes mode) => Mode = mode;
+    void SwitchMode(Modes mode) => _mode = mode;
 
     async void Save()
     {
@@ -157,14 +181,19 @@
 
     async void ParticipantRemoved(Participant participant)
     {
-        Hat = HatService.RemoveParticipant(Hat, participant);
+        _hat = HatService.RemoveParticipant(_hat, participant);
         StateHasChanged();
         await SaveHatToLocalStorage();
     }
 
-    async Task PersonAdded(Person person)
+    async Task PersonAdded(PersonViewModel person)
     {
-        Hat = HatService.AddParticipant(Hat, person);
+        _hat = HatService.AddParticipant(_hat, new Person
+        {
+            Id = person.Id,
+            Name = person.Name,
+            Email = person.Email
+        });
         await DefaultMode();
         await SaveHatToLocalStorage();
     }
@@ -172,19 +201,19 @@
     async Task SendCodeAndAdvance()
     {
         var result = await ClientHttpService
-            .SendVerificationAsync(NavigationManager, Hat);
+            .SendVerificationAsync(NavigationManager, _hat);
 
         await result
             .Match
             (
-                async success =>
+                async _ =>
                 {
                     await NextMode();
                     return true;
                 },
                 error =>
                 {
-                    ErrorDetails = error.Message;
+                    _errorDetails = error.Message;
                     SwitchMode(Modes.Failure);
                     return Task.FromResult(false);
                 }
@@ -203,14 +232,14 @@
         await InitializeHat();
     }
 
-    async Task<(bool success, Hat? hat)> TryLoadHatFromLocalStorageAsync()
+    async Task<(bool success, HatViewModel? hat)> TryLoadHatFromLocalStorageAsync()
     {
-        Hat? hat = null;
+        HatViewModel? hat = null;
         var hatJson = await Storage.GetFromLocalStorage("hat");
 
         try
         {
-            hat = JsonSerializer.Deserialize<Hat>(hatJson);
+            hat = JsonSerializer.Deserialize<HatViewModel>(hatJson);
         }
         catch
         {
@@ -227,7 +256,7 @@
 
     async Task SaveHatToLocalStorage()
     {
-        var hatJson = JsonSerializer.Serialize(Hat);
+        var hatJson = JsonSerializer.Serialize(_hat);
         await Storage.SetLocalStorage("hat", hatJson);
     }
 
@@ -235,18 +264,18 @@
     {
         await SaveHatToLocalStorage();
 
-        var result = await ClientHttpService.SendAsync(NavigationManager, Hat);
+        var result = await ClientHttpService.SendAsync(NavigationManager, _hat);
 
         result.Match
         (
-            success =>
+            _ =>
             {
                 SwitchMode(Modes.Success);
                 return true;
             },
             error =>
             {
-                ErrorDetails = error.Message;
+                _errorDetails = error.Message;
                 SwitchMode(Modes.Failure);
                 return false;
             }

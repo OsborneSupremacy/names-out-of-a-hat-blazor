@@ -1,4 +1,5 @@
 ﻿using LanguageExt.Common;
+using NamesOutOfAHat2.Model.DomainModels;
 
 namespace NamesOutOfAHat2.Client.Service;
 

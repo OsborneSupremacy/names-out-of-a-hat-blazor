@@ -4,15 +4,14 @@
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 
-@using NamesOutOfAHat2.Model
+@using NamesOutOfAHat2.Model.ViewModels
 @using NamesOutOfAHat2.Utility
-@using LanguageExt.Common
 
 @if(Visible)
 {
     @foreach (var participant in Hat.Participants)
     {
-        <ParticipantDisplay Participant="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
+        <ParticipantDisplay ParticipantViewModel="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
     }
 
     <ButtonArea>
@@ -26,7 +25,7 @@
     public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; } = default!;
+    public HatViewModel Hat { get; set; } = HatsViewModels.Empty;
 
     [Parameter, EditorRequired]
     public EventCallback SaveCallback { get; set; }
@@ -37,13 +36,13 @@
     [Parameter, EditorRequired]
     public EventCallback ShowErrorsCallback { get; set; }
 
-    async void ParticipantEdited(Participant participant)
+    async Task ParticipantEdited(ParticipantViewModel participant)
     {
         StateHasChanged();
         await SaveCallback.InvokeAsync();
     }
 
-    async void ParticipantRemoved(Participant participant)
+    async Task ParticipantRemoved(ParticipantViewModel participant)
     {
         Hat = HatService.RemoveParticipant(Hat, participant);
         StateHasChanged();
@@ -61,14 +60,20 @@
 
         if (!result.IsSuccess)
         {
-            Hat.Errors = result.GetErrors();
+            Hat = Hat with
+            {
+                Errors = result.GetErrors()
+            };
             await ShowErrorsCallback.InvokeAsync();
             return;
         }
 
         var shakeResult = HatShakerService.ShakeMultiple(Hat, 100);
 
-        Hat.Errors = shakeResult.GetErrors();
+        Hat = Hat with
+        {
+            Errors = shakeResult.GetErrors()
+        };
 
         if (!shakeResult.IsSuccess)
             await ShowErrorsCallback.InvokeAsync();

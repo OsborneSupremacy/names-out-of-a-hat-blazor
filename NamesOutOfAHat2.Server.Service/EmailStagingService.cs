@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Server.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Server.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class EmailStagingService
@@ -13,12 +15,12 @@ public class EmailStagingService
         _emailCompositionService = emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
     }
 
-    public Task<List<EmailParts>> StageEmailsAsync(Hat hat)
+    public Task<List<Invitation>> StageEmailsAsync(Hat hat)
     {
-        var emails = new List<EmailParts>();
+        var emails = new List<Invitation>();
 
-        foreach (var participant in hat.Participants ?? Enumerable.Empty<Participant>())
-            emails.Add(new EmailParts()
+        foreach (var participant in hat.Participants ?? [])
+            emails.Add(new Invitation
             {
                 RecipientEmail = participant.Person.Email,
                 Subject = _emailCompositionService.GetSubject(hat),

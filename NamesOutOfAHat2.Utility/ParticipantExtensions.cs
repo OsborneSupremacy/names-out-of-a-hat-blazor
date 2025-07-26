@@ -1,4 +1,4 @@
-﻿using NamesOutOfAHat2.Model;
+﻿using NamesOutOfAHat2.Model.DomainModels;
 
 namespace NamesOutOfAHat2.Utility;
 
@@ -16,27 +16,41 @@ public static class ParticipantExtensions
     public static string WriteDisplayName(this Participant input) =>
        !string.IsNullOrWhiteSpace(input.Person?.Name ?? string.Empty) ? input.Person!.Name : "Participant";
 
-    public static Participant ToParticipant(this Person input) => new(input);
-
-    public static Participant AddRecipient(this Participant input, Person person, bool eligible)
+    public static Participant ToParticipant(this Person input)
     {
-        input.Recipients ??= new List<Recipient>();
-        input.Recipients.Add(new Recipient()
+        return new Participant
         {
-            Person = person,
-            Eligible = eligible
-        });
-        return input;
+            Person = input,
+            PickedRecipient = Persons.Empty,
+            Recipients = []
+        };
     }
 
-    public static Participant Eligible(this Participant input, params Person[] people)
+    private static Participant AddRecipient(
+        this Participant participantIn,
+        Person person,
+        bool eligible
+        ) =>
+        participantIn with
+        {
+            Recipients = participantIn.Recipients.Concat(new List<Recipient>
+            {
+                new()
+                {
+                    Person = person,
+                    Eligible = eligible
+                }
+            }).ToList()
+        };
+
+    public static Participant AddEligibleRecipients(this Participant input, params Person[] people)
     {
         foreach (var person in people)
             input.AddRecipient(person, true);
         return input;
     }
 
-    public static Participant Ineligible(this Participant input, params Person[] people)
+    public static Participant AddIneligibleRecipients(this Participant input, params Person[] people)
     {
         foreach (var person in people)
             input.AddRecipient(person, false);

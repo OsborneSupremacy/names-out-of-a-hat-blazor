@@ -7,9 +7,4 @@
 /// service requires multiple config values, they can all be added to this dictionary
 /// without having modify the class.
 /// </summary>
-public class ConfigKeys : Dictionary<string, string>
-{
-    public ConfigKeys() : base(StringComparer.OrdinalIgnoreCase)
-    {
-    }
-}
+public class ConfigKeys() : Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

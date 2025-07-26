@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NamesOutOfAHat2.Interface;
+using NamesOutOfAHat2.Model.DomainModels;
 
 namespace NamesOutOfAHat2.Service.Tests;
 
@@ -26,17 +27,14 @@ public class ValidationServiceTests
             .Setup(x => x.ValidateList(It.IsAny<IList<Participant>>()))
             .Returns(new Result<bool>(new AggregateException(expectedErrors)));
 
-        List<Exception> errors = null;
+        List<Exception> errors = [];
 
         var service = autoFixture.Create<ValidationService>();
 
         // act
         var isSuccess = service.Validate(input)
             .Match(
-                success =>
-                {
-                    return true;
-                },
+                _ => true,
                 error =>
                 {
                     if (error is AggregateException aggregateException)
@@ -59,9 +57,7 @@ public class ValidationServiceTests
     {
         // arrange
         var autoFixture = new Fixture().AddAutoMoqCustomization();
-        IList<Participant> input = new List<Participant>();
-
-        input.AddMany(() => { return new Participant(); }, personCount);
+        var input = autoFixture.CreateMany<Participant>(personCount).ToList();
 
         autoFixture.Freeze<Mock<IComponentModelValidationService>>()
             .Setup(x => x.ValidateList(It.IsAny<IList<Participant>>()))
@@ -90,12 +86,11 @@ public class ValidationServiceTests
 
         using var serviceProvider = new ServiceCollection()
             .AddScoped(typeof(ValidationService))
-            .AddScoped<IDuplicateCheckService>(provider => new MockDuplicateCheckService(duplicatesExist))
-            .AddScoped(provider => cmvs.Object)
+            .AddScoped<IDuplicateCheckService>(_ => new MockDuplicateCheckService(duplicatesExist))
+            .AddScoped(_ => cmvs.Object)
             .BuildServiceProvider();
 
-        IList<Participant> input = new List<Participant>();
-        input.AddMany(() => { return new Participant(); }, 3);
+        var input = autoFixture.CreateMany<Participant>(3).ToList();
 
         var service = serviceProvider.GetService<ValidationService>();
 
@@ -107,9 +102,9 @@ public class ValidationServiceTests
         result.GetErrors().Count.Should().Be(expectedErrorCount);
     }
 
-    protected class MockDuplicateCheckService : IDuplicateCheckService
+    private class MockDuplicateCheckService : IDuplicateCheckService
     {
-        public bool DuplicatesExist { get; set; }
+        private bool DuplicatesExist { get; set; }
 
         public MockDuplicateCheckService(bool returnDuplicatesExist)
         {
@@ -118,7 +113,7 @@ public class ValidationServiceTests
 
         private List<ValidationException> ErrorMessages =>
             DuplicatesExist
-                ? new List<ValidationException>() { new("Duplicates exist") }
+                ? [new("Duplicates exist")]
                 : Enumerable.Empty<ValidationException>().ToList();
 
         public Result<bool> Execute(IList<Person> people)

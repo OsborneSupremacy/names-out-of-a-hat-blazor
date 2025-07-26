@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Server.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Server.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class OrganizerVerificationService
@@ -12,35 +14,31 @@ public class OrganizerVerificationService
 
     public bool CheckVerified(Guid hatId, string organizerEmail)
     {
-        if (!_memoryCache.TryGetValue(hatId, out OrganizerRegistration registrationOut))
+        if (!_memoryCache.TryGetValue(hatId, out OrganizerRegistration? registrationOut))
             return false;
 
         // email address doesn't match
-        return registrationOut.OrganizerEmail.ContentEquals(organizerEmail)
+        return registrationOut!.OrganizerEmail.ContentEquals(organizerEmail)
             && registrationOut.Verified;
     }
 
     public bool CheckVerified(OrganizerRegistration registrationIn)
     {
-        if (registrationIn is null) return false;
-
-        if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
+        if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration? registrationOut))
             return false;
 
         // email address doesn't match
-        return (registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail)
+        return (registrationOut!.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail)
             && registrationOut.Verified);
     }
 
     public bool Verify(OrganizerRegistration registrationIn)
     {
-        if (registrationIn is null) return false;
-
-        if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration registrationOut))
+        if (!_memoryCache.TryGetValue(registrationIn.HatId, out OrganizerRegistration? registrationOut))
             return false;
 
         // email address doesn't match
-        if (!registrationOut.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
+        if (!registrationOut!.OrganizerEmail.ContentEquals(registrationIn.OrganizerEmail))
             return false;
 
         // code doesn't match
@@ -50,7 +48,8 @@ public class OrganizerVerificationService
         var cacheEntryOptions = new MemoryCacheEntryOptions()
             .SetSlidingExpiration(TimeSpan.FromDays(7));
 
-        registrationOut.Verified = true;
+        registrationOut = registrationOut with { Verified = true, };
+
         _memoryCache.Set(registrationIn.HatId, registrationOut, cacheEntryOptions);
 
         return true;

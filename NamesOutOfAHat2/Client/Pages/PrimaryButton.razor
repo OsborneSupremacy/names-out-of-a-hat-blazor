@@ -1,5 +1,5 @@
 ﻿<div aria-label="@Text" @onclick="Clicked" class="btn btn-primary btn-lg px-4">
-    @if(processing)
+    @if(_processing)
     {
         <div class="spinner-border spinner-border-sm" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -16,20 +16,20 @@
     [Parameter, EditorRequired]
     public string Text { get; set; }
 
-    private bool processing;
+    private bool _processing;
 
     protected override async Task OnInitializedAsync()
     {
-        processing = false;
+        _processing = false;
     }
 
     protected async Task Clicked()
     {
-        if (processing) return;
-        processing = true;
+        if (_processing) return;
+        _processing = true;
         await Task.Delay(1000);
         await ClickedCallback.InvokeAsync();
-        processing = false;
+        _processing = false;
     }
 
     [Parameter, EditorRequired]

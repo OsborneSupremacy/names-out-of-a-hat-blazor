@@ -1,4 +1,4 @@
-﻿@using NamesOutOfAHat2.Model
+﻿@using NamesOutOfAHat2.Model.DomainModels
 @using NamesOutOfAHat2.Utility
 
 @inject NavigationManager NavigationManager
@@ -46,12 +46,12 @@
 
         await result
             .Match(
-                async success =>
+                async _ =>
                 { 
                     await NextCallback.InvokeAsync();
                     return true;
                 },
-                async error =>
+                async _ =>
                 {
                     await Task.Delay(3000);
                     _invalidCode = true;

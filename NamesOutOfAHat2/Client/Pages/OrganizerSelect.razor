@@ -1,4 +1,4 @@
-﻿@using NamesOutOfAHat2.Model
+﻿@using NamesOutOfAHat2.Model.DomainModels
 @using NamesOutOfAHat2.Utility
 
 @if(Visible)
@@ -45,8 +45,12 @@
         return "alert alert-secondary";
     }
 
-    async void SetOrganizer(Participant participant)
+    Task SetOrganizer(Participant participant)
     {
-        Hat.Organizer = participant;
+        Hat = Hat with
+        {
+            Organizer = participant
+        };
+        return Task.CompletedTask;
     }
 }

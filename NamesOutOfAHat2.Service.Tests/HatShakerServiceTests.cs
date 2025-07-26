@@ -1,4 +1,7 @@
-﻿namespace NamesOutOfAHat2.Service.Tests;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+using NamesOutOfAHat2.Test.Utility.Services;
+
+namespace NamesOutOfAHat2.Service.Tests;
 
 [ExcludeFromCodeCoverage]
 public class HatShakerServiceTests
@@ -9,23 +12,25 @@ public class HatShakerServiceTests
         var sue = "sue".ToPerson();
         var sam = "sam".ToPerson();
         var andy = "andy".ToPerson();
+        // joe can only gift sue, but sue cannot gift joe
 
-        var hat = new Hat()
-            .AddParticipant(joe.ToParticipant()
-                .Eligible(sue, sam, andy)
+        var hat = new HatBuilder()
+            .WithParticipant(joe.ToParticipant()
+                .AddEligibleRecipients(sue, sam, andy)
             )
-            .AddParticipant(sue.ToParticipant()
-                .Eligible(joe)
-                .Ineligible(sam, andy)
+            .WithParticipant(sue.ToParticipant()
+                .AddEligibleRecipients(joe)
+                .AddIneligibleRecipients(sam, andy)
             )
-            .AddParticipant(sam.ToParticipant()
-                .Eligible(joe)
-                .Ineligible(sue, andy)
+            .WithParticipant(sam.ToParticipant()
+                .AddEligibleRecipients(joe)
+                .AddIneligibleRecipients(sue, andy)
             )
-            .AddParticipant(andy.ToParticipant()
-                .Eligible(joe)
-                .Ineligible(sue, sam)
-            );
+            .WithParticipant(andy.ToParticipant()
+                .AddEligibleRecipients(joe)
+                .AddIneligibleRecipients(sue, sam)
+            )
+            .Build();
 
         return hat;
     }
@@ -46,45 +51,46 @@ public class HatShakerServiceTests
         // If not assigned to that one possible participant, will fail
         var kilo = "kilo".ToPerson();
 
-        var hat = new Hat()
-            .AddParticipant(alpha.ToParticipant()
-                .Eligible(beta, charlie, delta, echo, foxtrot, golf, hotel, india, kilo)
+        var hat = new HatBuilder()
+            .WithParticipant(alpha.ToParticipant()
+                .AddEligibleRecipients(beta, charlie, delta, echo, foxtrot, golf, hotel, india, kilo)
             )
-            .AddParticipant(beta.ToParticipant()
-                .Eligible(alpha, charlie, delta, echo, foxtrot, golf, hotel, india)
-                .Ineligible(kilo)
+            .WithParticipant(beta.ToParticipant()
+                .AddEligibleRecipients(alpha, charlie, delta, echo, foxtrot, golf, hotel, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(charlie.ToParticipant()
-                .Eligible(alpha, beta, delta, echo, foxtrot, golf, hotel, india)
-                .Ineligible(kilo)
+            .WithParticipant(charlie.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, delta, echo, foxtrot, golf, hotel, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(delta.ToParticipant()
-                .Eligible(alpha, beta, charlie, echo, foxtrot, golf, hotel, india)
-                .Ineligible(kilo)
+            .WithParticipant(delta.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, echo, foxtrot, golf, hotel, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(echo.ToParticipant()
-                .Eligible(alpha, beta, charlie, delta, foxtrot, golf, hotel, india)
-                .Ineligible(kilo)
+            .WithParticipant(echo.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, delta, foxtrot, golf, hotel, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(foxtrot.ToParticipant()
-                .Eligible(alpha, beta, charlie, delta, echo, golf, hotel, india)
-                .Ineligible(kilo)
+            .WithParticipant(foxtrot.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, delta, echo, golf, hotel, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(golf.ToParticipant()
-                .Eligible(alpha, beta, charlie, delta, echo, foxtrot, hotel, india)
-                .Ineligible(kilo)
+            .WithParticipant(golf.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, hotel, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(hotel.ToParticipant()
-                .Eligible(alpha, beta, charlie, delta, echo, foxtrot, golf, india)
-                .Ineligible(kilo)
+            .WithParticipant(hotel.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, golf, india)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(india.ToParticipant()
-                .Eligible(alpha, beta, charlie, delta, echo, foxtrot, golf, hotel)
-                .Ineligible(kilo)
+            .WithParticipant(india.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, golf, hotel)
+                .AddIneligibleRecipients(kilo)
             )
-            .AddParticipant(kilo.ToParticipant()
-                .Eligible(alpha, beta, charlie, delta, echo, foxtrot, hotel, india, golf)
-            );
+            .WithParticipant(kilo.ToParticipant()
+                .AddEligibleRecipients(alpha, beta, charlie, delta, echo, foxtrot, hotel, india, golf)
+            )
+            .Build();
 
         return hat;
     }
@@ -180,17 +186,17 @@ public class HatShakerServiceTests
         var sam = "sam".ToPerson();
 
         var hat = new Hat()
-            .AddParticipant(joe.ToParticipant()
-                .Eligible(sue)
-                .Ineligible(sam)
+            .WithParticipant(joe.ToParticipant()
+                .AddEligibleRecipients(sue)
+                .AddIneligibleRecipients(sam)
             )
-            .AddParticipant(sue.ToParticipant()
-                .Eligible(sam)
-                .Ineligible(joe)
+            .WithParticipant(sue.ToParticipant()
+                .AddEligibleRecipients(sam)
+                .AddIneligibleRecipients(joe)
             )
-            .AddParticipant(sam.ToParticipant()
-                .Eligible(joe)
-                .Ineligible(sue)
+            .WithParticipant(sam.ToParticipant()
+                .AddEligibleRecipients(joe)
+                .AddIneligibleRecipients(sue)
             );
 
         var service = autoFixture.Create<HatShakerService>();

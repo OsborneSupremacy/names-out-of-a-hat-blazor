@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class VerificationEmailStagingService
@@ -10,15 +12,15 @@ public class VerificationEmailStagingService
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
     }
 
-    public Task<EmailParts> StageEmailAsync(Hat hat, string code)
+    public Task<Invitation> StageEmailAsync(Hat hat, string code)
     {
-        List<string> e = new()
-    {
-        $"Dear {hat.Organizer?.Person.Name},",
-        "Your 🎩 Names Out Of A Hat 🎩 verification code is:",
-        $"<b>{code}</b>",
-        $"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>"
-    };
+        List<string> e =
+        [
+            $"Dear {hat.Organizer?.Person.Name},",
+            "Your 🎩 Names Out Of A Hat 🎩 verification code is:",
+            $"<b>{code}</b>",
+            $"-<a href=\"{_settings.SiteUrl}\">Names Out Of A Hat</a>"
+        ];
 
         StringBuilder s = new();
         foreach (var i in e)
@@ -27,7 +29,7 @@ public class VerificationEmailStagingService
             s.AppendLine("<br /><br />");
         }
 
-        return Task.FromResult(new EmailParts()
+        return Task.FromResult(new Invitation()
         {
             RecipientEmail = hat.Organizer?.Person?.Email ?? string.Empty,
             Subject = "🎩 Names Out Of A Hat 🎩 Verification Code",

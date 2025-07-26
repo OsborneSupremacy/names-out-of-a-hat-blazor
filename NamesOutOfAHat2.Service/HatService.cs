@@ -1,76 +1,86 @@
-﻿namespace NamesOutOfAHat2.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class HatService
 {
-    public Hat AddParticipant(Hat hat, Person person)
+    public Hat AddParticipant(Hat hatIn, Person person)
     {
-        hat.Participants ??= new List<Participant>();
-
         var newGiverRecipients = new List<Recipient>();
 
         // make person a recipient for all existing participants
-        foreach (Participant ep in hat.Participants)
+        foreach (Participant participant in hatIn.Participants)
         {
             // new person is recipient for existing participant
-            ep.Eligible(person);
+            participant.AddEligibleRecipients(person);
             // existing participant is recipient for new person
-            newGiverRecipients.Add(new Recipient(ep.Person, true));
+            newGiverRecipients.Add(new Recipient
+            {
+                Person = participant.Person,
+                Eligible = true
+            });
         }
 
-        return hat
+        return hatIn
             .AddParticipant(person.ToParticipant(newGiverRecipients));
     }
 
-    public Hat RemoveParticipant(Hat hat, Participant participant)
+    public Hat RemoveParticipant(Hat hatIn, Participant participantIn)
     {
-        var id = participant.Person.Id;
+        var id = participantIn.Person.Id;
 
-        var participants = hat.Participants?.ToList() ?? Enumerable.Empty<Participant>().ToList();
+        var participantsIn = hatIn.Participants;
+        var participantsOut = new List<Participant>();
 
-        foreach (var parcipant in participants)
-        {
-            var recipients = parcipant.Recipients.ToList();
-            recipients.RemoveAll(x => x.Person.Id == id);
-            parcipant.Recipients = recipients;
-        }
-
-        participants.RemoveAll(x => x.Person.Id == id);
-        hat.Participants = participants;
+        foreach (var participant in participantsIn.Where(p => p.Person.Id != id))
+            participantsOut.Add(participant with
+            {
+                Recipients = participant.Recipients.Where(r => r.Person.Id != id).ToList()
+            });
 
         // if person being removed is organizer, remove the organizer
-        if ((hat.Organizer?.Person.Id ?? Guid.Empty) == id)
-            hat.Organizer = null;
+        Participant? organizerOut = hatIn.Organizer?.Person.Id == id ? null : hatIn.Organizer;
 
-        return hat;
+        return hatIn with
+        {
+            Organizer = organizerOut,
+            Participants = participantsOut
+        };
     }
 
     /// <summary>
-    /// the hat from local storage isn't exactly the same as the hat that was saved
+    /// the hatIn from local storage isn't exactly the same as the hatIn that was saved
     /// because through serialization / deserialization, participant people are no
     /// longer the same objects as recipient people.
     /// To get them to be the same object, rebuild recipient lists
     /// </summary>
     /// <returns></returns>
-    public Hat ReconstructParticipants(Hat hat)
+    public Hat ReconstructParticipants(Hat hatIn)
     {
-        var participantPeople = hat!.Participants!.ToDictionary(x => x.Person.Id, x => x.Person);
+        var participantPeople = hatIn!.Participants!.ToDictionary(x => x.Person.Id, x => x.Person);
 
-        foreach (var partcipant in hat!.Participants!)
+        var participantsOut = new List<Participant>();
+
+        foreach (var participant in hatIn!.Participants!)
         {
-            var newRecips = new List<Recipient>();
+            var recipientsOut = new List<Recipient>();
 
-            foreach (var oldRecip in partcipant.Recipients)
+            foreach (var recipientIn in participant.Recipients)
             {
                 // old recipient found
-                if (participantPeople.TryGetValue(oldRecip.Person.Id, out var newRecip))
-                    newRecips.Add(new Recipient(newRecip, oldRecip.Eligible));
+                if (participantPeople.TryGetValue(recipientIn.Person.Id, out var recipientOut))
+                    recipientsOut.Add(new Recipient
+                    {
+                        Person = recipientOut,
+                        Eligible = recipientIn.Eligible
+                    });
                 // any old recipients not found in list of people will be lost
             }
 
-            partcipant.Recipients = newRecips;
+            participantsOut.Add(participant with { Recipients = recipientsOut });
         }
 
-        return hat;
+        return hatIn with { Participants = participantsOut };
     }
 }

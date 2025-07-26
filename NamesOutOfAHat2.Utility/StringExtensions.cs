@@ -41,7 +41,8 @@ public static class StringExtensions
         return defaultValue;
     }
 
-    private static readonly List<string> _personEmojis = new() {
+    private static readonly List<string> PersonEmojis =
+    [
         "😀",
         "😁",
         "😆",
@@ -62,11 +63,11 @@ public static class StringExtensions
         "🌝",
         "🌞",
         "😎"
-    };
+    ];
 
     public static string GetPersonEmojiFor(this string input)
     {
         Randomizer.Seed = new Random(input.GetHashCode() + input[..1].GetHashCode());
-        return new Faker().PickRandom(_personEmojis);
+        return new Faker().PickRandom(PersonEmojis);
     }
 }

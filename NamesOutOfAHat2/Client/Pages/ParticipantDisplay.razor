@@ -1,20 +1,20 @@
-﻿@using NamesOutOfAHat2.Model
+﻿@using NamesOutOfAHat2.Model.ViewModels
 @using NamesOutOfAHat2.Utility
 
 @*Display Mode*@
-@if(Mode == Modes.Default)
+@if(_mode == Modes.Default)
 {
     <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
-        <h5 class="card-header bg-info">@Participant.Person.Name.GetPersonEmojiFor() @Participant.Person.Name</h5>
+        <h5 class="card-header bg-info">@ParticipantViewModel.Person.Name.GetPersonEmojiFor() @ParticipantViewModel.Person.Name</h5>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item">📧 @Participant.Person.Email</li>
+            <li class="list-group-item">📧 @ParticipantViewModel.Person.Email</li>
             <li class="list-group-item">
-                <label class="form-label"><b>🎁 Eligible Recipients</b></label>
-                @foreach(var recipient in Participant.Recipients)
+                <label class="form-label"><b>🎁 AddEligibleRecipients Recipients</b></label>
+                @foreach(var recipient in ParticipantViewModel.Recipients)
                 {
                     <div class="form-check" style="text-align: left">
-                        <input class="form-check-input" id='@(Participant.Person.Id + "_" + recipient.Person.Id)' type="checkbox" @bind="recipient.Eligible" />
-                        <label class="form-check-label" for='@(Participant.Person.Id + "_" + recipient.Person.Id)' >@recipient.Person.Name</label>
+                        <input class="form-check-input" id='@(ParticipantViewModel.Person.Id + "_" + recipient.Person.Id)' type="checkbox" @bind="recipient.Eligible" />
+                        <label class="form-check-label" for='@(ParticipantViewModel.Person.Id + "_" + recipient.Person.Id)' >@recipient.Person.Name</label>
                     </div>
                 }
             </li>
@@ -27,19 +27,19 @@
 }
 
 @*Edit Mode*@
-@if(Mode == Modes.Editing)
+@if(_mode == Modes.Editing)
 {
     <div class="card mb-3" style="width: 18rem;display: inline-flex;margin: 10px;">
-        <h5 class="card-header bg-info">@Participant.WriteDisplayName()</h5>
+        <h5 class="card-header bg-info">@ParticipantViewModel.WriteDisplayName()</h5>
         <div class="card-body">
-            <EditForm Model="@Participant.Person" OnValidSubmit="@CommitParticipantEditAsync">
+            <EditForm Model="@ParticipantViewModel.Person" OnValidSubmit="@CommitParticipantEditAsync">
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" @bind-value="Participant.Person.Name" />
-                    <label for="Name">Name</label>
+                    <input id="PersonName" type="text" class="form-control" @bind-value="ParticipantViewModel.Person.Name" />
+                    <label for="PersonName">Name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="email" class="form-control" @bind-value="Participant.Person.Email" />
-                    <label for="Email">Email</label>
+                    <input id="PersonEmail" type="email" class="form-control" @bind-value="ParticipantViewModel.Person.Email" />
+                    <label for="PersonEmail">Email</label>
                 </div>
                 <DataAnnotationsValidator />
                 <ValidationSummary />
@@ -51,7 +51,7 @@
 
 @code {
 
-    Modes Mode = Modes.Default;
+    Modes _mode = Modes.Default;
 
     enum Modes
     {
@@ -59,27 +59,27 @@
         Editing
     }
 
-    void Edit() => Mode = Modes.Editing;
+    void Edit() => _mode = Modes.Editing;
 
     public async Task Remove()
     {
-        await ParticipantRemovedCallback.InvokeAsync(Participant);
+        await ParticipantRemovedCallback.InvokeAsync(ParticipantViewModel);
     }
 
-    void Display() => Mode = Modes.Default;
+    void Display() => _mode = Modes.Default;
 
     [Parameter, EditorRequired]
-    public Participant Participant { get; set; }
+    public ParticipantViewModel ParticipantViewModel { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<Participant> ParticpantEditedCallback { get; set; }
+    public EventCallback<ParticipantViewModel> ParticpantEditedCallback { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<Participant> ParticipantRemovedCallback { get; set; }
+    public EventCallback<ParticipantViewModel> ParticipantRemovedCallback { get; set; }
 
     public async Task CommitParticipantEditAsync()
     {
-        await ParticpantEditedCallback.InvokeAsync(Participant);
+        await ParticpantEditedCallback.InvokeAsync(ParticipantViewModel);
         Display();
     }
 

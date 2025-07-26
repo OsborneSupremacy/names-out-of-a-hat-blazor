@@ -1,15 +1,14 @@
-﻿using NamesOutOfAHat2.Model;
+﻿using NamesOutOfAHat2.Model.DomainModels;
 
 namespace NamesOutOfAHat2.Utility;
 
 public static class HatExtensions
 {
-    public static Hat AddParticipant(this Hat input, Participant participant)
-    {
-        input.Participants ??= new List<Participant>();
-        input.Participants.Add(participant);
-        return input;
-    }
+    public static Hat AddParticipant(this Hat hatIn, Participant participant) =>
+        hatIn with
+        {
+            Participants = hatIn.Participants.Concat([participant]).ToList(),
+        };
 
     public static OrganizerRegistration ToRegistration(this Hat input, string code) =>
         new()

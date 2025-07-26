@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class EmailCompositionService

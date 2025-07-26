@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using Bogus;
-using LanguageExt;
+using NamesOutOfAHat2.Model.DomainModels;
 using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace NamesOutOfAHat2.Service;
@@ -18,7 +18,7 @@ public class HatShakerService
         return ShakeMultiple(hat, randomSeeds);
     }
 
-    public Result<Hat> ShakeMultiple(Hat hat, List<int> randomSeeds)
+    private Result<Hat> ShakeMultiple(Hat hat, List<int> randomSeeds)
     {
         var hatOut = new Result<Hat>();
 
@@ -35,41 +35,50 @@ public class HatShakerService
         return hatOut;
     }
 
-    public Result<Hat> Shake(Hat hat, int randomSeed)
+    public Result<Hat> Shake(Hat hatIn, int randomSeed)
     {
         Randomizer.Seed = new Random(randomSeed);
         var faker = new Faker();
 
-        var participants = hat.Participants.ToList();
+        var participantsIn = hatIn.Participants
+            .Select(p => p with { PickedRecipient = null }) // clear any previous picks
+            .ToList();
+
+        var participantsOut = new List<Participant>();
+
         var pickedList = new System.Collections.Generic.HashSet<Guid>();
 
         var errors = new List<ValidationException>();
 
-        // clear all existing picked recipients
-        participants.ForEach(x => x.PickedRecipient = null);
-
-        for (int x = 1; x <= participants.Count; x++)
+        for (int x = 1; x <= participantsIn.Count; x++)
         {
-            var participant = faker.PickRandom(participants.Where(x => x.PickedRecipient is null));
-            var eligibleRecipients = participant.Recipients
-                .Where(x => x.Eligible)
-                .Where(x => !pickedList.Contains(x.Person.Id))
+            var participantIn = faker.PickRandom(participantsIn.Where(p => p.PickedRecipient is null));
+            var eligibleRecipients = participantIn.Recipients
+                .Where(r => r.Eligible)
+                .Where(r => !pickedList.Contains(r.Person.Id))
                 .ToList();
 
             if (!eligibleRecipients.Any())
             {
-                errors.Add(new($"Could not find an eligible recipient for {participant.Person.Name} that was not already taken"));
+                errors.Add(new($"Could not find an eligible recipient for {participantIn.Person.Name} that was not already taken"));
                 break;
             }
 
-            participant.PickedRecipient = faker.PickRandom(eligibleRecipients).Person;
-            pickedList.Add(participant.PickedRecipient.Id);
+            var participantOut = participantIn with
+            {
+                PickedRecipient = faker.PickRandom(eligibleRecipients).Person
+            };
+
+            participantsOut.Add(participantOut);
+            pickedList.Add(participantOut.PickedRecipient.Id);
         }
 
         if (!errors.Any())
-            return hat;
+            return hatIn with
+            {
+                Participants = participantsOut
+            };
 
-        participants.ForEach(x => x.PickedRecipient = null);
         return new Result<Hat>(new AggregateException(errors));
     }
 }

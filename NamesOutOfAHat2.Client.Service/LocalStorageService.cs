@@ -1,4 +1,5 @@
-﻿using blazored = Blazored.LocalStorage;
+﻿// ReSharper disable once IdentifierTypo
+using Blazored1 = Blazored.LocalStorage;
 
 namespace NamesOutOfAHat2.Client.Service;
 
@@ -6,15 +7,15 @@ namespace NamesOutOfAHat2.Client.Service;
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class LocalStorageService : Interface.ILocalStorageService
 {
-    private readonly blazored.ILocalStorageService _storage;
+    private readonly Blazored1.ILocalStorageService _storage;
 
-    public LocalStorageService(blazored.ILocalStorageService storage)
+    public LocalStorageService(Blazored1.ILocalStorageService storage)
     {
         _storage = storage;
     }
 
     public async Task<string> GetFromLocalStorage(string key) =>
-        await _storage.GetItemAsStringAsync(key);
+        (await _storage.GetItemAsStringAsync(key))!;
 
     public async Task SetLocalStorage(string key, string value) =>
         await _storage.SetItemAsStringAsync(key, value);

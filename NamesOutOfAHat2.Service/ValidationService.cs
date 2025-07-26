@@ -1,9 +1,11 @@
-﻿namespace NamesOutOfAHat2.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class ValidationService
 {
-    private const int _max = 30;
+    private const int Max = 30;
 
     private readonly IComponentModelValidationService _componentModelValidationService;
 
@@ -34,7 +36,7 @@ public class ValidationService
             0 => (false, "A gift exchange like this needs at least three people"),
             1 => (false, "One person makes for a lonely gift exchange. Add at least two more people."),
             2 => (false, "If your gift exchange has exactly two people, they're going to get each other's name. No reason to pick names out of a hat! Add at least one more person."),
-            > _max => (false, $"{_max} people is the maximum. How did this get past frontend validation? Are you trying to hack this app?"),
+            > Max => (false, $"{Max} people is the maximum. How did this get past frontend validation? Are you trying to hack this app?"),
             _ => (true, string.Empty)
         };
 

@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Server.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Server.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class OrganizerRegistrationService

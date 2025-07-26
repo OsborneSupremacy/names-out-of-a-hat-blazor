@@ -1,4 +1,5 @@
-﻿using NamesOutOfAHat2.Server.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+using NamesOutOfAHat2.Server.Service;
 
 namespace NamesOutOfAHat2.Service.Tests;
 
@@ -8,7 +9,7 @@ public class SendGridEmailServiceTests
 #pragma warning disable xUnit1004 // Test methods should not be skipped
     [Fact(Skip = "Not a permanent test")]
 #pragma warning restore xUnit1004 // Test methods should not be skipped
-    public async void SentAsync_Should_Work()
+    public async Task SendAsync_Should_Work()
     {
         // arrange
         var settings = new Settings() { SenderEmail = "nw@namesoutofahat.com", SendEmails = true };
@@ -19,7 +20,7 @@ public class SendGridEmailServiceTests
     };
 
 
-        var emailParts = new EmailParts()
+        var emailParts = new Invitation()
         {
             RecipientEmail = "osborne.ben@gmail.com",
             Subject = "Test Sendgrid Email",

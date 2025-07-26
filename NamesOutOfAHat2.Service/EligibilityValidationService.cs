@@ -1,4 +1,6 @@
 ﻿
+using NamesOutOfAHat2.Model.DomainModels;
+
 namespace NamesOutOfAHat2.Service;
 
 [ServiceLifetime(ServiceLifetime.Scoped)]

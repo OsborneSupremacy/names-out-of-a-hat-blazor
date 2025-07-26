@@ -1,5 +1,4 @@
-﻿@using NamesOutOfAHat2.Model
-
+﻿@using NamesOutOfAHat2.Model.ViewModels
 @inject NavigationManager NavigationManager
 @inject NamesOutOfAHat2.Service.EmailCompositionService EmailCompositionService;
 
@@ -34,7 +33,7 @@
     public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; } = default!;
+    public HatViewModel Hat { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }

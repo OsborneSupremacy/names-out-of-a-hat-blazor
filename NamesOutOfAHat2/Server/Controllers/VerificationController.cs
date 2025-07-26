@@ -49,7 +49,7 @@ public class VerificationController : ControllerBase
         return (await emailService.SendAsync(email))
             .Match<IActionResult>
             (
-                success => new OkObjectResult(true),
+                _ => new OkObjectResult(true),
                 error => new BadRequestObjectResult(error)
             );
     }

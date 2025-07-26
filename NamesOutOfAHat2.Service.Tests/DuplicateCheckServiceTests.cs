@@ -1,4 +1,7 @@
-﻿namespace NamesOutOfAHat2.Service.Tests;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+using NamesOutOfAHat2.Test.Utility.Services;
+
+namespace NamesOutOfAHat2.Service.Tests;
 
 [ExcludeFromCodeCoverage]
 public class DuplicateCheckServiceTests
@@ -7,15 +10,15 @@ public class DuplicateCheckServiceTests
     public void NameDuplicateCheckService_Should_Find_Duplicates()
     {
         // arrange
-        var input = new List<Person>()
-    {
-        new Person() { Name = "Joe" },
-        new Person() { Name = "joe" },
-        new Person() { Name = "Sue" },
-        new Person() { Name = "Sue  " },
-        new Person() { Name = "Steve" },
-        new Person() { Name = "Stephen" }
-    };
+        var input = new List<Person>
+        {
+            "Joe".ToPerson(),
+            "joe".ToPerson(),
+            "Sue".ToPerson(),
+            "Sue  ".ToPerson(),
+            "Steve".ToPerson(),
+            "Stephen".ToPerson()
+        };
 
         var service = new NameDuplicateCheckService();
 
@@ -33,14 +36,14 @@ public class DuplicateCheckServiceTests
     {
         // arrange
         var input = new List<Person>()
-    {
-        new Person() { Name = "Joe" },
-        new Person() { Name = "Joseph" },
-        new Person() { Name = "Sue" },
-        new Person() { Name = "Susan" },
-        new Person() { Name = "Steve" },
-        new Person() { Name = "Stephen" }
-    };
+        {
+            "Joe".ToPerson(),
+            "Joseph".ToPerson(),
+            "Sue".ToPerson(),
+            "Susan".ToPerson(),
+            "Steve".ToPerson(),
+            "Stephen".ToPerson()
+        };
 
         var service = new NameDuplicateCheckService();
 
@@ -56,14 +59,14 @@ public class DuplicateCheckServiceTests
     {
         // arrange
         var input = new List<Person>()
-    {
-        new Person() { Email = "Joe@gmail.com" },
-        new Person() { Email = "Joe@gmail.com" },
-        new Person() { Email = "Sue@gmail.com" },
-        new Person() { Email = "Sue@gmail.com  " },
-        new Person() { Email = "Steve@gmail.com" },
-        new Person() { Email = "Stephen@gmail.com" }
-    };
+        {
+            new PersonBuilder().WithEmail("Joe@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Joe@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Sue@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Sue@gmail.com  ").Build(),
+            new PersonBuilder().WithEmail("Steve@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Stephen@gmail.com").Build()
+        };
 
         var service = new EmailDuplicateCheckService();
 
@@ -80,29 +83,21 @@ public class DuplicateCheckServiceTests
     {
         // arrange
         var input = new List<Person>()
-    {
-        new Person() { Email = "Joe1@gmail.com" },
-        new Person() { Email = "Joe2@gmail.com" },
-        new Person() { Email = "Sue1@gmail.com" },
-        new Person() { Email = "Sue2@gmail.com  " },
-        new Person() { Email = "Steve@gmail.com" },
-        new Person() { Email = "Stephen@gmail.com" }
-    };
-
+        {
+            new PersonBuilder().WithEmail("Joe1@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Joe2@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Sue1@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Sue2@gmail.com  ").Build(),
+            new PersonBuilder().WithEmail("Steve@gmail.com").Build(),
+            new PersonBuilder().WithEmail("Stephen@gmail.com").Build()
+        };
         var service = new EmailDuplicateCheckService();
 
         // act
         var isSuccess = service.Execute(input)
             .Match(
-                success =>
-                {
-                    return true;
-                },
-                error =>
-                {
-                    return false;
-                }
-            );
+                _ => true,
+                _ => false);
 
         // assert
         isSuccess.Should().BeTrue();
@@ -116,14 +111,14 @@ public class DuplicateCheckServiceTests
 
         // arrange
         var input = new List<Person>()
-    {
-        new Person() { Id = guid1 },
-        new Person() { Id = guid1 },
-        new Person() { Id = guid1 },
-        new Person() { Id = guid2 },
-        new Person() { Id = guid2 },
-        new Person() { Id = guid2 }
-    };
+        {
+            new PersonBuilder().WithId(guid1).Build(),
+            new PersonBuilder().WithId(guid1).Build(),
+            new PersonBuilder().WithId(guid1).Build(),
+            new PersonBuilder().WithId(guid2).Build(),
+            new PersonBuilder().WithId(guid2).Build(),
+            new PersonBuilder().WithId(guid2).Build()
+        };
 
         var service = new IdDuplicateCheckService();
         List<Exception> errors = null;
@@ -131,7 +126,7 @@ public class DuplicateCheckServiceTests
         // act
         var isSuccess = service.Execute(input)
             .Match(
-                success =>
+                _ =>
                 {
                     return true;
                 },
@@ -153,14 +148,14 @@ public class DuplicateCheckServiceTests
     {
         // arrange
         var input = new List<Person>()
-    {
-        new Person() { Id = Guid.NewGuid() },
-        new Person() { Id = Guid.NewGuid() },
-        new Person() { Id = Guid.NewGuid() },
-        new Person() { Id = Guid.NewGuid() },
-        new Person() { Id = Guid.NewGuid() },
-        new Person() { Id = Guid.NewGuid() }
-    };
+        {
+            new PersonBuilder().WithId(Guid.NewGuid()).Build(),
+            new PersonBuilder().WithId(Guid.NewGuid()).Build(),
+            new PersonBuilder().WithId(Guid.NewGuid()).Build(),
+            new PersonBuilder().WithId(Guid.NewGuid()).Build(),
+            new PersonBuilder().WithId(Guid.NewGuid()).Build(),
+            new PersonBuilder().WithId(Guid.NewGuid()).Build()
+        };
 
         var service = new IdDuplicateCheckService();
 

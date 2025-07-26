@@ -1,5 +1,5 @@
 ﻿using LanguageExt.Common;
-using NamesOutOfAHat2.Model;
+using NamesOutOfAHat2.Model.DomainModels;
 
 namespace NamesOutOfAHat2.Interface;
 

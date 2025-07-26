@@ -35,10 +35,7 @@ public class EmailController : ControllerBase
         foreach(var email in emails)
             _ = (await emailService.SendAsync(email))
                 .Match(
-                    result =>
-                    {
-                        return true;
-                    },
+                    _ => true,
                     error =>
                     {
                         emailErrors.Add(error.Message);

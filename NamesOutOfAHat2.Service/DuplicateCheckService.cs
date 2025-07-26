@@ -1,4 +1,6 @@
-﻿namespace NamesOutOfAHat2.Service;
+﻿using NamesOutOfAHat2.Model.DomainModels;
+
+namespace NamesOutOfAHat2.Service;
 
 public abstract class DuplicateCheckService
 {
@@ -28,15 +30,15 @@ public abstract class DuplicateCheckService
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class NameDuplicateCheckService : DuplicateCheckService, IDuplicateCheckService
 {
-    protected static readonly Func<IList<Person>, IEnumerable<string>> _nameSelector = (IList<Person> people) =>
+    protected static readonly Func<IList<Person>, IEnumerable<string>> NameSelector = (IList<Person> people) =>
         people.Select(x => x.Name.TrimNullSafe());
 
-    protected static readonly Func<Person, string, bool> _nameEquals = (Person person, string value) =>
+    protected static readonly Func<Person, string, bool> NameEquals = (Person person, string value) =>
         person.Name.ContentEquals(value);
 
     public Result<bool> Execute(IList<Person> people)
     {
-        var result = ValidateNoDuplicates(people, _nameSelector, _nameEquals);
+        var result = ValidateNoDuplicates(people, NameSelector, NameEquals);
         if (result.IsSuccess) return true;
 
         var errors = result
@@ -54,15 +56,15 @@ public class NameDuplicateCheckService : DuplicateCheckService, IDuplicateCheckS
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class EmailDuplicateCheckService : DuplicateCheckService, IDuplicateCheckService
 {
-    protected static readonly Func<IList<Person>, IEnumerable<string>> _emailSelector = (IList<Person> people) =>
+    private static readonly Func<IList<Person>, IEnumerable<string>> EmailSelector = (IList<Person> people) =>
         people.Select(x => x.Email.TrimNullSafe());
 
-    protected static readonly Func<Person, string, bool> _emailEquals = (Person person, string value) =>
+    private static readonly Func<Person, string, bool> EmailEquals = (Person person, string value) =>
         person.Email.ContentEquals(value);
 
     public Result<bool> Execute(IList<Person> people)
     {
-        var result = ValidateNoDuplicates(people, _emailSelector, _emailEquals);
+        var result = ValidateNoDuplicates(people, EmailSelector, EmailEquals);
         if (result.IsSuccess) return true;
 
         var errors = result
@@ -85,12 +87,12 @@ public class EmailDuplicateCheckService : DuplicateCheckService, IDuplicateCheck
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class IdDuplicateCheckService : DuplicateCheckService, IDuplicateCheckService
 {
-    protected static readonly Func<IList<Person>, IEnumerable<Guid>> _idSelector = (IList<Person> people) =>
+    private static readonly Func<IList<Person>, IEnumerable<Guid>> IdSelector = (IList<Person> people) =>
         people.Select(x => x.Id);
 
-    protected static readonly Func<Person, Guid, bool> _idEquals = (Person person, Guid value) =>
+    private static readonly Func<Person, Guid, bool> IdEquals = (Person person, Guid value) =>
         person.Id.Equals(value);
 
     public Result<bool> Execute(IList<Person> people) =>
-        ValidateNoDuplicates(people, _idSelector, _idEquals);
+        ValidateNoDuplicates(people, IdSelector, IdEquals);
 }
