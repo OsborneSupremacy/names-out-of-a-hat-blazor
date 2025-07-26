@@ -27,19 +27,4 @@ public record HatViewModel
         Organizer = vm.Organizer,
         Participants = vm.Participants.Select(pvm => (Participant)pvm).ToList()
     };
-
-}
-
-public static class HatsViewModels
-{
-    public static HatViewModel Empty => new()
-    {
-        Id = Guid.Empty,
-        Errors = [],
-        Name = string.Empty,
-        AdditionalInformation = string.Empty,
-        PriceRange = string.Empty,
-        Organizer = ParticipantViewModels.Empty,
-        Participants = []
-    };
 }

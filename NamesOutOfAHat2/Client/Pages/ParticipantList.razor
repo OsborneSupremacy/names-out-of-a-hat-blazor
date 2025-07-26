@@ -4,6 +4,7 @@
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 
+@using NamesOutOfAHat2.Model.DomainModels
 @using NamesOutOfAHat2.Model.ViewModels
 @using NamesOutOfAHat2.Utility
 
@@ -25,7 +26,7 @@
     public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
-    public HatViewModel Hat { get; set; } = HatsViewModels.Empty;
+    public HatViewModel Hat { get; set; } = Hats.Empty;
 
     [Parameter, EditorRequired]
     public EventCallback SaveCallback { get; set; }

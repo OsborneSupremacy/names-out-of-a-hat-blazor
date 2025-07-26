@@ -15,13 +15,3 @@ public record ParticipantViewModel
         Recipients = vm.Recipients.Select(rvm => (Recipient)rvm).ToList()
     };
 }
-
-public static class ParticipantViewModels
-{
-    public static ParticipantViewModel Empty => new()
-    {
-        Person = PersonViewModels.Empty,
-        PickedRecipient = PersonViewModels.Empty,
-        Recipients = []
-    };
-}

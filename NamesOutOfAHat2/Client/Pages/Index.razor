@@ -54,7 +54,7 @@
     HatViewModel _hat = new()
     {
         Id = Guid.NewGuid(),
-        Organizer = ParticipantViewModels.Empty,
+        Organizer = Participants.Empty,
         Errors = [],
         Name = string.Empty,
         AdditionalInformation = string.Empty,
@@ -111,7 +111,7 @@
             Id = Guid.NewGuid(),
             Errors = [],
             Name = string.Empty,
-            Organizer = ParticipantViewModels.Empty,
+            Organizer = Participants.Empty,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             Participants = []

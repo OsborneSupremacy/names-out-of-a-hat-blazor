@@ -15,13 +15,3 @@ public record PersonViewModel
         Email = vm.Email
     };
 }
-
-public static class PersonViewModels
-{
-    public static PersonViewModel Empty => new()
-    {
-        Id = Guid.Empty,
-        Name = string.Empty,
-        Email = string.Empty
-    };
-}
