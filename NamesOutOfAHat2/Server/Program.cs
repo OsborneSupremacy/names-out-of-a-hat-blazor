@@ -33,7 +33,7 @@ var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
 builder.Services.AddSingleton(memoryCache);
 builder.Services.RegisterServicesInAssembly(typeof(ValidationService));
-builder.Services.RegisterServicesInAssembly(typeof(SendGridEmailService));
+builder.Services.RegisterServicesInAssembly(typeof(EmailService));
 
 builder.Services.AddValidatorsFromAssemblyContaining<SettingsValidator>();
 

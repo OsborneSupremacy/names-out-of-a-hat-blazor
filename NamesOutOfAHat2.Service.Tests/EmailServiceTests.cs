@@ -4,7 +4,7 @@ using NamesOutOfAHat2.Server.Service;
 namespace NamesOutOfAHat2.Service.Tests;
 
 [ExcludeFromCodeCoverage]
-public class SendGridEmailServiceTests
+public class EmailServiceTests
 {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
     [Fact(Skip = "Not a permanent test")]
@@ -12,13 +12,14 @@ public class SendGridEmailServiceTests
     public async Task SendAsync_Should_Work()
     {
         // arrange
-        var settings = new Settings() { SenderEmail = "nw@namesoutofahat.com", SendEmails = true };
+        var settings = new Settings { SenderEmail = "nw@namesoutofahat.com", SendEmails = true };
 
         var configKeys = new ConfigKeys()
-    {
-        { "sendGrid", "Copy the real API key here" }
-    };
-
+        {
+            { "SES_ACCESS_KEY", "Copy the real access key here" },
+            { "SES_ACCESS_KEY_SECRET", "Copy the access key secret here" },
+            { "AWS_REGION", "us-east-1" },
+        };
 
         var emailParts = new Invitation()
         {
@@ -27,7 +28,7 @@ public class SendGridEmailServiceTests
             HtmlBody = "<p>This is an html test.</p>"
         };
 
-        var service = new SendGridEmailService(settings, configKeys);
+        var service = new EmailService(settings, configKeys);
 
         var result = await service.SendAsync(emailParts);
 
