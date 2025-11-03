@@ -68,10 +68,14 @@ public class EligibilityValidationServiceTests
         var sue = "sue".ToPerson();
         var sam = "sam".ToPerson();
 
+        var joeParticipant = joe.ToParticipant();
+        var sueParticipant = sue.ToParticipant().AddEligibleRecipients(joe, sam);
+        var samParticipant = sam.ToParticipant().AddEligibleRecipients(joe, sue);
+
         var hat = new HatBuilder()
-            .WithParticipant(joe.ToParticipant())
-            .WithParticipant(sue.ToParticipant().AddEligibleRecipients(joe, sam))
-            .WithParticipant(sam.ToParticipant().AddEligibleRecipients(joe, sue))
+            .WithParticipant(joeParticipant)
+            .WithParticipant(sueParticipant)
+            .WithParticipant(samParticipant)
             .Build();
 
         var service = autoFixture.Create<EligibilityValidationService>();

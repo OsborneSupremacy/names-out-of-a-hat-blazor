@@ -14,46 +14,36 @@ public static class ParticipantExtensions
             .ToNaturalLanguageList();
 
     public static string WriteDisplayName(this Participant input) =>
-       !string.IsNullOrWhiteSpace(input.Person?.Name ?? string.Empty) ? input.Person!.Name : "Participant";
+        !string.IsNullOrWhiteSpace(input.Person?.Name ?? string.Empty) ? input.Person!.Name : "Participant";
 
     public static Participant ToParticipant(this Person input)
     {
-        return new Participant
-        {
-            Person = input,
-            PickedRecipient = Persons.Empty,
-            Recipients = []
-        };
+        return new Participant { Person = input, PickedRecipient = Persons.Empty, Recipients = [] };
     }
 
-    private static Participant AddRecipient(
+    private static List<Recipient> AddRecipient(
         this Participant participantIn,
         Person person,
         bool eligible
-        ) =>
-        participantIn with
-        {
-            Recipients = participantIn.Recipients.Concat(new List<Recipient>
-            {
-                new()
-                {
-                    Person = person,
-                    Eligible = eligible
-                }
-            }).ToList()
-        };
+    ) =>
+        participantIn
+            .Recipients
+            .Concat(new List<Recipient> { new() { Person = person, Eligible = eligible } })
+            .ToList();
 
     public static Participant AddEligibleRecipients(this Participant input, params Person[] people)
     {
+        var recipients = input.Recipients.ToList();
         foreach (var person in people)
-            input.AddRecipient(person, true);
-        return input;
+            recipients = input.AddRecipient(person, true);
+        return input with { Recipients = recipients };
     }
 
     public static Participant AddIneligibleRecipients(this Participant input, params Person[] people)
     {
+        var recipients = input.Recipients.ToList();
         foreach (var person in people)
-            input.AddRecipient(person, false);
-        return input;
+            recipients = input.AddRecipient(person, false);
+        return input with { Recipients = recipients };
     }
 }
