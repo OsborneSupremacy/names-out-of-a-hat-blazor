@@ -30,7 +30,7 @@
     public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; } = default!;
+    public Hat Hat { get; set; } = Hats.Empty;
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }

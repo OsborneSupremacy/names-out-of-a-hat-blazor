@@ -35,7 +35,13 @@
 
     <Verification Visible="@_mode.In(Modes.Verification)" Hat="_hat" NextCallback="NextMode" PreviousCallback="DefaultMode" />
 
-    <OrganizerSelect Visible="@_mode.In(Modes.Organizer)" Hat="_hat" NextCallback="NextMode" PreviousCallback="PreviousMode" />
+    <OrganizerSelect
+        Visible="@_mode.In(Modes.Organizer)"
+        Hat="_hat"
+        NextCallback="NextMode"
+        PreviousCallback="PreviousMode"
+        OrganizerSelectedCallback="OrganizerSelected"
+    />
 
     <SendVerificationEmail Visible="@_mode.In(Modes.SendVerifyEmail)" Hat="_hat" NextCallback="NextMode" NextSkipStepCallback="NextModeSkipStep" PreviousCallback="PreviousMode" />
 
@@ -200,6 +206,14 @@
         });
         await DefaultMode();
         await SaveHatToLocalStorage();
+    }
+
+    async Task OrganizerSelected(ParticipantViewModel participant)
+    {
+        _hat = _hat with
+        {
+            Organizer = participant
+        };
     }
 
     async Task SendCodeAndAdvance()

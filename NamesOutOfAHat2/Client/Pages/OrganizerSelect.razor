@@ -1,23 +1,24 @@
 ﻿@using NamesOutOfAHat2.Model.DomainModels
+@using NamesOutOfAHat2.Model.ViewModels
 @using NamesOutOfAHat2.Utility
 
 @if(Visible)
 {
     <SectionHeading Visible="true" Text="Select The Gift Exchange Organizer" />
 
-    @if (Hat.Organizer is not null) 
+    @if (Hat.Organizer != Participants.Empty)
     {
         <p class="lead">@Hat.Organizer.Person.Name is the Organizer</p>
     }
     @foreach(var participant in Hat.Participants)
     {
-        <div style="cursor: pointer" class="@GetClass(participant.Person.Id)" role="alert" @onclick="(() => SetOrganizer(participant))">
+        <div style="cursor: pointer" class="@GetClass(participant.Person.Id)" role="alert" @onclick="() => SetOrganizer(participant)">
             @participant.Person.Name.GetPersonEmojiFor() @participant.Person.Name
         </div>
     }
 
     <ButtonArea>
-        @if (Hat.Organizer is not null)
+        @if (Hat.Organizer != Participants.Empty)
         {
             <PrimaryButton ClickedCallback="NextCallback" Text="Everything Looks Good. Continue." />
         }
@@ -31,7 +32,7 @@
     public bool Visible { get; set; }
 
     [Parameter, EditorRequired]
-    public Hat Hat { get; set; } = default!;
+    public Hat Hat { get; set; } = Hats.Empty;
 
     [Parameter, EditorRequired]
     public EventCallback NextCallback { get; set; }
@@ -39,18 +40,14 @@
     [Parameter, EditorRequired]
     public EventCallback PreviousCallback { get; set; }
 
+    [Parameter, EditorRequired]
+    public EventCallback<ParticipantViewModel> OrganizerSelectedCallback { get; set; }
+
     private string GetClass(Guid id)
     {
-        if (id == (Hat.Organizer?.Person.Id ?? Guid.Empty )) return "alert alert-primary";
-        return "alert alert-secondary";
+        return id == (Hat.Organizer?.Person.Id ?? Guid.Empty ) ? "alert alert-primary" : "alert alert-secondary";
     }
 
-    Task SetOrganizer(Participant participant)
-    {
-        Hat = Hat with
-        {
-            Organizer = participant
-        };
-        return Task.CompletedTask;
-    }
+    async Task SetOrganizer(ParticipantViewModel participant) =>
+        await OrganizerSelectedCallback.InvokeAsync(participant);
 }
