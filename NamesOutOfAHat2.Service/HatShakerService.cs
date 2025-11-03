@@ -47,13 +47,13 @@ public class HatShakerService
 
         var participantsOut = new List<Participant>();
 
-        var pickedList = new System.Collections.Generic.HashSet<Guid>();
+        var pickedList = new HashSet<Guid>();
 
         var errors = new List<ValidationException>();
 
         for (int x = 1; x <= participantsIn.Count; x++)
         {
-            var participantIn = faker.PickRandom(participantsIn.Where(p => p.PickedRecipient is null));
+            var participantIn = faker.PickRandom(participantsIn.Where(p => p.PickedRecipient == Persons.Empty));
             var eligibleRecipients = participantIn.Recipients
                 .Where(r => r.Eligible)
                 .Where(r => !pickedList.Contains(r.Person.Id))
