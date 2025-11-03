@@ -18,9 +18,10 @@
 
     private bool _processing;
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
         _processing = false;
+        return Task.CompletedTask;
     }
 
     protected async Task Clicked()

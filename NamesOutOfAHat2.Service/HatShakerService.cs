@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Bogus;
 using NamesOutOfAHat2.Model.DomainModels;
+using Person = Bogus.Person;
 using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace NamesOutOfAHat2.Service;
@@ -41,7 +42,7 @@ public class HatShakerService
         var faker = new Faker();
 
         var participantsIn = hatIn.Participants
-            .Select(p => p with { PickedRecipient = null }) // clear any previous picks
+            .Select(p => p with { PickedRecipient = Persons.Empty }) // clear any previous picks
             .ToList();
 
         var participantsOut = new List<Participant>();

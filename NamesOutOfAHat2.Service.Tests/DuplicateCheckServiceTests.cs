@@ -121,15 +121,12 @@ public class DuplicateCheckServiceTests
         };
 
         var service = new IdDuplicateCheckService();
-        List<Exception> errors = null;
+        List<Exception> errors = [];
 
         // act
         var isSuccess = service.Execute(input)
             .Match(
-                _ =>
-                {
-                    return true;
-                },
+                _ => true,
                 error =>
                 {
                     if (error is AggregateException aggregateException)

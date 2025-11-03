@@ -44,7 +44,7 @@ public class HatService
 
         return hatIn with
         {
-            Organizer = organizerOut,
+            Organizer = organizerOut ?? Participants.Empty,
             Participants = participantsOut
         };
     }
@@ -70,11 +70,7 @@ public class HatService
             {
                 // old recipient found
                 if (participantPeople.TryGetValue(recipientIn.Person.Id, out var recipientOut))
-                    recipientsOut.Add(new Recipient
-                    {
-                        Person = recipientOut,
-                        Eligible = recipientIn.Eligible
-                    });
+                    recipientsOut.Add(recipientIn with { Person = recipientOut });
                 // any old recipients not found in list of people will be lost
             }
 

@@ -45,11 +45,11 @@ public class OrganizerVerificationServiceTests
         // act
         var result = service.Verify(registration);
 
-        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
+        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration? value);
 
         // assert
         result.Should().BeTrue();
-        value.Verified.Should().BeTrue();
+        (value?.Verified ?? false).Should().BeTrue();
     }
 
     [Fact]

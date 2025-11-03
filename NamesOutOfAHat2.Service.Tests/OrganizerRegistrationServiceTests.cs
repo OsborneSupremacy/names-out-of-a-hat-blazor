@@ -24,7 +24,7 @@ public class OrganizerRegistrationServiceTests
         service.Register(hat, "1234");
 
         // assert
-        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
+        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration? value);
 
         value.Should().NotBeNull();
         value.HatId.Should().Be(hat.Id);
@@ -50,7 +50,7 @@ public class OrganizerRegistrationServiceTests
         service.Register(hat, "5678");
 
         // assert
-        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration value);
+        memoryCache.TryGetValue(hat.Id, out OrganizerRegistration? value);
 
         value.Should().NotBeNull();
         value.HatId.Should().Be(hat.Id);

@@ -28,7 +28,7 @@ public record Hat
     public static implicit operator HatViewModel(Hat hat) => new HatViewModel
     {
         Id = hat.Id,
-        Errors = new List<string>(hat.Errors),
+        Errors = [..hat.Errors],
         Name = hat.Name,
         AdditionalInformation = hat.AdditionalInformation,
         PriceRange = hat.PriceRange,

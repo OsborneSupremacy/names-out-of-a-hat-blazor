@@ -161,25 +161,26 @@
         await SaveHatToLocalStorage();
     }
 
-    async Task HatErrorsMode()
+    Task HatErrorsMode()
     {
         SwitchMode(Modes.ShowingErrors);
+        return Task.CompletedTask;
     }
 
     void SwitchMode(Modes mode) => _mode = mode;
 
-    async void Save()
+    async Task Save()
     {
         await SaveHatToLocalStorage();
     }
 
-    async void ParticipantEdited(Participant participant)
+    async Task ParticipantEdited(Participant participant)
     {
         StateHasChanged();
         await SaveHatToLocalStorage();
     }
 
-    async void ParticipantRemoved(Participant participant)
+    async Task ParticipantRemoved(Participant participant)
     {
         _hat = HatService.RemoveParticipant(_hat, participant);
         StateHasChanged();
