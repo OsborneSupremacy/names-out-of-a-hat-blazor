@@ -17,7 +17,7 @@ public class ValidationServiceTests
 
         IList<Participant> input = new List<Participant>();
 
-        var expectedErrors = new List<ValidationException>() { 
+        var expectedErrors = new List<ValidationException> { 
             new("error1"),
             new("error2") 
         };

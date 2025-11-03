@@ -35,7 +35,7 @@ public class DuplicateCheckServiceTests
     public void NameDuplicateCheckService_Should_Not_Find_Duplicates()
     {
         // arrange
-        var input = new List<Person>()
+        var input = new List<Person>
         {
             "Joe".ToPerson(),
             "Joseph".ToPerson(),
@@ -58,7 +58,7 @@ public class DuplicateCheckServiceTests
     public void EmailDuplicateCheckService_Should_Find_Duplicates()
     {
         // arrange
-        var input = new List<Person>()
+        var input = new List<Person>
         {
             new PersonBuilder().WithEmail("Joe@gmail.com").Build(),
             new PersonBuilder().WithEmail("Joe@gmail.com").Build(),
@@ -82,7 +82,7 @@ public class DuplicateCheckServiceTests
     public void EmailDuplicateCheckService_Should_Not_Find_Duplicates()
     {
         // arrange
-        var input = new List<Person>()
+        var input = new List<Person>
         {
             new PersonBuilder().WithEmail("Joe1@gmail.com").Build(),
             new PersonBuilder().WithEmail("Joe2@gmail.com").Build(),
@@ -110,7 +110,7 @@ public class DuplicateCheckServiceTests
         var guid2 = Guid.NewGuid();
 
         // arrange
-        var input = new List<Person>()
+        var input = new List<Person>
         {
             new PersonBuilder().WithId(guid1).Build(),
             new PersonBuilder().WithId(guid1).Build(),
@@ -144,7 +144,7 @@ public class DuplicateCheckServiceTests
     public void IdDuplicateCheckService_Should_Not_Find_Duplicates()
     {
         // arrange
-        var input = new List<Person>()
+        var input = new List<Person>
         {
             new PersonBuilder().WithId(Guid.NewGuid()).Build(),
             new PersonBuilder().WithId(Guid.NewGuid()).Build(),

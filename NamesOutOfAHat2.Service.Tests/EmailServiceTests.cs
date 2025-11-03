@@ -8,20 +8,20 @@ public class EmailServiceTests
 {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
     [Fact(Skip = "Not a permanent test")]
+    //[Fact]
 #pragma warning restore xUnit1004 // Test methods should not be skipped
     public async Task SendAsync_Should_Work()
     {
         // arrange
-        var settings = new Settings { SenderEmail = "nw@namesoutofahat.com", SendEmails = true };
+        var settings = new Settings { SenderEmail = "namesoutofahat@osbornesupremacy.com", SendEmails = true };
 
-        var configKeys = new ConfigKeys()
+        var configKeys = new ConfigKeys
         {
             { "SES_ACCESS_KEY", "Copy the real access key here" },
-            { "SES_ACCESS_KEY_SECRET", "Copy the access key secret here" },
-            { "AWS_REGION", "us-east-1" },
+            { "SES_ACCESS_KEY_SECRET", "Copy the access key secret here" }
         };
 
-        var emailParts = new Invitation()
+        var emailParts = new Invitation
         {
             RecipientEmail = "osborne.ben@gmail.com",
             Subject = "Test Sendgrid Email",

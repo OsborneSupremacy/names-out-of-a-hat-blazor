@@ -8,11 +8,9 @@ namespace NamesOutOfAHat2.Server.Service;
 [ServiceLifetime(ServiceLifetime.Scoped)]
 public class EmailService : IEmailService
 {
-    private readonly string _sesAcessKey;
+    private readonly string _sesAccessKey;
 
     private readonly string _sesAccessKeySecret;
-
-    private readonly string _awsRegion;
 
     private readonly Settings _settings;
 
@@ -22,9 +20,8 @@ public class EmailService : IEmailService
         )
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        _sesAcessKey = configKeys?.GetValueOrDefault("SES_ACCESS_KEY") ?? throw new ArgumentNullException(nameof(configKeys));
+        _sesAccessKey = configKeys?.GetValueOrDefault("SES_ACCESS_KEY") ?? throw new ArgumentNullException(nameof(configKeys));
         _sesAccessKeySecret = configKeys?.GetValueOrDefault("SES_ACCESS_KEY_SECRET") ?? throw new ArgumentNullException(nameof(configKeys));
-        _awsRegion = configKeys?.GetValueOrDefault("AWS_REGION") ?? "us-east-1";
     }
 
     public async Task<Result<bool>> SendAsync(Invitation invitation)
@@ -32,7 +29,7 @@ public class EmailService : IEmailService
         if (!_settings.SendEmails)
             return new Result<bool>(new InvalidOperationException("The application is currently configured to not send emails."));
 
-        using var client = new AmazonSimpleEmailServiceClient(_sesAcessKey, _sesAccessKeySecret, _awsRegion);
+        using var client = new AmazonSimpleEmailServiceClient(_sesAccessKey, _sesAccessKeySecret);
 
         var sendRequest = new SendEmailRequest
         {

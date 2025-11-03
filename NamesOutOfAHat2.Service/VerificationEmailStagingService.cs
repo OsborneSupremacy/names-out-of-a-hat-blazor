@@ -29,7 +29,7 @@ public class VerificationEmailStagingService
             s.AppendLine("<br /><br />");
         }
 
-        return Task.FromResult(new Invitation()
+        return Task.FromResult(new Invitation
         {
             RecipientEmail = hat.Organizer?.Person?.Email ?? string.Empty,
             Subject = "🎩 Names Out Of A Hat 🎩 Verification Code",

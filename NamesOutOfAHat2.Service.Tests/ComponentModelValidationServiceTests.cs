@@ -7,10 +7,10 @@ public class ComponentModelValidationServiceTests
     public void Validate_Should_Fail_When_One_Item_Invalid()
     {
         // arrange
-        var items = new List<TestItem>()
-    {
+        var items = new List<TestItem>
+        {
         new TestItem(),
-        new TestItem() { TestValue = "Hello"}
+        new TestItem { TestValue = "Hello"}
     };
 
         var service = new ComponentModelValidationService();
@@ -27,10 +27,10 @@ public class ComponentModelValidationServiceTests
     public void Validate_Should_Pass_When_All_Items_Valid()
     {
         // arrange
-        var items = new List<TestItem>()
-    {
-        new TestItem() { TestValue = "Hola" },
-        new TestItem() { TestValue = "Hello"}
+        var items = new List<TestItem>
+        {
+        new TestItem { TestValue = "Hola" },
+        new TestItem { TestValue = "Hello"}
     };
 
         var service = new ComponentModelValidationService();
