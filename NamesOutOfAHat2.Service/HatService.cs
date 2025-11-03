@@ -7,23 +7,39 @@ public class HatService
 {
     public Hat AddParticipant(Hat hatIn, Person person)
     {
-        var newGiverRecipients = new List<Recipient>();
+        var newRecipient = new Recipient { Person = person, Eligible = true };
 
-        // make the person a recipient for all existing participants
+        var participantsOut = new List<Participant>();
+        var newParticipantRecipients = new List<Recipient>();
+
+        // make the participant a recipient for all existing participants
         foreach (Participant participant in hatIn.Participants)
         {
-            // new person is recipient for existing participant
-            participant.AddEligibleRecipients(person);
-            // existing participant is recipient for new person
-            newGiverRecipients.Add(new Recipient
+            // new recipient is recipient for existing participanta
+            participantsOut.Add(participant with
+            {
+                Recipients = participant.Recipients.Concat([newRecipient]).ToList()
+            });
+
+            // existing participant is recipient for new participant
+            newParticipantRecipients.Add(new Recipient
             {
                 Person = participant.Person,
                 Eligible = true
             });
         }
 
-        return hatIn
-            .AddParticipant(person.ToParticipant(newGiverRecipients));
+        participantsOut.Add(new Participant
+        {
+            Person = person,
+            Recipients = newParticipantRecipients,
+            PickedRecipient = Persons.Empty
+        });
+
+        return hatIn with
+        {
+            Participants = participantsOut
+        };
     }
 
     public Hat RemoveParticipant(Hat hatIn, Participant participantIn)
@@ -50,7 +66,7 @@ public class HatService
     }
 
     /// <summary>
-    /// the hatIn from local storage isn't exactly the same as the hatIn that was saved
+    /// The hatIn from local storage isn't exactly the same as the hatIn that was saved
     /// because through serialization / deserialization, participant people are no
     /// longer the same objects as recipient people.
     /// To get them to be the same object, rebuild recipient lists

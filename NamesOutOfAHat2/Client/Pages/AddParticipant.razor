@@ -5,11 +5,11 @@
             <h5 class="card-header bg-info">@Person.WriteDisplayName()</h5>
             <div class="card-body">
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" @bind-value="Person.Name" />
+                    <input id="Name" type="text" class="form-control" @bind-value="Person.Name" />
                     <label for="Name">Name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="email" class="form-control" @bind-value="Person.Email" />
+                    <input id="Email" type="email" class="form-control" @bind-value="Person.Email" />
                     <label for="Email">Email</label>
                 </div>
                 <DataAnnotationsValidator />
