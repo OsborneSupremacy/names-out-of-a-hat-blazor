@@ -1,5 +1,4 @@
 ﻿
-@inject NamesOutOfAHat2.Service.HatService HatService
 @inject NamesOutOfAHat2.Service.ValidationService ValidationService
 @inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
 @inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
@@ -37,18 +36,17 @@
     [Parameter, EditorRequired]
     public EventCallback ShowErrorsCallback { get; set; }
 
-    async Task ParticipantEdited(ParticipantViewModel participant)
-    {
-        StateHasChanged();
-        await SaveCallback.InvokeAsync();
-    }
+    [Parameter, EditorRequired]
+    public EventCallback<ParticipantViewModel> ParticipantEditedCallback { get; set; }
 
-    async Task ParticipantRemoved(ParticipantViewModel participant)
-    {
-        Hat = HatService.RemoveParticipant(Hat, participant);
-        StateHasChanged();
-        await SaveCallback.InvokeAsync();
-    }
+    [Parameter, EditorRequired]
+    public EventCallback<ParticipantViewModel> ParticipantRemovedCallback { get; set; }
+
+    async Task ParticipantEdited(ParticipantViewModel participant) =>
+        await ParticipantEditedCallback.InvokeAsync(participant);
+
+    async Task ParticipantRemoved(ParticipantViewModel participant) =>
+        await ParticipantRemovedCallback.InvokeAsync(participant);
 
     async Task ShakeUpTheHat()
     {

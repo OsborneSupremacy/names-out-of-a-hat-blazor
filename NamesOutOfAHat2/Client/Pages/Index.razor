@@ -22,11 +22,14 @@
     <AddParticipant Visible="@_mode.In(Modes.Adding)" Person="_person" PersonAddedCallback="PersonAdded" CancelCallback="DefaultMode" />
 
     <ParticipantList
-        Visible="@(_mode.In(Modes.Default) && (_hat.Participants.Any()))"
+        Visible="@(_mode.In(Modes.Default) && _hat.Participants.Any())"
         SaveCallback="Save"
         Hat="_hat"
         NextCallback="VerificationMode"
-        ShowErrorsCallback="HatErrorsMode" />
+        ShowErrorsCallback="HatErrorsMode"
+        ParticipantEditedCallback="ParticipantEdited"
+        ParticipantRemovedCallback="ParticipantRemoved"
+    />
 
     <HatErrors Visible="@_mode.In(Modes.ShowingErrors)" Hat="_hat" NextCallback="DefaultMode" />
 
@@ -64,9 +67,9 @@
 
     Modes _mode = Modes.Gdpr;
 
-    string _errorDetails = String.Empty;
+    string _errorDetails = string.Empty;
 
-    enum Modes : int
+    enum Modes
     {
         Gdpr = -1,
         Default = 0,
@@ -174,13 +177,13 @@
         await SaveHatToLocalStorage();
     }
 
-    async Task ParticipantEdited(Participant participant)
+    async Task ParticipantEdited(ParticipantViewModel participant)
     {
         StateHasChanged();
         await SaveHatToLocalStorage();
     }
 
-    async Task ParticipantRemoved(Participant participant)
+    async Task ParticipantRemoved(ParticipantViewModel participant)
     {
         _hat = HatService.RemoveParticipant(_hat, participant);
         StateHasChanged();

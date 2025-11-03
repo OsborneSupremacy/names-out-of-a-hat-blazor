@@ -9,7 +9,7 @@ public class HatService
     {
         var newGiverRecipients = new List<Recipient>();
 
-        // make person a recipient for all existing participants
+        // make the person a recipient for all existing participants
         foreach (Participant participant in hatIn.Participants)
         {
             // new person is recipient for existing participant
@@ -39,12 +39,12 @@ public class HatService
                 Recipients = participant.Recipients.Where(r => r.Person.Id != id).ToList()
             });
 
-        // if person being removed is organizer, remove the organizer
-        Participant? organizerOut = hatIn.Organizer?.Person.Id == id ? null : hatIn.Organizer;
+        // if the person being removed is the organizer, remove the organizer
+        Participant organizerOut = hatIn.Organizer.Person.Id == id ? Participants.Empty : hatIn.Organizer;
 
         return hatIn with
         {
-            Organizer = organizerOut ?? Participants.Empty,
+            Organizer = organizerOut,
             Participants = participantsOut
         };
     }
@@ -71,7 +71,7 @@ public class HatService
                 // old recipient found
                 if (participantPeople.TryGetValue(recipientIn.Person.Id, out var recipientOut))
                     recipientsOut.Add(recipientIn with { Person = recipientOut });
-                // any old recipients not found in list of people will be lost
+                // any old recipients not found in the list of people will be lost
             }
 
             participantsOut.Add(participant with { Recipients = recipientsOut });
