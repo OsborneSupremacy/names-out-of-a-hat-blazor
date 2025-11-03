@@ -20,7 +20,7 @@ public class HatBuilder
     {
         _id = Guid.NewGuid();
         _participants = [];
-        _organizer = null;
+        _organizer = Participants.Empty;
         _name = string.Empty;
         _priceRange = string.Empty;
         _additionalInformation = string.Empty;
@@ -48,7 +48,7 @@ public class HatBuilder
         new()
         {
             Id = _id ?? Guid.NewGuid(),
-            Organizer = null,
+            Organizer = _organizer ?? Participants.Empty,
             Errors = [],
             Name = _name,
             AdditionalInformation = _additionalInformation,

@@ -27,7 +27,7 @@ public class OrganizerRegistrationService
         OrganizerRegistration registration = new()
         {
             HatId = hat.Id,
-            OrganizerEmail = hat.Organizer?.Person.Email ?? string.Empty,
+            OrganizerEmail = hat.Organizer != Participants.Empty ? hat.Organizer.Person.Email : string.Empty,
             VerificationCode = code,
             Verified = false
         };

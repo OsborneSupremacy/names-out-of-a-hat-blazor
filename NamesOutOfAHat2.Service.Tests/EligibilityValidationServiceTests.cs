@@ -108,7 +108,7 @@ public class EligibilityValidationServiceTests
 
         // assert
         result.IsSuccess.Should().BeFalse();
-        result.GetErrors().Count().Should().Be(1);
+        result.GetErrors().Count.Should().Be(1);
         result.GetErrors().Single().Should().Contain("joe");
     }
 }
