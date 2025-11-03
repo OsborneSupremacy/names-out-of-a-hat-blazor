@@ -11,7 +11,7 @@
 {
     @foreach (var participant in Hat.Participants)
     {
-        <ParticipantDisplay ParticipantViewModel="@participant" ParticpantEditedCallback="@ParticipantEdited" ParticipantRemovedCallback="@ParticipantRemoved" />
+        <ParticipantDisplay ParticipantViewModel="@participant" ParticpantEditedCallback="@ParticipantEditedCallback" ParticipantRemovedCallback="@ParticipantRemovedCallback" />
     }
 
     <ButtonArea>
@@ -41,12 +41,6 @@
 
     [Parameter, EditorRequired]
     public EventCallback<ParticipantViewModel> ParticipantRemovedCallback { get; set; }
-
-    async Task ParticipantEdited(ParticipantViewModel participant) =>
-        await ParticipantEditedCallback.InvokeAsync(participant);
-
-    async Task ParticipantRemoved(ParticipantViewModel participant) =>
-        await ParticipantRemovedCallback.InvokeAsync(participant);
 
     async Task ShakeUpTheHat()
     {
