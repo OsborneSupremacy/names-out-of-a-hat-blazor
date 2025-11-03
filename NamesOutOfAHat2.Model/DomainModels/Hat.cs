@@ -7,7 +7,7 @@ public record Hat
     [Required]
     public required Guid Id { get; init; }
 
-    public required List<string> Errors { get; init; }
+    public required IReadOnlyList<string> Errors { get; init; }
 
     public required string Name { get; init; }
 

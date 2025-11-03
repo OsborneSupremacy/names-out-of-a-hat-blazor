@@ -10,7 +10,7 @@ public record Participant
     public required Person Person { get; init; }
 
     [Required, MinLength(1, ErrorMessage = "Each participant needs at least one possible recipient")]
-    public required List<Recipient> Recipients { get; init; }
+    public required IReadOnlyList<Recipient> Recipients { get; init; }
 
     public static implicit operator ParticipantViewModel(Participant p) => new ParticipantViewModel
     {
