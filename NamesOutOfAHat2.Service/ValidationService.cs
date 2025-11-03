@@ -20,9 +20,7 @@ public class ValidationService
     public Result<bool> Validate(Hat hat)
     {
         var result = _componentModelValidationService.Validate(hat);
-        if (!result.IsSuccess) return result;
-
-        return Validate(hat.Participants);
+        return !result.IsSuccess ? result : Validate(hat.Participants);
     }
 
     public Result<bool> Validate(IList<Participant> participants)

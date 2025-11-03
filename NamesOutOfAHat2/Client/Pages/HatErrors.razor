@@ -1,19 +1,19 @@
-﻿@using NamesOutOfAHat2.Model.DomainModels
+﻿@inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
+
+@using NamesOutOfAHat2.Model.DomainModels
+@using NamesOutOfAHat2.Utility
 
 @if(Visible)
 {
     <SectionHeading Visible="true" Text="There is a problem with the hat." />
 
     <div class="alert alert-danger" role="alert">
-        @if (Hat.Errors.Any())
-        {
-            <ul>
-                @foreach (var error in Hat.Errors)
-                {
-                    <li>@error</li>
-                }
-            </ul>
-        }
+        <ul>
+            @foreach (var error in EligibilityValidationService.Validate(Hat).GetErrors())
+            {
+                <li>@error</li>
+            }
+        </ul>
     </div>
 
     <BackButton ClickedCallback="NextCallback" Text="Go Back" />
