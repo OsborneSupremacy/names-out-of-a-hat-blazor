@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace GiftExchange.Library.Models;
+﻿namespace GiftExchange.Library.Models;
 
 public record Participant
 {
@@ -9,8 +7,10 @@ public record Participant
     [Required]
     public required Person Person { get; init; }
 
+    public required bool InvitationSent { get; init; }
+
     [Required, MinLength(1, ErrorMessage = "Each participant needs at least one possible recipient")]
-    public required IReadOnlyList<Recipient> Recipients { get; init; }
+    public required ImmutableList<Recipient> Recipients { get; init; }
 }
 
 public static class Participants
@@ -18,6 +18,7 @@ public static class Participants
     public static Participant Empty => new()
     {
         Person = Persons.Empty,
+        InvitationSent = false,
         PickedRecipient = Persons.Empty,
         Recipients = []
     };

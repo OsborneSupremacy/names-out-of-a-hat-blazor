@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace GiftExchange.Library.Models;
+﻿namespace GiftExchange.Library.Models;
 
 public record Recipient
 {
