@@ -5,7 +5,6 @@
 
 @using NamesOutOfAHat2.Model.DomainModels
 @using NamesOutOfAHat2.Model.ViewModels
-@using NamesOutOfAHat2.Utility
 
 @if(Visible)
 {
@@ -15,7 +14,7 @@
     }
 
     <ButtonArea>
-        <PrimaryButton ClickedCallback="ShakeUpTheHat" Text="Shake Up The Hat" />
+        <PrimaryButton ClickedCallback="ShakeUpTheHatCallback" Text="Shake Up The Hat" />
     </ButtonArea>
 }
 
@@ -42,35 +41,6 @@
     [Parameter, EditorRequired]
     public EventCallback<ParticipantViewModel> ParticipantRemovedCallback { get; set; }
 
-    async Task ShakeUpTheHat()
-    {
-        await SaveCallback.InvokeAsync();
-
-        var result = ValidationService.Validate(Hat);
-
-        if (result.IsSuccess)
-            result = EligibilityValidationService.Validate(Hat);
-
-        if (!result.IsSuccess)
-        {
-            Hat = Hat with
-            {
-                Errors = result.GetErrors()
-            };
-            await ShowErrorsCallback.InvokeAsync();
-            return;
-        }
-
-        var shakeResult = HatShakerService.ShakeMultiple(Hat, 100);
-
-        Hat = Hat with
-        {
-            Errors = shakeResult.GetErrors()
-        };
-
-        if (!shakeResult.IsSuccess)
-            await ShowErrorsCallback.InvokeAsync();
-        else
-            await NextCallback.InvokeAsync();
-    }
+    [Parameter, EditorRequired]
+    public EventCallback ShakeUpTheHatCallback { get; set; }
 }

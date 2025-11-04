@@ -54,6 +54,7 @@ public class HatShakerService
         for (int x = 1; x <= participantsIn.Count; x++)
         {
             var participantIn = faker.PickRandom(participantsIn.Where(p => p.PickedRecipient == Persons.Empty));
+
             var eligibleRecipients = participantIn.Recipients
                 .Where(r => r.Eligible)
                 .Where(r => !pickedList.Contains(r.Person.Id))

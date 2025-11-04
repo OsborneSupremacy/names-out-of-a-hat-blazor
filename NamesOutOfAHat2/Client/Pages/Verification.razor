@@ -12,7 +12,7 @@
             <ul class="list-group list-group-flush">
                 <li class="list-group-item">📧 @participant.Person.Email</li>
                 <li class="list-group-item">
-                    <label class="form-label"><b>🎁 AddEligibleRecipients Recipients <i class="bi bi-question-circle"></i></b></label>
+                    <label class="form-label"><b>🎁 Eligible Recipients <i class="bi bi-question-circle"></i></b></label>
                     @foreach (var recipient in participant.Recipients.Where(x => x.Eligible))
                     {
                         <div style="text-align: left">

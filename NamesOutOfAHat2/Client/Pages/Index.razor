@@ -3,6 +3,9 @@
 @inject Service.ClientHttpService ClientHttpService
 @inject NamesOutOfAHat2.Service.HatService HatService
 @inject NavigationManager NavigationManager
+@inject NamesOutOfAHat2.Service.ValidationService ValidationService
+@inject NamesOutOfAHat2.Service.EligibilityValidationService EligibilityValidationService
+@inject NamesOutOfAHat2.Service.HatShakerService HatShakerService
 
 @using System.Text.Json
 @using NamesOutOfAHat2.Model.DomainModels
@@ -29,6 +32,7 @@
         ShowErrorsCallback="HatErrorsMode"
         ParticipantEditedCallback="ParticipantEdited"
         ParticipantRemovedCallback="ParticipantRemoved"
+        ShakeUpTheHatCallback="ShakeUpTheHat"
     />
 
     <HatErrors Visible="@_mode.In(Modes.ShowingErrors)" Hat="_hat" NextCallback="DefaultMode" />
@@ -214,6 +218,45 @@
         {
             Organizer = participant
         };
+    }
+
+    async Task ShakeUpTheHat()
+    {
+        await SaveHatToLocalStorage();
+
+        var result = ValidationService.Validate(_hat);
+
+        if (result.IsSuccess)
+            result = EligibilityValidationService.Validate(_hat);
+
+        if (!result.IsSuccess)
+        {
+            _hat = _hat with
+            {
+                Errors = result.GetErrors()
+            };
+            await HatErrorsMode();
+            return;
+        }
+
+        var shakeResult = HatShakerService.ShakeMultiple(_hat, 100);
+
+        var next = shakeResult.Match(
+            ok =>
+            {
+                _hat = ok;
+                return VerificationMode();
+            },
+            _ =>
+            {
+                _hat = _hat with
+                {
+                    Errors = shakeResult.GetErrors()
+                };
+                return HatErrorsMode();
+            });
+
+        await next;
     }
 
     async Task SendCodeAndAdvance()

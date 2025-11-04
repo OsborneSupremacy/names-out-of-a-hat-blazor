@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Client.Serv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Server.Service", "NamesOutOfAHat2.Server.Service\NamesOutOfAHat2.Server.Service.csproj", "{A1E92297-61DD-4140-814D-49BB1A99DEB8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GiftExchange.Library", "src\GiftExchange.Library\GiftExchange.Library.csproj", "{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{A1E92297-61DD-4140-814D-49BB1A99DEB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1E92297-61DD-4140-814D-49BB1A99DEB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1E92297-61DD-4140-814D-49BB1A99DEB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
