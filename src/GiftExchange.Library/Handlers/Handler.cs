@@ -19,7 +19,7 @@ internal class Handler
             {
                 StatusCode = (int)innerResponse.StatusCode,
                 Headers = CorsHeaderService.GetCorsHeaders(),
-                Body = JsonService.SerializeDefault(innerResponse)
+                Body = JsonService.SerializeDefault(innerResponse.Value)
             };
 
         return new APIGatewayProxyResponse

@@ -10,3 +10,4 @@ global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Services;
 global using GiftExchange.Library.Utility;
 
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
