@@ -8,4 +8,5 @@ global using System.Net;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Services;
+global using GiftExchange.Library.Utility;
 

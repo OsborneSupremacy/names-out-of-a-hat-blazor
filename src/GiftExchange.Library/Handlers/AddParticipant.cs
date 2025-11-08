@@ -6,25 +6,18 @@ public class AddParticipant
     public static async Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context
-    )
+    ) =>
+        await Handler
+            .FunctionHandler<AddParticipantRequest, AddParticipantResponse>(
+                request,
+                InnerHandler,
+                context
+            );
+
+    private static Task<Result<AddParticipantResponse>> InnerHandler(AddParticipantRequest request)
     {
-        var innerRequest = JsonService.DeserializeDefault<AddParticipantRequest>(request.Body);
-        if (innerRequest == null)
-            return ApiGatewayProxyResponses.BadRequest;
-
-        var personId = Guid.NewGuid();
-        /*
-         real logic coming later
-         */
-
-        return new APIGatewayProxyResponse
-        {
-            StatusCode = (int)HttpStatusCode.OK,
-            Headers = CorsHeaderService.GetCorsHeaders(),
-            Body = JsonService.SerializeDefault(new AddParticipantResponse
-            {
-                PersonId = personId
-            })
-        };
+        var response = new AddParticipantResponse { PersonId = Guid.NewGuid() };
+        var result = new Result<AddParticipantResponse>(response, HttpStatusCode.Created);
+        return Task.FromResult(result);
     }
 }

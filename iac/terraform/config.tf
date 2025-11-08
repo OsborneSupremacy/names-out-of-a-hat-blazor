@@ -8,6 +8,7 @@ provider "aws" {
       ManagedBy   = "terraform"
       Owner       = "giftexchange@osbornesupremacy.com"
     }
+  }
 }
 
 terraform {
@@ -18,9 +19,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "bro-tfstate"
-    use_lockfile   = true
-    key            = "giftexchange/live"
-    region         = "us-east-1"
+    bucket       = "bro-tfstate"
+    use_lockfile = true
+    key          = "giftexchange/live"
+    region       = "us-east-1"
   }
 }
