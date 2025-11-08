@@ -34,6 +34,10 @@ resource "aws_api_gateway_deployment" "default" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    module.lambda-add-participant
+  ]
 }
 
 resource "aws_api_gateway_stage" "live-stage" {
@@ -42,8 +46,4 @@ resource "aws_api_gateway_stage" "live-stage" {
   deployment_id = aws_api_gateway_deployment.default.id
 }
 
-resource "aws_api_gateway_resource" "root-resource" {
-  rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
-  parent_id   = ""
-  path_part   = ""
-}
+
