@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "hatId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The unique identifier of the hat"
+    },
+    "personId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The unique identifier of the person to remove"
+    }
+  },
+  "required": ["hatId", "personId"],
+  "additionalProperties": false
+}

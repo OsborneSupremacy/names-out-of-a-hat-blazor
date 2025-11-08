@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "hatName": {
+      "type": "string",
+      "description": "The name of the hat"
+    },
+    "organizerName": {
+      "type": "string",
+      "description": "The name of the organizer"
+    },
+    "organizerEmail": {
+      "type": "string",
+      "format": "email",
+      "description": "The email address of the organizer"
+    }
+  },
+  "required": ["hatName", "organizerName", "organizerEmail"],
+  "additionalProperties": false
+}

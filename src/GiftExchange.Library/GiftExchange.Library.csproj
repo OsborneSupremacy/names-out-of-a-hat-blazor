@@ -13,4 +13,8 @@
       <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Schema\" />
+    </ItemGroup>
+
 </Project>

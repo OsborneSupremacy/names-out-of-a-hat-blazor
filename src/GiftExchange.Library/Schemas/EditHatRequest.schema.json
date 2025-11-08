@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "hatId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The unique identifier of the hat to edit"
+    },
+    "name": {
+      "type": "string",
+      "description": "The updated name of the hat"
+    },
+    "additionalInformation": {
+      "type": "string",
+      "description": "Additional information about the hat"
+    },
+    "priceRange": {
+      "type": "string",
+      "description": "The price range for gifts"
+    }
+  },
+  "required": ["hatId", "name", "additionalInformation", "priceRange"],
+  "additionalProperties": false
+}
