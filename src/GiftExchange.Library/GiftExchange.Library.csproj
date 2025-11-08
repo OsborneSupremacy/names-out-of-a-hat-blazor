@@ -6,4 +6,11 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.2" />
+      <PackageReference Include="Amazon.Lambda.Core" Version="2.8.0" />
+      <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.9.4" />
+      <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.1" />
+    </ItemGroup>
+
 </Project>
