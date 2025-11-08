@@ -2,7 +2,7 @@ resource "aws_lambda_function" "lambda" {
 
   function_name    = var.function_name
   description      = var.function_description
-  handler          = "Villains.Library::Villains.Library.Lambda.${var.function_net_class}::FunctionHandler"
+  handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.${var.function_net_class}::FunctionHandler"
   runtime          = "dotnet8"
   architectures    = ["arm64"]
   memory_size      = var.function_memory_size
@@ -13,11 +13,4 @@ resource "aws_lambda_function" "lambda" {
   environment {
     variables = var.environment_variables
   }
-
-  tags = merge(
-    var.common_tags,
-    {
-      Name = var.function_name
-    }
-  )
 }

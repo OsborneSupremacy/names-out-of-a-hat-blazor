@@ -8,7 +8,7 @@ resource "aws_api_gateway_method_response" "get_404_response" {
     "method.response.header.Access-Control-Allow-Headers" = true
     "method.response.header.Access-Control-Allow-Origins" = true
   }
-  count       = var.include_404_response ? 1 : 0
+  count = var.include_404_response ? 1 : 0
 }
 
 resource "aws_api_gateway_method_response" "get_200_response" {

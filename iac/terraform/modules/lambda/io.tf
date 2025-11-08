@@ -59,10 +59,6 @@ variable "function_timeout" {
   default = 30
 }
 
-variable "common_tags" {
-  type = map(string)
-}
-
 variable "environment_variables" {
   type = map(string)
 }
