@@ -1,4 +1,5 @@
-﻿namespace GiftExchange.Library.Handlers;
+﻿
+namespace GiftExchange.Library.Handlers;
 
 public class AddParticipant
 {
@@ -7,7 +8,23 @@ public class AddParticipant
         ILambdaContext context
     )
     {
+        var innerRequest = JsonService.DeserializeDefault<AddParticipantRequest>(request.Body);
+        if (innerRequest == null)
+            return ApiGatewayProxyResponses.BadRequest;
 
-        return new APIGatewayProxyResponse { };
+        var personId = Guid.NewGuid();
+        /*
+         real logic coming later
+         */
+
+        return new APIGatewayProxyResponse
+        {
+            StatusCode = (int)HttpStatusCode.OK,
+            Headers = CorsHeaderService.GetCorsHeaders(),
+            Body = JsonService.SerializeDefault(new AddParticipantResponse
+            {
+                PersonId = personId
+            })
+        };
     }
 }
