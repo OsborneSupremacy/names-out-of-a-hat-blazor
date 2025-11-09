@@ -19,4 +19,5 @@ module "lambda-add-participant" {
   function_net_class                                = "AddParticipant"
   deployment_package_filename                       = data.archive_file.lambda_function.output_path
   deployment_package_source_code_hash               = data.archive_file.lambda_function.output_base64sha256
+  dynamodb_table_arn                                = aws_dynamodb_table.giftexchange.arn
 }

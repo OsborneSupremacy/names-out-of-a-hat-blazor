@@ -23,6 +23,8 @@ public record Hat
     ]
     public required ImmutableList<Participant> Participants { get; init; }
 
+    public required bool OrganizerVerified { get; init; }
+
     public required bool RecipientsAssigned { get; init; }
 }
 
@@ -37,6 +39,7 @@ public static class Hats
         PriceRange = string.Empty,
         Organizer = Participants.Empty,
         Participants = [],
+        OrganizerVerified = false,
         RecipientsAssigned = false
     };
 }

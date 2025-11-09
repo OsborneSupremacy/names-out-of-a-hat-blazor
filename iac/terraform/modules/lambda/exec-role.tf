@@ -27,3 +27,29 @@ resource "aws_lambda_permission" "allow_apigw_invoke" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${var.gateway_rest_api_id}/*/*/*"
 }
+
+resource "aws_iam_role_policy" "dynamodb_policy" {
+  name = "${var.function_name}-dynamodb-policy"
+  role = aws_iam_role.exec-role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [
+          var.dynamodb_table_arn,
+          "${var.dynamodb_table_arn}/index/*"  # Allow access to any GSI/LSI on the table
+        ]
+      }
+    ]
+  })
+}

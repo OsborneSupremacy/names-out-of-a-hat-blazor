@@ -90,6 +90,12 @@ variable "deployment_package_source_code_hash" {
   type = string
 }
 
+# dynamo db config
+variable "dynamodb_table_arn" {
+  description = "ARN of the DynamoDB table this Lambda needs to access"
+  type        = string
+}
+
 # outputs
 
 output "function_exec_role" {

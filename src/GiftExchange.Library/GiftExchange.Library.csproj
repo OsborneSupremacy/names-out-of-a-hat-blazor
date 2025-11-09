@@ -12,6 +12,7 @@
       <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
       <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.9.4" />
       <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.1" />
+      <PackageReference Include="dotenv.net" Version="4.0.0" />
     </ItemGroup>
 
 </Project>
