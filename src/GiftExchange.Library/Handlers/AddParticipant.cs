@@ -7,7 +7,7 @@ public class AddParticipant
         APIGatewayProxyRequest request,
         ILambdaContext context
     ) =>
-        await Handler
+        await PayloadHandler
             .FunctionHandler<AddParticipantRequest, AddParticipantResponse>(
                 request,
                 InnerHandler,

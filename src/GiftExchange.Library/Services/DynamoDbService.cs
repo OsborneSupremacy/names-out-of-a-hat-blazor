@@ -70,4 +70,37 @@ internal class DynamoDbService
         await _dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
         return hat.Id;
     }
+
+    public async Task<(bool exists, Hat hat)> GetHatAsync(string organizerEmail, Guid hatId)
+    {
+        if (string.IsNullOrWhiteSpace(organizerEmail) || hatId == Guid.Empty)
+            return (false, Hats.Empty);
+
+        var request = new GetItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = organizerEmail }, ["SK"] = new() { S = hatId.ToString() }
+            }
+        };
+
+        var response = await _dynamoDbClient.GetItemAsync(request).ConfigureAwait(false);
+
+        if (response.Item == null || response.Item.Count == 0)
+            return (false, Hats.Empty);
+
+        var hat = new Hat
+        {
+            Id = Guid.Parse(response.Item["HatId"].S),
+            Name = response.Item["Name"].S,
+            AdditionalInformation = response.Item["AdditionalInformation"].S,
+            PriceRange = response.Item["PriceRange"].S,
+            OrganizerVerified = response.Item["OrganizerVerified"].BOOL ?? false,
+            RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
+            Organizer = JsonService.DeserializeDefault<Participant>(response.Item["Organizer"].S) ?? Participants.Empty,
+            Participants = JsonService.DeserializeDefault<ImmutableList<Participant>>(response.Item["Participants"].S) ?? [ ]
+        };
+        return (true, hat);
+    }
 }

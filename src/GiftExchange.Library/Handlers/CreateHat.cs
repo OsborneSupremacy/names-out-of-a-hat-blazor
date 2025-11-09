@@ -14,7 +14,7 @@ public class CreateHat
         APIGatewayProxyRequest request,
         ILambdaContext context
     ) =>
-        await Handler.FunctionHandler<CreateHatRequest, CreateHatResponse>
+        await PayloadHandler.FunctionHandler<CreateHatRequest, CreateHatResponse>
         (
             request,
             InnerHandler,
@@ -46,7 +46,6 @@ public class CreateHat
         var newHat = new Hat
         {
             Id = Guid.NewGuid(),
-            Errors = [],
             Name = request.HatName,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,

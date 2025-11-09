@@ -1,6 +1,6 @@
 namespace GiftExchange.Library.Handlers;
 
-internal class Handler
+internal static class PayloadHandler
 {
     public static async Task<APIGatewayProxyResponse> FunctionHandler<TRequest, TResponse>(
         APIGatewayProxyRequest request,
