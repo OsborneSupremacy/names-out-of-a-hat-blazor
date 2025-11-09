@@ -36,7 +36,8 @@ resource "aws_api_gateway_deployment" "default" {
   }
 
   depends_on = [
-    module.lambda-add-participant
+    module.lambda-add-participant,
+    module.lambda-create-hat
   ]
 }
 
