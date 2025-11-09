@@ -24,20 +24,25 @@ internal class DynamoDbService
 
     public async Task<(bool exists, Guid hatId)> DoesHatExistAsync(string organizerEmail)
     {
-        var request = new GetItemRequest
+        var request = new QueryRequest
         {
             TableName = _tableName,
-            Key = new()
+            KeyConditionExpression = "PK = :pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new AttributeValue { S = organizerEmail }
-            }
+                [":pk"] = new() { S = organizerEmail }
+            },
+            ProjectionExpression = "SK",
+            Limit = 1
         };
 
-        var response = await _dynamoDbClient
-            .GetItemAsync(request).ConfigureAwait(false);
+        var response = await _dynamoDbClient.QueryAsync(request).ConfigureAwait(false);
 
-        var exists = response.Item is { Count: > 0 };
-        return (exists, exists ? Guid.Parse(response.Item["SK"].S) : Guid.Empty);
+        if (response.Items is { Count: > 0 } &&
+            response.Items[0].TryGetValue("SK", out var skAttr))
+            return (true, Guid.Parse(skAttr.S));
+
+        return (false, Guid.Empty);
     }
 
     public async Task<Guid> CreateHatAsync(Hat hat)
