@@ -30,15 +30,12 @@ public class CreateHat
         if (hatExists)
             return new Result<CreateHatResponse>(new CreateHatResponse { HatId = hatId }, HttpStatusCode.OK);
 
-        var organizer = new Participant
+        var organizer = new Person { Id = Guid.NewGuid(), Name = request.OrganizerName, Email = request.OrganizerEmail };
+
+        var organizerParticipant = new Participant
         {
             PickedRecipient = Persons.Empty,
-            Person = new Person
-            {
-                Id = Guid.NewGuid(),
-                Name = request.OrganizerName,
-                Email = request.OrganizerEmail
-            },
+            Person = organizer,
             InvitationSent = false,
             Recipients = []
         };
@@ -50,7 +47,7 @@ public class CreateHat
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             Organizer = organizer,
-            Participants = [ organizer ],
+            Participants = [ organizerParticipant ],
             OrganizerVerified = false,
             RecipientsAssigned = false
         };

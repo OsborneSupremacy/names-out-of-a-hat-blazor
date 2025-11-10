@@ -49,7 +49,7 @@ internal class DynamoDbService
     {
         var item = new Dictionary<string, AttributeValue>
         {
-            ["PK"] = new() { S = hat.Organizer.Person.Email },
+            ["PK"] = new() { S = hat.Organizer.Email },
             ["SK"] = new() { S = hat.Id.ToString() },
             ["HatId"] = new() { S = hat.Id.ToString() },
             ["Name"] = new() { S = hat.Name },
@@ -99,7 +99,7 @@ internal class DynamoDbService
             PriceRange = response.Item["PriceRange"].S,
             OrganizerVerified = response.Item["OrganizerVerified"].BOOL ?? false,
             RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
-            Organizer = JsonService.DeserializeDefault<Participant>(response.Item["Organizer"].S) ?? Participants.Empty,
+            Organizer = JsonService.DeserializeDefault<Person>(response.Item["Organizer"].S) ?? Persons.Empty,
             Participants = JsonService.DeserializeDefault<ImmutableList<Participant>>(response.Item["Participants"].S) ?? [ ]
         };
         return (true, hat);

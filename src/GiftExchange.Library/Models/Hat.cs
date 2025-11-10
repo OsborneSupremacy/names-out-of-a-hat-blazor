@@ -11,7 +11,7 @@ public record Hat
 
     public required string PriceRange { get; init; }
 
-    public required Participant Organizer { get; init; }
+    public required Person Organizer { get; init; }
 
     public required ImmutableList<Participant> Participants { get; init; }
 
@@ -28,7 +28,7 @@ public static class Hats
         Name = string.Empty,
         AdditionalInformation = string.Empty,
         PriceRange = string.Empty,
-        Organizer = Participants.Empty,
+        Organizer = Persons.Empty,
         Participants = [],
         OrganizerVerified = false,
         RecipientsAssigned = false

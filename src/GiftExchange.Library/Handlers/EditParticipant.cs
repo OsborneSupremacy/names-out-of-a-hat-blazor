@@ -86,7 +86,7 @@ public class EditParticipant
     }
 
     private static bool ParticipantIsOrganizer(Participant participant, Hat hat) =>
-        participant.Person.Id == hat.Organizer.Person.Id;
+        participant.Person.Id == hat.Organizer.Id;
 
     private static bool OrganizerEmailChanged(Participant participant, EditParticipantRequest request) =>
         participant.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase);

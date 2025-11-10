@@ -20,7 +20,7 @@
       "description": "The suggested price range for gifts"
     },
     "organizer": {
-      "$ref": "#/definitions/participant",
+      "$ref": "#/definitions/person",
       "description": "The organizer of the gift exchange"
     },
     "participants": {
