@@ -2,6 +2,8 @@ namespace GiftExchange.Library.Messaging;
 
 public record EditParticipantRequest
 {
+    public required string OrganizerEmail { get; init; }
+
     public required Guid HatId { get; init; }
 
     public required Guid PersonId { get; init; }

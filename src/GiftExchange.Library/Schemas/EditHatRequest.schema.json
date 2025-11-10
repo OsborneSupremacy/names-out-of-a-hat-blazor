@@ -7,6 +7,11 @@
       "format": "uuid",
       "description": "The unique identifier of the hat to edit"
     },
+    "organizerEmail": {
+      "type": "string",
+      "format": "email",
+      "description": "The email address of the organizer"
+    },
     "name": {
       "type": "string",
       "description": "The updated name of the hat"
@@ -20,6 +25,6 @@
       "description": "The price range for gifts"
     }
   },
-  "required": ["hatId", "name", "additionalInformation", "priceRange"],
+  "required": ["hatId", "organizerEmail", "name", "additionalInformation", "priceRange"],
   "additionalProperties": false
 }

@@ -81,7 +81,8 @@ internal class DynamoDbService
             TableName = _tableName,
             Key = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new() { S = organizerEmail }, ["SK"] = new() { S = hatId.ToString() }
+                ["PK"] = new() { S = organizerEmail },
+                ["SK"] = new() { S = hatId.ToString() }
             }
         };
 
@@ -102,5 +103,57 @@ internal class DynamoDbService
             Participants = JsonService.DeserializeDefault<ImmutableList<Participant>>(response.Item["Participants"].S) ?? [ ]
         };
         return (true, hat);
+    }
+
+    public async Task EditHatAsync(EditHatRequest request)
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = request.OrganizerEmail },
+                ["SK"] = new() { S = request.HatId.ToString() }
+            },
+            UpdateExpression = "SET #name = :name, AdditionalInformation = :additionalInfo, PriceRange = :priceRange",
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                ["#name"] = "Name"
+            },
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":name"] = new() { S = request.Name },
+                [":additionalInfo"] = new() { S = request.AdditionalInformation },
+                [":priceRange"] = new() { S = request.PriceRange }
+            }
+        };
+
+        await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
+    }
+
+    public async Task UpdateParticipantsAsync(
+        string requestOrganizerEmail,
+        Guid requestHatId,
+        ImmutableList<Participant> newParticipants
+        )
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = requestOrganizerEmail },
+                ["SK"] = new() { S = requestHatId.ToString() }
+            },
+            UpdateExpression = "SET Participants = :participants",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":participants"] = new() { S = JsonService.SerializeDefault(newParticipants) }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
     }
 }
