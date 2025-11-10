@@ -167,7 +167,11 @@ internal class DynamoDbService
                 ["PK"] = new() { S = requestOrganizerEmail },
                 ["SK"] = new() { S = requestHatId.ToString() }
             },
-            UpdateExpression = "SET Organizer.Person.Name = :name",
+            UpdateExpression = "SET #name = :name",
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                ["#name"] = "Organizer.Person.Name"
+            },
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":name"] = new() { S = requestName }

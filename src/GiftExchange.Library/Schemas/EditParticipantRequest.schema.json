@@ -1,49 +1,47 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "organizerEmail": {
-      "type": "string",
-      "format": "email",
-      "description": "The email address of the organizer"
-    },
-    "hatId": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The unique identifier of the hat"
-    },
-    "personId": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The unique identifier of the person to edit"
-    },
-    "recipients": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "organizerEmail": {
             "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          }
+            "format": "email",
+            "description": "The email address of the organizer"
         },
-        "required": ["id", "name"]
-      },
-      "description": "The list of potential recipients"
+        "hatId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the hat"
+        },
+        "personId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the person to edit"
+        },
+        "eligibleRecipientIds": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "description": "The list of eligible recipient UUIDs"
+        },
+        "name": {
+            "type": "string",
+            "description": "The updated name of the participant"
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The updated email of the participant"
+        }
     },
-    "name": {
-      "type": "string",
-      "description": "The updated name of the participant"
-    },
-    "email": {
-      "type": "string",
-      "format": "email",
-      "description": "The updated email of the participant"
-    }
-  },
-  "required": ["organizerEmail", "hatId", "personId", "recipients", "name", "email"],
-  "additionalProperties": false
+    "required": [
+        "organizerEmail",
+        "hatId",
+        "personId",
+        "eligibleRecipientIds",
+        "name",
+        "email"
+    ],
+    "additionalProperties": false
 }

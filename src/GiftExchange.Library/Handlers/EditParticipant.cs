@@ -62,14 +62,17 @@ public class EditParticipant
         if(participantsOut.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
             return new Result(new InvalidOperationException($"Participant with email {request.Email} already exists"), HttpStatusCode.Conflict);
 
+        var newRecipientList = GetUpdatedRecipientList(participantsOut, request);
+
         // re-add the updated participant with the new details
         participantsOut.Add(existingParticipant with
         {
             Person = existingParticipant.Person with
             {
                 Name = request.Name,
-                Email = request.Email
-            }
+                Email = request.Email,
+            },
+            Recipients = newRecipientList
         });
 
         await _dynamoDbService
@@ -93,6 +96,8 @@ public class EditParticipant
 
     /// <summary>
     /// The update recipient will be in the list of every other participant. We need to update those items.
+    ///
+    /// Use this for the participants *not* being edited.
     /// </summary>
     private ImmutableList<Recipient> GetUpdatedRecipientList(Participant participant, EditParticipantRequest request)
     {
@@ -122,4 +127,17 @@ public class EditParticipant
 
         return recipientsOut.ToImmutableList();
     }
+
+    /// <summary>
+    /// Use this for the participant being edited.
+    /// </summary>
+    /// <returns></returns>
+    private ImmutableList<Recipient> GetUpdatedRecipientList(List<Participant> otherParticipants, EditParticipantRequest request) =>
+        otherParticipants
+            .Select(p => new Recipient
+            {
+                Person = p.Person,
+                Eligible = request.EligibleRecipientIds.Contains(p.Person.Id)
+            })
+            .ToImmutableList();
 }
