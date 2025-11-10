@@ -15,8 +15,8 @@ public class GetHat
         ILambdaContext context
     )
     {
-        var organizerEmail = request.PathParameters["email"] ?? string.Empty;
-        var hatParameter = request.PathParameters["id"];
+        var organizerEmail = request.QueryStringParameters["email"] ?? string.Empty;
+        var hatParameter = request.QueryStringParameters["id"];
 
         var hatId = Guid.TryParse(hatParameter, out var guidOut) ? guidOut : Guid.Empty;
 
