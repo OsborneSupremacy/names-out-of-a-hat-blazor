@@ -2,14 +2,10 @@
 
 public record Person
 {
-    [Required]
     public required Guid Id { get; init; }
 
-    [Required(AllowEmptyStrings = false)]
     public required string Name { get; init; }
 
-    [Required(AllowEmptyStrings = false)]
-    [EmailAddress]
     public required string Email { get; init; }
 }
 

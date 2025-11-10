@@ -156,4 +156,26 @@ internal class DynamoDbService
             .UpdateItemAsync(updateRequest)
             .ConfigureAwait(false);
     }
+
+    public async Task UpdateOrganizerNameAsync(string requestOrganizerEmail, Guid requestHatId, string requestName)
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = requestOrganizerEmail },
+                ["SK"] = new() { S = requestHatId.ToString() }
+            },
+            UpdateExpression = "SET Organizer.Person.Name = :name",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":name"] = new() { S = requestName }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
+    }
 }

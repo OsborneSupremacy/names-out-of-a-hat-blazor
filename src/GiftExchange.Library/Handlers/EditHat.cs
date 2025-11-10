@@ -14,7 +14,7 @@ public class EditHat
         APIGatewayProxyRequest request,
         ILambdaContext context
     ) =>
-        await PayloadHandler.FunctionHandler<EditHatRequest, HttpStatusCode>
+        await PayloadHandler.FunctionHandler<EditHatRequest>
         (
             request,
             InnerHandler,
