@@ -17,7 +17,7 @@ public class GetHat
     {
         var organizerEmail = request.QueryStringParameters["email"] ?? string.Empty;
         var hatParameter = request.QueryStringParameters["id"];
-        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showPickedRecipients"], out var boolOut) && boolOut;
+        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 
         var hatId = Guid.TryParse(hatParameter, out var guidOut) ? guidOut : Guid.Empty;
 
