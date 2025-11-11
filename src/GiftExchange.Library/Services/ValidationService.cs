@@ -10,10 +10,10 @@ internal class ValidationService
             if(!validCountResponse.Success) return validCountResponse;
 
         var validDuplicatesResponse = ValidateDuplicates(hat.Participants);
-            if(!validDuplicatesResponse.Success) return validCountResponse;
+            if(!validDuplicatesResponse.Success) return validDuplicatesResponse;
 
         var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
-            if(!validEligibilityResponse.Success) return validCountResponse;
+            if(!validEligibilityResponse.Success) return validEligibilityResponse;
 
         return new ValidateHatResponse { Success = true, Errors = []};
     }
