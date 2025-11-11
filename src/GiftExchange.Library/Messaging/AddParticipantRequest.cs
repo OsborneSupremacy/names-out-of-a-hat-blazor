@@ -1,5 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
+[UsedImplicitly]
 public record AddParticipantRequest
 {
     public required string OrganizerEmail { get; init; }

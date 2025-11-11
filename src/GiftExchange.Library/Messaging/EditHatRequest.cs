@@ -1,5 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
+[UsedImplicitly]
 public record EditHatRequest
 {
     public required Guid HatId { get; init; }

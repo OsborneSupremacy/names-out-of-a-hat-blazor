@@ -1,6 +1,8 @@
 global using Amazon.Lambda.APIGatewayEvents;
 global using Amazon.Lambda.Core;
 
+global using JetBrains.Annotations;
+
 global using System.Collections.Immutable;
 global using System.ComponentModel.DataAnnotations;
 global using System.Net;

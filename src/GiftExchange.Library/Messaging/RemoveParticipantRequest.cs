@@ -1,6 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
-// ReSharper disable once ClassNeverInstantiated.Global
+[UsedImplicitly]
 public record RemoveParticipantRequest
 {
     public required string OrganizerEmail { get; init; }

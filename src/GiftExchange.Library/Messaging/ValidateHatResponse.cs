@@ -1,6 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
-// ReSharper disable once ClassNeverInstantiated.Global
+[UsedImplicitly]
 public record ValidateHatResponse
 {
     public required bool Success { get; init; }

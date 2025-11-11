@@ -13,5 +13,4 @@ internal static class ApiGatewayProxyResponses
         StatusCode = (int)HttpStatusCode.NotFound,
         Headers = CorsHeaderService.GetCorsHeaders()
     };
-
 }

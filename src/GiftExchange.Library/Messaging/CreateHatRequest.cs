@@ -1,5 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
+[UsedImplicitly]
 public record CreateHatRequest
 {
     public required string HatName { get; init; }

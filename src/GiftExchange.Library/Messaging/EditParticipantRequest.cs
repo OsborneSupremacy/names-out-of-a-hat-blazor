@@ -1,6 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
-// ReSharper disable once ClassNeverInstantiated.Global
+[UsedImplicitly]
 public record EditParticipantRequest
 {
     public required string OrganizerEmail { get; init; }
@@ -9,6 +9,7 @@ public record EditParticipantRequest
 
     public required Guid PersonId { get; init; }
 
+    // ReSharper disable once CollectionNeverUpdated.Global
     public required ImmutableList<Guid> EligibleRecipientIds { get; init; }
 
     public required string Name { get; init; }
