@@ -14,7 +14,7 @@
         }
     },
     "required": [
-        "hatId"
+        "organizerEmail", "hatId"
     ],
     "additionalProperties": false
 }
