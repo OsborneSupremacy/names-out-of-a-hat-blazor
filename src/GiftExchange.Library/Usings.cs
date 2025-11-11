@@ -5,6 +5,7 @@ global using System.Collections.Immutable;
 global using System.ComponentModel.DataAnnotations;
 global using System.Net;
 
+global using GiftExchange.Library.Extensions;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Services;
