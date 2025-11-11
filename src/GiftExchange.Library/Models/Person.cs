@@ -11,10 +11,14 @@ public record Person
 
 public static class Persons
 {
+    private static readonly Guid RedactedGuid = new("11111111-1111-1111-1111-111111111111");
+
     public static Person Empty => new()
     {
         Id = Guid.Empty,
         Name = string.Empty,
         Email = string.Empty
     };
+
+    public static Person Reacted => new() { Id = RedactedGuid, Name = "Hidden", Email = "someone@somedomain.com" };
 }

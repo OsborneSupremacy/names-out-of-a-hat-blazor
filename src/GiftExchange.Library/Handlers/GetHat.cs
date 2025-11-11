@@ -17,6 +17,7 @@ public class GetHat
     {
         var organizerEmail = request.QueryStringParameters["email"] ?? string.Empty;
         var hatParameter = request.QueryStringParameters["id"];
+        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showPickedRecipients"], out var boolOut) && boolOut;
 
         var hatId = Guid.TryParse(hatParameter, out var guidOut) ? guidOut : Guid.Empty;
 
@@ -27,6 +28,9 @@ public class GetHat
         if(!hatExists)
             return ApiGatewayProxyResponses.NotFound;
 
+        if(!showPickedRecipients)
+            hat = RedactPickedRecipients(hat);
+
         return new APIGatewayProxyResponse
         {
             StatusCode = (int)HttpStatusCode.OK,
@@ -34,4 +38,15 @@ public class GetHat
             Body = JsonService.SerializeDefault(hat)
         };
     }
+
+    private Hat RedactPickedRecipients(Hat hat) =>
+        hat with
+        {
+            Participants = hat.Participants
+                .Select(p => p with
+                {
+                    PickedRecipient = p.PickedRecipient == Persons.Empty ? Persons.Empty : Persons.Reacted
+                })
+                .ToImmutableList()
+        };
 }

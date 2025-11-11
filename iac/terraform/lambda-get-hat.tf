@@ -6,8 +6,9 @@ module "lambda-get-hat" {
   gateway_http_method         = "GET"
   gateway_http_operation_name = "GetHat"
   gateway_method_request_parameters = {
-    "method.request.querystring.email" = true,
-    "method.request.querystring.id"    = true
+    "method.request.querystring.email"                = true,
+    "method.request.querystring.id"                   = true,
+    "method.request.querystring.showpickedrecipients" = true,
   }
   gateway_method_request_model_name                 = ""
   gateway_method_request_model_description          = ""
