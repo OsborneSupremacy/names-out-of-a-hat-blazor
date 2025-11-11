@@ -1,13 +1,15 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "personId": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The unique identifier of the created person"
-    }
-  },
-  "required": ["personId"],
-  "additionalProperties": false
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "personId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the created person"
+        }
+    },
+    "required": [
+        "personId"
+    ],
+    "additionalProperties": false
 }

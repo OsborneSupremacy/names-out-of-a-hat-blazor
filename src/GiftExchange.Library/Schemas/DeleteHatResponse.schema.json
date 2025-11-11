@@ -1,17 +1,22 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "successMessage": {
-      "type": "string",
-      "description": "A success message when the delete operation completes"
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "successMessage": {
+            "type": "string",
+            "description": "A success message when the delete operation completes"
+        },
+        "errors": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "List of error messages when the operation fails"
+        }
     },
-    "errors": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "List of error messages when the operation fails"
-    }
-  },
-  "required": ["successMessage", "errors"],
-  "additionalProperties": false
+    "required": [
+        "successMessage",
+        "errors"
+    ],
+    "additionalProperties": false
 }

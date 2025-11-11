@@ -1,18 +1,21 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "hatId": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The unique identifier of the hat to validate"
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "hatId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the hat to validate"
+        },
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "The email address of the organizer"
+        }
     },
-    "organizerEmail": {
-      "type": "string",
-      "format": "email",
-      "description": "The email address of the organizer"
-    }
-  },
-  "required": ["hatId", "organizerEmail"],
-  "additionalProperties": false
+    "required": [
+        "hatId",
+        "organizerEmail"
+    ],
+    "additionalProperties": false
 }

@@ -32,5 +32,4 @@ public class ValidateHat
 
         return new Result<ValidateHatResponse>(validResult, HttpStatusCode.OK);
     }
-
 }

@@ -1,111 +1,132 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "The unique identifier of the hat"
-    },
-    "name": {
-      "type": "string",
-      "description": "The name of the gift exchange"
-    },
-    "additionalInformation": {
-      "type": "string",
-      "description": "Additional details about the gift exchange"
-    },
-    "priceRange": {
-      "type": "string",
-      "description": "The suggested price range for gifts"
-    },
-    "organizer": {
-      "$ref": "#/definitions/person",
-      "description": "The organizer of the gift exchange"
-    },
-    "participants": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/participant"
-      },
-      "description": "The list of participants in the gift exchange"
-    },
-    "organizerVerified": {
-      "type": "boolean",
-      "description": "Whether the organizer has been verified"
-    },
-    "recipientsAssigned": {
-      "type": "boolean",
-      "description": "Whether recipients have been assigned to participants"
-    }
-  },
-  "required": ["id", "name", "additionalInformation", "priceRange", "organizer", "participants", "organizerVerified", "recipientsAssigned"],
-  "additionalProperties": false,
-  "definitions": {
-    "person": {
-      "type": "object",
-      "properties": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
         "id": {
-          "type": "string",
-          "format": "uuid",
-          "description": "The unique identifier of the person"
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the hat"
         },
         "name": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The name of the person"
+            "type": "string",
+            "description": "The name of the gift exchange"
         },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "minLength": 1,
-          "description": "The email address of the person"
+        "additionalInformation": {
+            "type": "string",
+            "description": "Additional details about the gift exchange"
+        },
+        "priceRange": {
+            "type": "string",
+            "description": "The suggested price range for gifts"
+        },
+        "organizer": {
+            "$ref": "#/definitions/person",
+            "description": "The organizer of the gift exchange"
+        },
+        "participants": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/participant"
+            },
+            "description": "The list of participants in the gift exchange"
+        },
+        "organizerVerified": {
+            "type": "boolean",
+            "description": "Whether the organizer has been verified"
+        },
+        "recipientsAssigned": {
+            "type": "boolean",
+            "description": "Whether recipients have been assigned to participants"
         }
-      },
-      "required": ["id", "name", "email"],
-      "additionalProperties": false
     },
-    "recipient": {
-      "type": "object",
-      "properties": {
+    "required": [
+        "id",
+        "name",
+        "additionalInformation",
+        "priceRange",
+        "organizer",
+        "participants",
+        "organizerVerified",
+        "recipientsAssigned"
+    ],
+    "additionalProperties": false,
+    "definitions": {
         "person": {
-          "$ref": "#/definitions/person",
-          "description": "The person who could be a potential recipient"
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique identifier of the person"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The name of the person"
+                },
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "minLength": 1,
+                    "description": "The email address of the person"
+                }
+            },
+            "required": [
+                "id",
+                "name",
+                "email"
+            ],
+            "additionalProperties": false
         },
-        "eligible": {
-          "type": "boolean",
-          "description": "Whether this person is eligible to be picked as a recipient"
+        "recipient": {
+            "type": "object",
+            "properties": {
+                "person": {
+                    "$ref": "#/definitions/person",
+                    "description": "The person who could be a potential recipient"
+                },
+                "eligible": {
+                    "type": "boolean",
+                    "description": "Whether this person is eligible to be picked as a recipient"
+                }
+            },
+            "required": [
+                "person",
+                "eligible"
+            ],
+            "additionalProperties": false
+        },
+        "participant": {
+            "type": "object",
+            "properties": {
+                "pickedRecipient": {
+                    "$ref": "#/definitions/person",
+                    "description": "The person this participant will give a gift to"
+                },
+                "person": {
+                    "$ref": "#/definitions/person",
+                    "description": "The person who is participating"
+                },
+                "invitationSent": {
+                    "type": "boolean",
+                    "description": "Whether an invitation has been sent to this participant"
+                },
+                "recipients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/recipient"
+                    },
+                    "minItems": 1,
+                    "description": "The list of potential recipients for this participant"
+                }
+            },
+            "required": [
+                "pickedRecipient",
+                "person",
+                "invitationSent",
+                "recipients"
+            ],
+            "additionalProperties": false
         }
-      },
-      "required": ["person", "eligible"],
-      "additionalProperties": false
-    },
-    "participant": {
-      "type": "object",
-      "properties": {
-        "pickedRecipient": {
-          "$ref": "#/definitions/person",
-          "description": "The person this participant will give a gift to"
-        },
-        "person": {
-          "$ref": "#/definitions/person",
-          "description": "The person who is participating"
-        },
-        "invitationSent": {
-          "type": "boolean",
-          "description": "Whether an invitation has been sent to this participant"
-        },
-        "recipients": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/recipient"
-          },
-          "minItems": 1,
-          "description": "The list of potential recipients for this participant"
-        }
-      },
-      "required": ["pickedRecipient", "person", "invitationSent", "recipients"],
-      "additionalProperties": false
     }
-  }
 }
