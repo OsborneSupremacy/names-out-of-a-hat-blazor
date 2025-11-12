@@ -41,17 +41,23 @@ internal static class HatShakerService
 
         var participantsOut = new List<Participant>();
 
-        var pickedList = new HashSet<string>();
+        var assignedGivers = new HashSet<string>();
+        var assignedRecipients = new HashSet<string>();
 
         var errors = new List<string>();
 
-        for (int x = 1; x <= participantsIn.Count; x++)
+        foreach (var _ in participantsIn)
         {
-            var participantIn = faker.PickRandom(participantsIn.Where(p => p.PickedRecipient == Persons.Empty));
+            var participantIn = faker.
+                PickRandom(
+                    participantsIn
+                        .Where(p => !assignedGivers.Contains(p.Person.Email))
+                        .Where(p => p.PickedRecipient == Persons.Empty)
+                );
 
             var eligibleRecipients = participantIn.Recipients
                 .Where(r => r.Eligible)
-                .Where(r => !pickedList.Contains(r.Person.Email))
+                .Where(r => !assignedRecipients.Contains(r.Person.Email))
                 .ToList();
 
             if (!eligibleRecipients.Any())
@@ -66,7 +72,9 @@ internal static class HatShakerService
             };
 
             participantsOut.Add(participantOut);
-            pickedList.Add(participantOut.PickedRecipient.Email);
+
+            assignedGivers.Add(participantIn.Person.Email);
+            assignedRecipients.Add(participantOut.PickedRecipient.Email);
         }
 
         if (!errors.Any())
