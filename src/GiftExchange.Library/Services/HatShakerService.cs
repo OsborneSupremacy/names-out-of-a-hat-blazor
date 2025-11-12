@@ -35,6 +35,10 @@ internal static class HatShakerService
         Randomizer.Seed = new Random(randomSeed);
         var faker = new Faker();
 
+        participantsIn = participantsIn
+            .Select(p => p with { PickedRecipient = Persons.Empty }) // clear any previous picks
+            .ToImmutableList();
+
         var participantsOut = new List<Participant>();
 
         var pickedList = new HashSet<Guid>();

@@ -145,10 +145,11 @@ internal class DynamoDbService
                 ["PK"] = new() { S = requestOrganizerEmail },
                 ["SK"] = new() { S = requestHatId.ToString() }
             },
-            UpdateExpression = "SET Participants = :participants",
+            UpdateExpression = "SET Participants = :participants, RecipientsAssigned = :recipientsAssigned",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                [":participants"] = new() { S = JsonService.SerializeDefault(newParticipants) }
+                [":participants"] = new() { S = JsonService.SerializeDefault(newParticipants) },
+                [":recipientsAssigned"] = new() { BOOL = false }
             }
         };
 
@@ -193,7 +194,7 @@ internal class DynamoDbService
                 ["PK"] = new() { S = requestOrganizerEmail },
                 ["SK"] = new() { S = requestHatId.ToString() }
             },
-            UpdateExpression = "SET RecipientsAssignedAsync = :recipientsAssigned",
+            UpdateExpression = "SET RecipientsAssigned = :recipientsAssigned",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":recipientsAssigned"] = new() { BOOL = recipientsAssigned }
