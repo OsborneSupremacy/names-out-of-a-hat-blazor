@@ -20,6 +20,7 @@ public class ValidateHat
             InnerHandler,
             context
         );
+
     private async Task<Result<ValidateHatResponse>> InnerHandler(ValidateHatRequest request)
     {
         var (hatExists, hat) = await _dynamoDbService

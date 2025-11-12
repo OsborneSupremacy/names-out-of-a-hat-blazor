@@ -1,0 +1,14 @@
+﻿namespace GiftExchange.Library.Messaging;
+
+internal record ParticipantInvitationRequest
+{
+    public required Guid HatId { get; init; }
+
+    public required string OrganizerEmail { get; init; }
+
+    public required string RecipientEmail { get; init; }
+
+    public required string Subject { get; init; }
+
+    public required string HtmlBody { get; init; }
+}
