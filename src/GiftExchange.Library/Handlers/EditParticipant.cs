@@ -33,7 +33,7 @@ public class EditParticipant
             .ToList();
 
         var existingParticipant = participantsOut
-            .FirstOrDefault(p => p.Person.Email == request.Email);
+            .FirstOrDefault(p => p.Person.Email.ContentEquals(request.Email));
 
         if(existingParticipant is null)
             return new Result(new KeyNotFoundException($"Participant with email `{request.Email}` not found"), HttpStatusCode.NotFound);
