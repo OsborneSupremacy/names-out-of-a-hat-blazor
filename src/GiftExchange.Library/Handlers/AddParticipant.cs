@@ -15,27 +15,26 @@ public class AddParticipant
         ILambdaContext context
     ) =>
         await PayloadHandler
-            .FunctionHandler<AddParticipantRequest, AddParticipantResponse>(
+            .FunctionHandler<AddParticipantRequest>(
                 request,
                 InnerHandler,
                 context
             );
 
-    private async Task<Result<AddParticipantResponse>> InnerHandler(AddParticipantRequest request)
+    private async Task<Result> InnerHandler(AddParticipantRequest request)
     {
         var (hatExists, hat) = await _dynamoDbService
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
 
         if(!hatExists)
-            return new Result<AddParticipantResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+            return new Result(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
         // Check if a participant with the same email already exists
         if(hat.Participants.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
-            return new Result<AddParticipantResponse>(new InvalidOperationException($"Participant with email {request.Email} already exists in the hat."), HttpStatusCode.Conflict);
+            return new Result(new InvalidOperationException($"Participant with email {request.Email} already exists in the hat."), HttpStatusCode.Conflict);
 
         var newPerson = new Person
         {
-            Id = Guid.NewGuid(),
             Name = request.Name,
             Email = request.Email,
         };
@@ -73,7 +72,6 @@ public class AddParticipant
             participantsOut
         ) .ConfigureAwait(false);
 
-        var response = new AddParticipantResponse { PersonId = newPerson.Id };
-        return new Result<AddParticipantResponse>(response, HttpStatusCode.Created);
+        return new Result(HttpStatusCode.Created);
     }
 }

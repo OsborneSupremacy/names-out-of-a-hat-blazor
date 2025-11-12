@@ -30,31 +30,13 @@ public class EditParticipant
             return new Result(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
         var participantsOut = hat.Participants
-            .Select(p => p with
-            {
-                Recipients = GetUpdatedRecipientList(p, request)
-            })
             .ToList();
 
         var existingParticipant = participantsOut
-            .FirstOrDefault(p => p.Person.Id == request.PersonId);
+            .FirstOrDefault(p => p.Person.Email == request.Email);
 
         if(existingParticipant is null)
-            return new Result(new KeyNotFoundException($"Participant with id {request.PersonId} not found"), HttpStatusCode.NotFound);
-
-        if(ParticipantIsOrganizer(existingParticipant, hat))
-        {
-            if(OrganizerEmailChanged(existingParticipant, request))
-                return new Result(new InvalidOperationException("The organizer's email address cannot be changed."), HttpStatusCode.BadRequest);
-
-            // the only thing that can be changed for the organizer is their name
-            if(OrganizerNameChanged(existingParticipant, request))
-                await _dynamoDbService.UpdateOrganizerNameAsync(
-                    request.OrganizerEmail,
-                    request.HatId,
-                    request.Name
-                ).ConfigureAwait(false);
-        }
+            return new Result(new KeyNotFoundException($"Participant with email `{request.Email}` not found"), HttpStatusCode.NotFound);
 
         participantsOut.Remove(existingParticipant);
 
@@ -67,11 +49,6 @@ public class EditParticipant
         // re-add the updated participant with the new details
         participantsOut.Add(existingParticipant with
         {
-            Person = existingParticipant.Person with
-            {
-                Name = request.Name,
-                Email = request.Email,
-            },
             Recipients = newRecipientList
         });
 
@@ -85,49 +62,6 @@ public class EditParticipant
         return new Result(HttpStatusCode.OK);
     }
 
-    private static bool ParticipantIsOrganizer(Participant participant, Hat hat) =>
-        participant.Person.Id == hat.Organizer.Id;
-
-    private static bool OrganizerEmailChanged(Participant participant, EditParticipantRequest request) =>
-        participant.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase);
-
-    private static bool OrganizerNameChanged(Participant participant, EditParticipantRequest request) =>
-        !participant.Person.Name.Equals(request.Name);
-
-    /// <summary>
-    /// The update recipient will be in the list of every other participant. We need to update those items.
-    ///
-    /// Use this for the participants *not* being edited.
-    /// </summary>
-    private ImmutableList<Recipient> GetUpdatedRecipientList(Participant participant, EditParticipantRequest request)
-    {
-        if(participant.Person.Id == request.PersonId)
-            return participant.Recipients;
-
-        var recipientsOut = participant
-            .Recipients
-            .ToList();
-
-        var existingRecipient = recipientsOut
-            .FirstOrDefault(r => r.Person.Id == request.PersonId);
-
-        if (existingRecipient is not null)
-            recipientsOut.Remove(existingRecipient);
-
-        recipientsOut.Add(new Recipient
-        {
-            Person = new Person
-            {
-                Id = request.PersonId,
-                Name = request.Name,
-                Email = request.Email
-            },
-            Eligible = existingRecipient?.Eligible ?? true
-        });
-
-        return recipientsOut.ToImmutableList();
-    }
-
     /// <summary>
     /// Use this for the participant being edited.
     /// </summary>
@@ -137,7 +71,7 @@ public class EditParticipant
             .Select(p => new Recipient
             {
                 Person = p.Person,
-                Eligible = request.EligibleRecipientIds.Contains(p.Person.Id)
+                Eligible = request.EligibleRecipientEmails.Contains(p.Person.Email, StringComparer.OrdinalIgnoreCase)
             })
             .ToImmutableList();
 }

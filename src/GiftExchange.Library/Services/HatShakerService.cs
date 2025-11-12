@@ -41,7 +41,7 @@ internal static class HatShakerService
 
         var participantsOut = new List<Participant>();
 
-        var pickedList = new HashSet<Guid>();
+        var pickedList = new HashSet<string>();
 
         var errors = new List<string>();
 
@@ -51,7 +51,7 @@ internal static class HatShakerService
 
             var eligibleRecipients = participantIn.Recipients
                 .Where(r => r.Eligible)
-                .Where(r => !pickedList.Contains(r.Person.Id))
+                .Where(r => !pickedList.Contains(r.Person.Email))
                 .ToList();
 
             if (!eligibleRecipients.Any())
@@ -66,7 +66,7 @@ internal static class HatShakerService
             };
 
             participantsOut.Add(participantOut);
-            pickedList.Add(participantOut.PickedRecipient.Id);
+            pickedList.Add(participantOut.PickedRecipient.Email);
         }
 
         if (!errors.Any())

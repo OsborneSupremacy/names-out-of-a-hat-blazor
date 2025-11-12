@@ -27,9 +27,9 @@ internal class EligibilityValidationService
         foreach (var person in people)
         {
             if (!participants
-                .Where(x => x.Person.Id != person.Id)
+                .Where(x => x.Person.Email != person.Email)
                 .SelectMany(x => x.Recipients)
-                .Any(x => x.Eligible && x.Person.Id == person.Id))
+                .Any(x => x.Eligible && x.Person.Email == person.Email))
 
                 errors.Add(new($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked."));
         }

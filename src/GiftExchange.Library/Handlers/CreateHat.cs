@@ -30,7 +30,7 @@ public class CreateHat
         if (hatExists)
             return new Result<CreateHatResponse>(new CreateHatResponse { HatId = hatId }, HttpStatusCode.OK);
 
-        var organizer = new Person { Id = Guid.NewGuid(), Name = request.OrganizerName, Email = request.OrganizerEmail };
+        var organizer = new Person { Name = request.OrganizerName, Email = request.OrganizerEmail };
 
         var organizerParticipant = new Participant
         {

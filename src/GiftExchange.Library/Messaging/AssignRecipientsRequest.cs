@@ -1,5 +1,6 @@
 namespace GiftExchange.Library.Messaging;
 
+[UsedImplicitly]
 public record AssignRecipientsRequest
 {
     public required Guid HatId { get; init; }

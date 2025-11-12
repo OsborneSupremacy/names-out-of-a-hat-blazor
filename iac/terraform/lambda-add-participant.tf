@@ -10,9 +10,9 @@ module "lambda-add-participant" {
   gateway_method_request_model_description          = "A request to add a participant."
   gateway_method_request_model_schema_file_location = "../../src/GiftExchange.Library/Schemas/AddParticipantRequest.schema.json"
   include_404_response                              = true
-  good_response_model_name                          = "AddParticipantResponse"
-  good_response_model_description                   = "A response to a request to add a participant."
-  good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/AddParticipantResponse.schema.json"
+  good_response_model_name                          = ""
+  good_response_model_description                   = ""
+  good_response_model_schema_file_location          = ""
   function_description                              = "Add a participant"
   function_memory_size                              = 128
   function_name                                     = "giftexchange-add-participant"

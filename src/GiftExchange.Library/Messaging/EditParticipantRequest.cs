@@ -7,12 +7,8 @@ public record EditParticipantRequest
 
     public required Guid HatId { get; init; }
 
-    public required Guid PersonId { get; init; }
-
     // ReSharper disable once CollectionNeverUpdated.Global
-    public required ImmutableList<Guid> EligibleRecipientIds { get; init; }
-
-    public required string Name { get; init; }
+    public required ImmutableList<string> EligibleRecipientEmails { get; init; }
 
     public required string Email { get; init; }
 }

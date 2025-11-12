@@ -12,10 +12,10 @@
             "format": "uuid",
             "description": "The unique identifier of the hat"
         },
-        "personId": {
+        "email": {
             "type": "string",
-            "format": "uuid",
-            "description": "The unique identifier of the person to remove"
+            "format": "email",
+            "description": "The email of the participant to remove"
         }
     },
     "required": [

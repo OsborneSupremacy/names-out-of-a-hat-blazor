@@ -37,7 +37,7 @@ public class RemoveParticipant
             .ToList();
 
         var existingParticipant = participantsOut
-            .FirstOrDefault(p => p.Person.Id == request.PersonId);
+            .FirstOrDefault(p => p.Person.Email.ContentEquals(request.Email));
 
         if(existingParticipant is null)
             return new Result(HttpStatusCode.OK);
@@ -58,11 +58,11 @@ public class RemoveParticipant
     }
 
     private static bool ParticipantIsOrganizer(Participant participant, Hat hat) =>
-        participant.Person.Id == hat.Organizer.Id;
+        participant.Person.Email.ContentEquals(hat.Organizer.Email);
 
     private ImmutableList<Recipient> GetUpdatedRecipientList(Participant participant, RemoveParticipantRequest request)
     {
-        if(participant.Person.Id == request.PersonId)
+        if(participant.Person.Email.ContentEquals(request.Email))
             return [];
 
         var recipientsOut = participant
@@ -70,7 +70,7 @@ public class RemoveParticipant
             .ToList();
 
         var existingRecipient = recipientsOut
-            .FirstOrDefault(r => r.Person.Id == request.PersonId);
+            .FirstOrDefault(r => r.Person.Email.ContentEquals(request.Email));
 
         if (existingRecipient is not null)
             recipientsOut.Remove(existingRecipient);

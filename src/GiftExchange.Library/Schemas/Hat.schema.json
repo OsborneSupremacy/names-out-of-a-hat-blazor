@@ -54,11 +54,6 @@
         "person": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "string",
-                    "format": "uuid",
-                    "description": "The unique identifier of the person"
-                },
                 "name": {
                     "type": "string",
                     "minLength": 1,
@@ -72,7 +67,6 @@
                 }
             },
             "required": [
-                "id",
                 "name",
                 "email"
             ],
