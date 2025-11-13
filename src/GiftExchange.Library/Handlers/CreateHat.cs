@@ -36,7 +36,6 @@ public class CreateHat
         {
             PickedRecipient = Persons.Empty,
             Person = organizer,
-            InvitationSent = false,
             Recipients = []
         };
 

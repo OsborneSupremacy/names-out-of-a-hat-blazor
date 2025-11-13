@@ -43,7 +43,6 @@ public class AddParticipant
         {
             Person = newPerson,
             PickedRecipient = Persons.Empty,
-            InvitationSent = false,
             Recipients = hat.Participants
                 .Select(p => new Recipient
                 {

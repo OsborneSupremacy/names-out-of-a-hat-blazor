@@ -46,9 +46,6 @@ public class SendInvitations
 
         foreach(var participant in hat.Participants)
         {
-            if(participant.InvitationSent)
-                continue; // need to account for queued invitations not yet sent
-
             var invitation = new ParticipantInvitationRequest
             {
                 HatId = request.HatId,
