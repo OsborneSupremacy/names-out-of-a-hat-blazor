@@ -28,6 +28,7 @@ public class InvitationQueueHandler
         _liveMode = EnvReader.TryGetBooleanValue("LIVE_MODE", out var boolOut) && boolOut;
     }
 
+    // ReSharper disable once UnusedMember.Global
     public async Task FunctionHandler(SQSEvent evnt, ILambdaContext context)
     {
         foreach (var record in evnt.Records)
