@@ -8,7 +8,7 @@ namespace GiftExchange.Library.Handlers;
 [UsedImplicitly]
 public class InvitationQueueHandler
 {
-    private const string SenderEmail = "namesofahat@osbornesupremacy.com";
+    private const string SenderEmail = "namesoutofahat@osbornesupremacy.com";
 
     private const string TestRecipient = "osborne.ben@gmail.com";
 
