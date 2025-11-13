@@ -89,3 +89,10 @@ resource "aws_iam_role_policy" "invitation-queue-handler-policy" {
   })
 }
 
+resource "aws_lambda_event_source_mapping" "invitation-queue-handler-sqs-trigger" {
+  event_source_arn                   = aws_sqs_queue.invitations-queue.arn
+  function_name                      = aws_lambda_function.invitation-queue-handler.arn
+  batch_size                         = 1
+  maximum_batching_window_in_seconds = 30
+  enabled                            = true
+}
