@@ -1,6 +1,7 @@
 ﻿using Amazon.Lambda.SQSEvents;
 using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
+using dotenv.net.Utilities;
 
 namespace GiftExchange.Library.Handlers;
 
@@ -8,6 +9,10 @@ namespace GiftExchange.Library.Handlers;
 public class InvitationQueueHandler
 {
     private const string SenderEmail = "namesofahat@osbornesupremacy.com";
+
+    private const string TestRecipient = "osborne.ben@gmail.com";
+
+    private readonly bool _liveMode;
 
     private readonly IAmazonSimpleEmailService _sesClient;
 
@@ -20,6 +25,7 @@ public class InvitationQueueHandler
         _sesClient = new AmazonSimpleEmailServiceClient(
             Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION")!)
         );
+        _liveMode = EnvReader.TryGetBooleanValue("LIVE_MODE", out var boolOut) && boolOut;
     }
 
     public async Task FunctionHandler(SQSEvent evnt, ILambdaContext context)
@@ -38,12 +44,14 @@ public class InvitationQueueHandler
 
         context.Logger.LogInformation($"Sending email to {invitation.RecipientEmail} with subject '{invitation.Subject}'");
 
+        var recipient = _liveMode ? invitation.RecipientEmail : TestRecipient;
+
         var sendRequest = new SendEmailRequest
         {
             Source = SenderEmail,
             Destination = new Destination
             {
-                ToAddresses = [ invitation.RecipientEmail ]
+                ToAddresses = [ recipient ]
             },
             Message = new Message
             {
