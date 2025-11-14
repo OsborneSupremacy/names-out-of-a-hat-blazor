@@ -13,7 +13,7 @@ module "lambda-send-invitations-hat" {
   good_response_model_name                          = ""
   good_response_model_description                   = ""
   good_response_model_schema_file_location          = ""
-  function_description                              = ""
+  function_description                              = "Composes emails and enqueues in SQS"
   function_memory_size                              = 128
   function_name                                     = "giftexchange-send-invitations"
   function_net_class                                = "SendInvitations"

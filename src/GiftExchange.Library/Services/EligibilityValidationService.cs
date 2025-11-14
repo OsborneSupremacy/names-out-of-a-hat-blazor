@@ -31,7 +31,7 @@ internal class EligibilityValidationService
                 .SelectMany(x => x.Recipients)
                 .Any(x => x.Eligible && x.Person.Email == person.Email))
 
-                errors.Add(new($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked."));
+                errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
         }
 
         if (errors.Any())

@@ -44,5 +44,5 @@ internal class EmailCompositionService
         };
 
     private static string GetQualifiedName(string name) =>
-        !name.StartsWith("the ", StringComparison.OrdinalIgnoreCase) ? name : $"the {name}";
+        name.StartsWith("the ", StringComparison.OrdinalIgnoreCase) ? name : $"the {name}";
 }
