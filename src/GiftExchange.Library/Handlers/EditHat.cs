@@ -10,6 +10,7 @@ public class EditHat
         _dynamoDbService = new DynamoDbService();
     }
 
+    [UsedImplicitly]
     public async Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context

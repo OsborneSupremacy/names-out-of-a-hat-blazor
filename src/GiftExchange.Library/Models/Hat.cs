@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Models;
 
-public record Hat
+internal record Hat
 {
     [Required]
     public required Guid Id { get; init; }
@@ -20,7 +20,7 @@ public record Hat
     public required bool RecipientsAssigned { get; init; }
 }
 
-public static class Hats
+internal static class Hats
 {
     public static Hat Empty => new()
     {

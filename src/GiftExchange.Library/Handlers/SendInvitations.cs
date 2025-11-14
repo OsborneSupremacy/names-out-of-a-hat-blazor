@@ -35,8 +35,6 @@ public class SendInvitations
         if(!hat.RecipientsAssigned)
             return new Result(new AggregateException("Recipients have not yet been assigned."), HttpStatusCode.BadRequest);
 
-        var participantsOut = new List<Participant>();
-
         var sqsClient = new Amazon.SQS.AmazonSQSClient();
         var queueUrl = EnvReader.GetStringValue("INVITATIONS_QUEUE_URL");
 

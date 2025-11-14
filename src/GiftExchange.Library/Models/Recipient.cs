@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Models;
 
-public record Recipient
+internal record Recipient
 {
     [Required]
     public required Person Person { get; init; }

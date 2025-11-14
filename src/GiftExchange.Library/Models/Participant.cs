@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Models;
 
-public record Participant
+internal record Participant
 {
     public required Person PickedRecipient { get; init; }
 
@@ -12,7 +12,7 @@ public record Participant
     public required ImmutableList<Recipient> Recipients { get; init; }
 }
 
-public static class Participants
+internal static class Participants
 {
     public static Participant Empty => new()
     {

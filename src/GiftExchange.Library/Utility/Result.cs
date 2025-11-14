@@ -1,10 +1,4 @@
-
 namespace GiftExchange.Library.Utility;
-
-internal static class Results
-{
-    public static Result Success(HttpStatusCode statusCode) => new(statusCode);
-}
 
 internal class Result
 {

@@ -2,7 +2,7 @@ using System.Net.Mime;
 
 namespace GiftExchange.Library.Services;
 
-public static class CorsHeaderService
+internal static class CorsHeaderService
 {
    public static Dictionary<string, string> GetCorsHeaders() =>
        new()

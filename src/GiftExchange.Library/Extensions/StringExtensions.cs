@@ -3,7 +3,7 @@ using Bogus;
 
 namespace GiftExchange.Library.Extensions;
 
-public static class StringExtensions
+internal static class StringExtensions
 {
     public static string TrimNullSafe(this string input)
     {

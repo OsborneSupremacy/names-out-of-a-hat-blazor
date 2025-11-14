@@ -1,5 +1,6 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
+[UsedImplicitly]
 public class AssignRecipients
 {
     private readonly DynamoDbService _dynamoDbService;
@@ -12,6 +13,7 @@ public class AssignRecipients
         _dynamoDbService = new DynamoDbService();
     }
 
+    [UsedImplicitly]
     public async Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context

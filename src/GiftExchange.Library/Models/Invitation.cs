@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Models;
 
-public record Invitation
+internal record Invitation
 {
     public required string RecipientEmail { get; init; }
 

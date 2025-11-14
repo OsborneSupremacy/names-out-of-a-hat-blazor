@@ -1,13 +1,13 @@
 ﻿namespace GiftExchange.Library.Models;
 
-public record Person
+internal record Person
 {
     public required string Name { get; init; }
 
     public required string Email { get; init; }
 }
 
-public static class Persons
+internal static class Persons
 {
     public static Person Empty => new()
     {
