@@ -1,6 +1,6 @@
 namespace GiftExchange.Library.Utility;
 
-internal class Result
+public class Result
 {
     public bool IsSuccess { get; }
 
@@ -29,7 +29,7 @@ internal class Result
     }
 }
 
-internal class Result<T>
+public class Result<T>
 {
     public bool IsSuccess { get; }
 

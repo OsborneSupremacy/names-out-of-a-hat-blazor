@@ -1,12 +1,20 @@
+global using Amazon.DynamoDBv2;
+
 global using Amazon.Lambda.APIGatewayEvents;
 global using Amazon.Lambda.Core;
 
+global using dotenv.net.Utilities;
+
 global using JetBrains.Annotations;
+
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.DependencyInjection;
 
 global using System.Collections.Immutable;
 global using System.ComponentModel.DataAnnotations;
 global using System.Net;
 
+global using GiftExchange.Library.Abstractions;
 global using GiftExchange.Library.Extensions;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;

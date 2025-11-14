@@ -2,18 +2,22 @@ using System.Text.Json;
 
 namespace GiftExchange.Library.Services;
 
-public static class JsonService
+public class JsonService
 {
-    private static JsonSerializerOptions GetDefaultSerializerOptions() =>
-        new()
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
+
+    public JsonService()
+    {
+        _jsonSerializerOptions = new()
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
+    }
 
-    public static string SerializeDefault<T>(T value) =>
-        JsonSerializer.Serialize(value, GetDefaultSerializerOptions());
+    public string SerializeDefault<T>(T value) =>
+        JsonSerializer.Serialize(value, _jsonSerializerOptions);
 
-    public static T? DeserializeDefault<T>(string value) =>
-        JsonSerializer.Deserialize<T>(value, GetDefaultSerializerOptions());
+    public T? DeserializeDefault<T>(string value) =>
+        JsonSerializer.Deserialize<T>(value, _jsonSerializerOptions);
 }

@@ -6,7 +6,7 @@ namespace GiftExchange.Library.Services;
 [UsedImplicitly]
 internal class EmailCompositionService
 {
-    public static string ComposeEmail(Hat hat, string participant, string pickedName)
+    public string ComposeEmail(Hat hat, string participant, string pickedName)
     {
         var e = new List<string>
         {

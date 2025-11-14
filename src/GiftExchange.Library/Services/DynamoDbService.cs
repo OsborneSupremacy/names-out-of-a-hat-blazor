@@ -1,24 +1,20 @@
-﻿using Amazon.DynamoDBv2;
-using Amazon.DynamoDBv2.Model;
-using dotenv.net.Utilities;
+﻿using Amazon.DynamoDBv2.Model;
 
 namespace GiftExchange.Library.Services;
 
-internal class DynamoDbService
+public class DynamoDbService
 {
+    private readonly JsonService _jsonService;
+
     private readonly IAmazonDynamoDB _dynamoDbClient;
 
     private readonly string _tableName;
 
-    public DynamoDbService(IAmazonDynamoDB dynamoDbClient)
+    // ReSharper disable once ConvertToPrimaryConstructor
+    public DynamoDbService(IAmazonDynamoDB dynamoDbClient, JsonService jsonService)
     {
+        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
         _dynamoDbClient = dynamoDbClient ?? throw new ArgumentNullException(nameof(dynamoDbClient));
-        _tableName = EnvReader.GetStringValue("TABLE_NAME");
-    }
-
-    public DynamoDbService()
-    {
-        _dynamoDbClient = new AmazonDynamoDBClient();
         _tableName = EnvReader.GetStringValue("TABLE_NAME");
     }
 
@@ -57,8 +53,8 @@ internal class DynamoDbService
             ["PriceRange"] = new() { S = hat.PriceRange },
             ["OrganizerVerified"] = new() { BOOL = hat.OrganizerVerified },
             ["RecipientsAssigned"] = new() { BOOL = hat.RecipientsAssigned },
-            ["Organizer"] = new() { S = JsonService.SerializeDefault(hat.Organizer) },
-            ["Participants"] = new() { S = JsonService.SerializeDefault(hat.Participants) }
+            ["Organizer"] = new() { S = _jsonService.SerializeDefault(hat.Organizer) },
+            ["Participants"] = new() { S = _jsonService.SerializeDefault(hat.Participants) }
         };
 
         var request = new PutItemRequest
@@ -99,8 +95,8 @@ internal class DynamoDbService
             PriceRange = response.Item["PriceRange"].S,
             OrganizerVerified = response.Item["OrganizerVerified"].BOOL ?? false,
             RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
-            Organizer = JsonService.DeserializeDefault<Person>(response.Item["Organizer"].S) ?? Persons.Empty,
-            Participants = JsonService.DeserializeDefault<ImmutableList<Participant>>(response.Item["Participants"].S) ?? [ ]
+            Organizer = _jsonService.DeserializeDefault<Person>(response.Item["Organizer"].S) ?? Persons.Empty,
+            Participants = _jsonService.DeserializeDefault<ImmutableList<Participant>>(response.Item["Participants"].S) ?? [ ]
         };
         return (true, hat);
     }
@@ -148,7 +144,7 @@ internal class DynamoDbService
             UpdateExpression = "SET Participants = :participants, RecipientsAssigned = :recipientsAssigned",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                [":participants"] = new() { S = JsonService.SerializeDefault(newParticipants) },
+                [":participants"] = new() { S = _jsonService.SerializeDefault(newParticipants) },
                 [":recipientsAssigned"] = new() { BOOL = false }
             }
         };

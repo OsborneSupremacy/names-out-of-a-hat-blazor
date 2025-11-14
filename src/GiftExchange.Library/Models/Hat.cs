@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Models;
 
-internal record Hat
+public record Hat
 {
     [Required]
     public required Guid Id { get; init; }

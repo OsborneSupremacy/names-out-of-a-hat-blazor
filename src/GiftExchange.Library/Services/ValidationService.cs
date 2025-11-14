@@ -9,9 +9,6 @@ internal class ValidationService
         var validCountResponse = ValidateCount(hat.Participants);
             if(!validCountResponse.Success) return validCountResponse;
 
-        var validDuplicatesResponse = ValidateDuplicates(hat.Participants);
-            if(!validDuplicatesResponse.Success) return validDuplicatesResponse;
-
         var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
             if(!validEligibilityResponse.Success) return validEligibilityResponse;
 
@@ -29,25 +26,6 @@ internal class ValidationService
 
         if (!isValid)
             return new ValidateHatResponse { Success = false, Errors = [ error ] };
-
-        return new ValidateHatResponse { Success = true, Errors = []};
-    }
-
-    private ValidateHatResponse ValidateDuplicates(IList<Participant> participants)
-    {
-        List<DuplicateCheckService> duplicateCheckServices = [
-            new NameDuplicateCheckService(),
-            new EmailDuplicateCheckService()
-        ];
-
-        var people = participants.Select(x => x.Person).ToList();
-
-        foreach (var duplicateCheckService in duplicateCheckServices)
-        {
-            var duplicatesCheckResult = duplicateCheckService.Execute(people);
-            if (!duplicatesCheckResult.Success)
-                return duplicatesCheckResult;
-        }
 
         return new ValidateHatResponse { Success = true, Errors = []};
     }
