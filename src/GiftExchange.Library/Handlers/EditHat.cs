@@ -1,5 +1,5 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
-public class EditHat : HandlerWithoutResponseBody<EditHatRequest, EditHatService>
+public class EditHat : HandlerBase<EditHatRequest, EditHatService, StatusCodeOnlyResponse>, IHasRequestBody<EditHatRequest>
 {
 }

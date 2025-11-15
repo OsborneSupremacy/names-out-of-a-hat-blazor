@@ -2,6 +2,7 @@
 
 namespace GiftExchange.Library.Services;
 
+[UsedImplicitly]
 public class DynamoDbService
 {
     private readonly JsonService _jsonService;

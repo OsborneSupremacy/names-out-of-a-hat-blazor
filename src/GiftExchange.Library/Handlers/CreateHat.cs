@@ -1,5 +1,5 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
-public class CreateHat : HandlerWithResponseBody<CreateHatRequest, CreateHatService, CreateHatResponse>
+public class CreateHat : HandlerBase<CreateHatRequest, CreateHatService, CreateHatResponse>, IHasRequestBody<CreateHatRequest>, IHasRequestBody<CreateHatResponse>
 {
 }

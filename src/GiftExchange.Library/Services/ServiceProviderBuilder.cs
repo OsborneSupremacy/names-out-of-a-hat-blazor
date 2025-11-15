@@ -1,5 +1,4 @@
-﻿using Amazon.DynamoDBv2;
-using Amazon.SimpleEmail;
+﻿using Amazon.SimpleEmail;
 using Amazon.SQS;
 
 namespace GiftExchange.Library.Services;
@@ -31,15 +30,20 @@ internal static class ServiceProviderBuilder
     public static IServiceCollection AddBusinessServices(this IServiceCollection services) =>
         services
             .AddSingleton<AddParticipantService>()
-            .AddSingleton<AssignRecipientsService>()
+            .AddSingleton<EditParticipantService>()
+            .AddSingleton<RemoveParticipantService>()
+
             .AddSingleton<CreateHatService>()
             .AddSingleton<DeleteHatService>()
             .AddSingleton<EditHatService>()
-            .AddSingleton<EligibilityValidationService>()
-            .AddSingleton<EmailCompositionService>()
             .AddSingleton<GetHatService>()
-            .AddSingleton<InvitationQueueHandlerService>()
-            .AddSingleton<RemoveParticipantService>()
-            .AddSingleton<ValidateHatService>()
-            .AddSingleton<VerifyOrganizerService>();
+
+            .AddSingleton<EligibilityValidationService>()
+            .AddSingleton<ValidationService>()
+            .AddSingleton<AssignRecipientsService>()
+
+            .AddSingleton<VerifyOrganizerService>()
+            .AddSingleton<EmailCompositionService>()
+            .AddSingleton<EnqueueInvitationsService>()
+            .AddSingleton<InvitationQueueHandlerService>();
 }

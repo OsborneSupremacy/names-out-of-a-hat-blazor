@@ -4,7 +4,7 @@ using System.Web;
 namespace GiftExchange.Library.Services;
 
 [UsedImplicitly]
-internal class EmailCompositionService
+public class EmailCompositionService
 {
     public string ComposeEmail(Hat hat, string participant, string pickedName)
     {

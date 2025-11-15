@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class CreateHatService : IServiceWithResponseBody<CreateHatRequest, CreateHatResponse>
+public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResponse>
 {
     private readonly DynamoDbService _dynamoDbService;
 

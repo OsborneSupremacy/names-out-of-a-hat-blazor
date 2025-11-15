@@ -1,21 +1,34 @@
 ﻿namespace GiftExchange.Library.Services;
 
-internal class ValidationService
+public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHatResponse>
 {
     private const int Max = 30;
 
-    public ValidateHatResponse Validate(Hat hat)
+    private readonly DynamoDbService _dynamoDbService;
+
+    public ValidationService(DynamoDbService dynamoDbService)
     {
-        var validCountResponse = ValidateCount(hat.Participants);
-            if(!validCountResponse.Success) return validCountResponse;
-
-        var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
-            if(!validEligibilityResponse.Success) return validEligibilityResponse;
-
-        return new ValidateHatResponse { Success = true, Errors = []};
+        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
     }
 
-    private ValidateHatResponse ValidateCount(IList<Participant> participants)
+    public async Task<Result<ValidateHatResponse>> ExecuteAsync(ValidateHatRequest request, ILambdaContext context)
+    {
+        var (hatExists, hat) = await _dynamoDbService
+            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+
+        if(!hatExists)
+            return new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+
+        var validCountResponse = ValidateCount(hat.Participants);
+            if(validCountResponse.IsFaulted || !validCountResponse.Value.Success) return validCountResponse;
+
+        var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
+            if(validEligibilityResponse.IsFaulted || !validEligibilityResponse.Value.Success) return validEligibilityResponse;
+
+        return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors = []}, HttpStatusCode.OK);
+    }
+
+    private Result<ValidateHatResponse> ValidateCount(IList<Participant> participants)
     {
         var (isValid, error) = participants.Count switch
         {
@@ -24,9 +37,12 @@ internal class ValidationService
             _ => (true, string.Empty)
         };
 
-        if (!isValid)
-            return new ValidateHatResponse { Success = false, Errors = [ error ] };
-
-        return new ValidateHatResponse { Success = true, Errors = []};
+        return isValid switch
+        {
+            false => new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = [error] },
+                HttpStatusCode.OK),
+            _ => new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors = [] },
+                HttpStatusCode.OK)
+        };
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class AddParticipantService : IServiceWithoutResponseBody<AddParticipantRequest>
+public class AddParticipantService : IBusinessService<AddParticipantRequest, StatusCodeOnlyResponse>
 {
     private readonly ILogger<AddParticipantService> _logger;
 
@@ -12,17 +12,17 @@ public class AddParticipantService : IServiceWithoutResponseBody<AddParticipantR
         _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
     }
 
-    public async Task<Result> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
+    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
     {
         var (hatExists, hat) = await _dynamoDbService
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
 
         if(!hatExists)
-            return new Result(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+            return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
         // Check if a participant with the same email already exists
         if(hat.Participants.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
-            return new Result(new InvalidOperationException($"Participant with email {request.Email} already exists in the hat."), HttpStatusCode.Conflict);
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException($"Participant with email {request.Email} already exists in the hat."), HttpStatusCode.Conflict);
 
         var newPerson = new Person
         {
@@ -62,6 +62,9 @@ public class AddParticipantService : IServiceWithoutResponseBody<AddParticipantR
             participantsOut
         ) .ConfigureAwait(false);
 
-        return new Result(HttpStatusCode.Created);
+        return new Result<StatusCodeOnlyResponse>(
+            new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.Created},
+            HttpStatusCode.Created
+        );
     }
 }

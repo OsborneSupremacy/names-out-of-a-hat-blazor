@@ -2,7 +2,7 @@
 
 internal class EligibilityValidationService
 {
-    public ValidateHatResponse Validate(ImmutableList<Participant> participants)
+    public Result<ValidateHatResponse> Validate(ImmutableList<Participant> participants)
     {
         var errors = new List<string>();
 
@@ -20,7 +20,7 @@ internal class EligibilityValidationService
         }
 
         if (errors.Any())
-            return new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() };
+            return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK);
 
         var people = participants.Select(x => x.Person).ToList();
 
@@ -35,8 +35,8 @@ internal class EligibilityValidationService
         }
 
         if (errors.Any())
-            return new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() };
+            return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK);
 
-        return new ValidateHatResponse { Success = true, Errors =[] };
+        return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors =[] }, HttpStatusCode.OK);
     }
 }

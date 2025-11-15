@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
 [UsedImplicitly]
-public class AssignRecipients : HandlerWithoutResponseBody<AssignRecipientsRequest, AssignRecipientsService>
+public class AssignRecipients : HandlerBase<AssignRecipientsRequest, AssignRecipientsService, StatusCodeOnlyResponse>, IHasRequestBody<AssignRecipientsRequest>
 {
 }

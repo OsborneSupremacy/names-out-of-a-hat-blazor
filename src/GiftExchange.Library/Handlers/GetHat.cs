@@ -1,53 +1,18 @@
 namespace GiftExchange.Library.Handlers;
 
-public class GetHat
+public class GetHat : HandlerBase<GetHatRequest, GetHatService, Hat>, IHasRequestParameters<GetHatRequest>, IHasResponseBody<Hat>
 {
-    private readonly DynamoDbService _dynamoDbService;
-
-    // ReSharper disable once ConvertConstructorToMemberInitializers
-    public GetHat()
-    {
-        _dynamoDbService = new DynamoDbService();
-    }
-
-    [UsedImplicitly]
-    public async Task<APIGatewayProxyResponse> FunctionHandler(
-        APIGatewayProxyRequest request,
-        ILambdaContext context
-    )
+    public Result<GetHatRequest> Transform(APIGatewayProxyRequest request)
     {
         var organizerEmail = request.QueryStringParameters["email"] ?? string.Empty;
-        var hatParameter = request.QueryStringParameters["id"];
+        var hatId = Guid.TryParse(request.QueryStringParameters["id"], out var id) ? id : Guid.Empty;
         var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 
-        var hatId = Guid.TryParse(hatParameter, out var guidOut) ? guidOut : Guid.Empty;
-
-        var (hatExists, hat) = await _dynamoDbService
-            .GetHatAsync(organizerEmail, hatId)
-            .ConfigureAwait(false);
-
-        if(!hatExists)
-            return ApiGatewayProxyResponses.NotFound;
-
-        if(!showPickedRecipients)
-            hat = RedactPickedRecipients(hat);
-
-        return new APIGatewayProxyResponse
+        return new Result<GetHatRequest>(new GetHatRequest
         {
-            StatusCode = (int)HttpStatusCode.OK,
-            Headers = CorsHeaderService.GetCorsHeaders(),
-            Body = JsonService.SerializeDefault(hat)
-        };
+            OrganizerEmail = organizerEmail,
+            HatId = hatId,
+            ShowPickedRecipients = showPickedRecipients
+        }, HttpStatusCode.OK);
     }
-
-    private Hat RedactPickedRecipients(Hat hat) =>
-        hat with
-        {
-            Participants = hat.Participants
-                .Select(p => p with
-                {
-                    PickedRecipient = p.PickedRecipient == Persons.Empty ? Persons.Empty : Persons.Reacted
-                })
-                .ToImmutableList()
-        };
 }
