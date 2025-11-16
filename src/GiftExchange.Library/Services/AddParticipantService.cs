@@ -4,21 +4,30 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
 {
     private readonly ILogger<AddParticipantService> _logger;
 
+    private readonly GetHatService _getHatService;
+
     private readonly DynamoDbService _dynamoDbService;
 
-    public AddParticipantService(ILogger<AddParticipantService> logger, DynamoDbService dynamoDbService)
+    public AddParticipantService(
+        ILogger<AddParticipantService> logger,
+        DynamoDbService dynamoDbService,
+        GetHatService getHatService
+        )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _getHatService = getHatService ?? throw new ArgumentNullException(nameof(getHatService));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _dynamoDbService
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+        var hatResult = await _getHatService
+            .ExecuteAsync(new GetHatRequest { HatId = request.HatId, OrganizerEmail = request.OrganizerEmail, ShowPickedRecipients = true }, context);
 
-        if(!hatExists)
-            return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+        if(hatResult.IsFaulted)
+            return new Result<StatusCodeOnlyResponse>(hatResult.Exception, hatResult.StatusCode);
+
+        var hat = hatResult.Value;
 
         // Check if a participant with the same email already exists
         if(hat.Participants.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
