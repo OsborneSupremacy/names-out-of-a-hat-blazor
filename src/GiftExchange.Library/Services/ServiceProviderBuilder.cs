@@ -29,6 +29,8 @@ internal static class ServiceProviderBuilder
 
     public static IServiceCollection AddBusinessServices(this IServiceCollection services) =>
         services
+            .AddSingleton<DynamoDbService>()
+
             .AddSingleton<AddParticipantService>()
             .AddSingleton<EditParticipantService>()
             .AddSingleton<RemoveParticipantService>()

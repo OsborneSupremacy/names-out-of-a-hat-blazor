@@ -14,7 +14,7 @@ resource "aws_lambda_function" "invitation-queue-handler" {
     variables = merge(
       local.common_environment_variables,
       {
-        LIVE_MODE = true
+        LIVE_MODE = false
       }
     )
   }
