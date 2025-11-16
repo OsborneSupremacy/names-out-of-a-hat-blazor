@@ -1,5 +1,5 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
-public class SendInvitations : HandlerBase<SendInvitationsRequest, EnqueueInvitationsService, StatusCodeOnlyResponse>, IHasRequestBody<SendInvitationsRequest>
+public class SendInvitations : ApiGatewayHandler<SendInvitationsRequest, EnqueueInvitationsService, StatusCodeOnlyResponse>, IHasRequestBody<SendInvitationsRequest>
 {
 }

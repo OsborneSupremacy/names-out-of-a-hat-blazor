@@ -1,5 +1,5 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
-public class EditParticipant : HandlerBase<EditParticipantRequest, EditParticipantService, StatusCodeOnlyResponse>, IHasRequestBody<EditParticipantRequest>
+public class EditParticipant : ApiGatewayHandler<EditParticipantRequest, EditParticipantService, StatusCodeOnlyResponse>, IHasRequestBody<EditParticipantRequest>
 {
 }

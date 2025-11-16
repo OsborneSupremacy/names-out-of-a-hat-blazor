@@ -1,5 +1,5 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
-public class EditHat : HandlerBase<EditHatRequest, EditHatService, StatusCodeOnlyResponse>, IHasRequestBody<EditHatRequest>
+public class EditHat : ApiGatewayHandler<EditHatRequest, EditHatService, StatusCodeOnlyResponse>, IHasRequestBody<EditHatRequest>
 {
 }

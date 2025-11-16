@@ -1,6 +1,6 @@
 namespace GiftExchange.Library.Handlers;
 
-public class GetHat : HandlerBase<GetHatRequest, GetHatService, Hat>, IHasRequestParameters<GetHatRequest>, IHasResponseBody<Hat>
+public class GetHat : ApiGatewayHandler<GetHatRequest, GetHatService, Hat>, IHasRequestParameters<GetHatRequest>, IHasResponseBody<Hat>
 {
     public Result<GetHatRequest> Transform(APIGatewayProxyRequest request)
     {

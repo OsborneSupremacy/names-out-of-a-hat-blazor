@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Handlers;
 
 [UsedImplicitly]
-public class AssignRecipients : HandlerBase<AssignRecipientsRequest, AssignRecipientsService, StatusCodeOnlyResponse>, IHasRequestBody<AssignRecipientsRequest>
+public class AssignRecipients : ApiGatewayHandler<AssignRecipientsRequest, AssignRecipientsService, StatusCodeOnlyResponse>, IHasRequestBody<AssignRecipientsRequest>
 {
 }
