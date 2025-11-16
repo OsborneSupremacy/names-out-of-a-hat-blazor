@@ -1,34 +1,5 @@
 namespace GiftExchange.Library.Utility;
 
-public class Result
-{
-    public bool IsSuccess { get; }
-
-    public bool IsFaulted => !IsSuccess;
-
-    public HttpStatusCode StatusCode { get; }
-
-    public Exception Exception =>
-        IsFaulted
-            ? _exception!
-            : throw new InvalidOperationException("Cannot access exception for successful result");
-
-    private readonly Exception? _exception;
-
-    public Result(HttpStatusCode statusCode)
-    {
-        IsSuccess = true;
-        StatusCode = statusCode;
-    }
-
-    public Result(Exception exception, HttpStatusCode statusCode)
-    {
-        _exception = exception;
-        IsSuccess = false;
-        StatusCode = statusCode;
-    }
-}
-
 public class Result<T>
 {
     public bool IsSuccess { get; }

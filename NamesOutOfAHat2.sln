@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NamesOutOfAHat2.Server.Serv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GiftExchange.Library", "src\GiftExchange.Library\GiftExchange.Library.csproj", "{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GiftExchange.Library.Tests", "src\GiftExchange.Library.Tests\GiftExchange.Library.Tests.csproj", "{FEA5B930-BE86-40D5-B37A-C9325C3D5A72}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,10 @@ Global
 		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFA3E0B4-D720-40EF-A9F8-1E41C8142599}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEA5B930-BE86-40D5-B37A-C9325C3D5A72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEA5B930-BE86-40D5-B37A-C9325C3D5A72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEA5B930-BE86-40D5-B37A-C9325C3D5A72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEA5B930-BE86-40D5-B37A-C9325C3D5A72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

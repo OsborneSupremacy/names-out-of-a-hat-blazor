@@ -16,6 +16,13 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
     private IServiceProvider? _serviceProvider;
     private readonly object _serviceProviderLock = new();
 
+    protected ApiGatewayHandler() { }
+
+    protected ApiGatewayHandler(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    }
+
     private IServiceProvider GetServiceProvider()
     {
         if(_serviceProvider is not null) return _serviceProvider;

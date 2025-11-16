@@ -14,7 +14,7 @@ internal static class ServiceProviderBuilder
             .BuildServiceProvider();
     }
 
-    public static IServiceCollection AddVendorServices(this IServiceCollection services) =>
+    internal static IServiceCollection AddVendorServices(this IServiceCollection services) =>
         services
             .AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>()
             .AddSingleton<IAmazonSimpleEmailService>(
@@ -22,12 +22,12 @@ internal static class ServiceProviderBuilder
                     Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION")!)))
             .AddSingleton<IAmazonSQS, AmazonSQSClient>();
 
-    public static IServiceCollection AddUtilities(this IServiceCollection services) =>
+    internal static IServiceCollection AddUtilities(this IServiceCollection services) =>
         services
             .AddLogging(builder => builder.AddLambdaLogger())
             .AddSingleton<JsonService>();
 
-    public static IServiceCollection AddBusinessServices(this IServiceCollection services) =>
+    internal static IServiceCollection AddBusinessServices(this IServiceCollection services) =>
         services
             .AddSingleton<DynamoDbService>()
 

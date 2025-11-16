@@ -7,6 +7,13 @@ public class InvitationQueueHandler
     private IServiceProvider? _serviceProvider;
     private readonly object _serviceProviderLock = new();
 
+    protected InvitationQueueHandler() { }
+
+    protected InvitationQueueHandler(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    }
+
     private IServiceProvider GetServiceProvider()
     {
         if(_serviceProvider is not null) return _serviceProvider;

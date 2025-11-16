@@ -2,6 +2,10 @@ namespace GiftExchange.Library.Handlers;
 
 public class GetHat : ApiGatewayHandler<GetHatRequest, GetHatService, Hat>, IHasRequestParameters<GetHatRequest>, IHasResponseBody<Hat>
 {
+    public GetHat() { }
+
+    public GetHat(IServiceProvider serviceProvider) : base(serviceProvider) { }
+
     public Result<GetHatRequest> Transform(APIGatewayProxyRequest request)
     {
         var organizerEmail = request.QueryStringParameters["email"] ?? string.Empty;
