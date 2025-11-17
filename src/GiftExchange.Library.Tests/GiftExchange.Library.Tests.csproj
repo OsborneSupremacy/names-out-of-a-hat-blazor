@@ -29,4 +29,11 @@
     <ProjectReference Include="..\GiftExchange.Library\GiftExchange.Library.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove=".env" />
+    <Content Include=".env">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
