@@ -2,13 +2,13 @@
 
 public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 {
-    private readonly IServiceProvider _serviceProvider;
-
     private readonly JsonService _jsonService;
 
     private readonly ILambdaContext _context;
 
     private readonly TestDataService _testDataService;
+
+    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
     public AddParticipantTests(DynamoDbFixture dbFixture)
     {
@@ -18,14 +18,16 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 
         _context = new FakeLambdaContext();
         _jsonService = new JsonService();
-        _serviceProvider = new ServiceCollection()
+        IServiceProvider serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
             .AddSingleton(dynamoDbClient)
             .BuildServiceProvider();
 
-        var dynamoDbService = _serviceProvider.GetRequiredService<DynamoDbService>();
+        var dynamoDbService = serviceProvider.GetRequiredService<DynamoDbService>();
         _testDataService = new TestDataService(dynamoDbService);
+
+        _sut = new AddParticipant(serviceProvider).FunctionHandler;
     }
 
     [Fact]
@@ -45,10 +47,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             })
         };
 
-        var sut = new AddParticipant(_serviceProvider);
-
         // act
-        var response = await sut.FunctionHandler(request, _context);
+        var response = await _sut(request, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Created);
@@ -82,11 +82,9 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             })
         };
 
-        var sut = new AddParticipant(_serviceProvider);
-
         // act
-        await sut.FunctionHandler(requestOne, _context);
-        var response = await sut.FunctionHandler(requestTwo, _context);
+        await _sut(requestOne, _context);
+        var response = await _sut(requestTwo, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
@@ -120,11 +118,10 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             })
         };
 
-        var sut = new AddParticipant(_serviceProvider);
 
         // act
-        await sut.FunctionHandler(requestOne, _context);
-        var response = await sut.FunctionHandler(requestTwo, _context);
+        await _sut(requestOne, _context);
+        var response = await _sut(requestTwo, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);

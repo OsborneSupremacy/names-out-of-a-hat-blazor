@@ -2,6 +2,7 @@ global using Amazon.Lambda.APIGatewayEvents;
 global using Amazon.Lambda.Core;
 
 global using dotenv.net;
+global using dotenv.net.Utilities;
 
 global using FluentAssertions;
 

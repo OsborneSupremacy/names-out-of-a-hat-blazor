@@ -14,6 +14,7 @@ public class DynamoDbFixture : IAsyncLifetime
     // ReSharper disable once ConvertConstructorToMemberInitializers
     public DynamoDbFixture()
     {
+        DotEnv.Load();
         _container = new DynamoDbBuilder().Build();
         CancellationTokenSource = new();
     }
@@ -42,11 +43,9 @@ public class DynamoDbFixture : IAsyncLifetime
     {
         using var client = CreateClient();
 
-        const string tableName = "giftexchange";
-
         var createRequest = new CreateTableRequest
         {
-            TableName = tableName,
+            TableName = EnvReader.GetStringValue("TABLE_NAME"),
             BillingMode = BillingMode.PAY_PER_REQUEST,
             KeySchema =
             [
