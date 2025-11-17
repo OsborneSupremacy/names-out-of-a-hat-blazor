@@ -44,4 +44,11 @@ internal class TestDataService
 
         return newHat;
     }
+
+    public async Task<Hat> GetHatAsync(string organizerEmail, Guid hatId)
+    {
+        var (_, hat) = await _dynamoDbService
+            .GetHatAsync(organizerEmail, hatId);
+        return hat;
+    }
 }

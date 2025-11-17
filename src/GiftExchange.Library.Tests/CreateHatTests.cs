@@ -6,8 +6,6 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
 
     private readonly ILambdaContext _context;
 
-    private readonly TestDataService _testDataService;
-
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
     public CreateHatTests(DynamoDbFixture dbFixture)
@@ -24,8 +22,6 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-        _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
-
         _sut = new CreateHat(serviceProvider).FunctionHandler;
     }
 
