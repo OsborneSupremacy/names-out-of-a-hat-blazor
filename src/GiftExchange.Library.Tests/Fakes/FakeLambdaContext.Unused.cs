@@ -1,8 +1,11 @@
-﻿using Amazon.Lambda.Core;
+﻿using System.Diagnostics.CodeAnalysis;
+using Amazon.Lambda.Core;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace GiftExchange.Library.Tests.Fakes;
 
-internal partial class FakeLamdaContext
+[SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
+internal partial class FakeLambdaContext
 {
     public string AwsRequestId { get; }
 

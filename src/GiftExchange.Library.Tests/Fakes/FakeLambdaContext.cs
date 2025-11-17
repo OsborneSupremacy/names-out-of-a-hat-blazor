@@ -2,7 +2,7 @@
 
 namespace GiftExchange.Library.Tests.Fakes;
 
-internal partial class FakeLamdaContext : ILambdaContext
+internal partial class FakeLambdaContext : ILambdaContext
 {
 
 

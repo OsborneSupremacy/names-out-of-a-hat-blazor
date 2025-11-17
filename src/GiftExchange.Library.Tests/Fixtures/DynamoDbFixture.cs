@@ -1,3 +1,6 @@
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
+using Amazon.Runtime;
 using Testcontainers.DynamoDb;
 
 namespace GiftExchange.Library.Tests.Fixtures;
@@ -15,9 +18,68 @@ public class DynamoDbFixture : IAsyncLifetime
         CancellationTokenSource = new();
     }
 
+    public IAmazonDynamoDB CreateClient()
+    {
+        var config = new AmazonDynamoDBConfig
+        {
+            ServiceURL = _container.GetConnectionString()
+        };
+
+        var credentials = new BasicAWSCredentials("test", "test");
+        return new AmazonDynamoDBClient(credentials, config);
+    }
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync(CancellationTokenSource.Token);
+        await ProvisionTableAsync();
+    }
+
+    /// <summary>
+    /// Provision table in the DynamoDB container that's equivalent to the production table that's provisioned via Terraform.
+    /// </summary>
+    private async Task ProvisionTableAsync()
+    {
+        using var client = CreateClient();
+
+        const string tableName = "giftexchange";
+
+        var createRequest = new CreateTableRequest
+        {
+            TableName = tableName,
+            BillingMode = BillingMode.PAY_PER_REQUEST,
+            KeySchema =
+            [
+                new KeySchemaElement("PK", KeyType.HASH),
+                new KeySchemaElement("SK", KeyType.RANGE)
+            ],
+            AttributeDefinitions =
+            [
+                new AttributeDefinition("PK", ScalarAttributeType.S),
+                new AttributeDefinition("SK", ScalarAttributeType.S)
+            ]
+        };
+
+        await client.CreateTableAsync(createRequest, CancellationTokenSource.Token);
+
+        // // Wait for table to become ACTIVE
+        // var timeout = TimeSpan.FromSeconds(30);
+        // var start = DateTime.UtcNow;
+        // while (true)
+        // {
+        //     var desc = await client.DescribeTableAsync(tableName, CancellationTokenSource.Token);
+        //     if (desc.Table.TableStatus == TableStatus.ACTIVE)
+        //     {
+        //         break;
+        //     }
+        //
+        //     if (DateTime.UtcNow - start > timeout)
+        //     {
+        //         throw new TimeoutException($"Timed out waiting for DynamoDB table {tableName} to become ACTIVE.");
+        //     }
+        //
+        //     await Task.Delay(500, CancellationTokenSource.Token);
+        // }
     }
 
     public async Task DisposeAsync()
