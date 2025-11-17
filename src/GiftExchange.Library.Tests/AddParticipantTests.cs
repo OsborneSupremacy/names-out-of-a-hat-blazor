@@ -1,6 +1,4 @@
-﻿using GiftExchange.Library.Tests.Extensions;
-
-namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests;
 
 public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 {
@@ -25,10 +23,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             .AddSingleton(dynamoDbClient)
             .BuildServiceProvider();
 
-        var dynamoDbService = serviceProvider.GetRequiredService<DynamoDbService>();
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-
-        _testDataService = new TestDataService(dynamoDbService);
+        _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
 
         _sut = new AddParticipant(serviceProvider).FunctionHandler;
     }
@@ -43,8 +39,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             {
                 OrganizerEmail = hat.Organizer.Email,
                 HatId = hat.Id,
-                Name = "Joe Test",
-                Email = "participant@test.com"
+                Name = "Guy Test",
+                Email = "guy@test.com"
             }).ToApiGatewayProxyRequest();
 
         // act

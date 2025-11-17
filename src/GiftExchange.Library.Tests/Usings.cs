@@ -12,6 +12,8 @@ global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Handlers;
 global using GiftExchange.Library.Services;
+
+global using GiftExchange.Library.Tests.Extensions;
 global using GiftExchange.Library.Tests.Fakes;
 global using GiftExchange.Library.Tests.Fixtures;
 global using GiftExchange.Library.Tests.Services;
