@@ -7,7 +7,7 @@ namespace GiftExchange.Library.Tests.Fixtures;
 
 public class DynamoDbFixture : IAsyncLifetime
 {
-    public CancellationTokenSource CancellationTokenSource { get; }
+    private CancellationTokenSource CancellationTokenSource { get; }
 
     private readonly DynamoDbContainer _container;
 
@@ -61,25 +61,6 @@ public class DynamoDbFixture : IAsyncLifetime
         };
 
         await client.CreateTableAsync(createRequest, CancellationTokenSource.Token);
-
-        // // Wait for table to become ACTIVE
-        // var timeout = TimeSpan.FromSeconds(30);
-        // var start = DateTime.UtcNow;
-        // while (true)
-        // {
-        //     var desc = await client.DescribeTableAsync(tableName, CancellationTokenSource.Token);
-        //     if (desc.Table.TableStatus == TableStatus.ACTIVE)
-        //     {
-        //         break;
-        //     }
-        //
-        //     if (DateTime.UtcNow - start > timeout)
-        //     {
-        //         throw new TimeoutException($"Timed out waiting for DynamoDB table {tableName} to become ACTIVE.");
-        //     }
-        //
-        //     await Task.Delay(500, CancellationTokenSource.Token);
-        // }
     }
 
     public async Task DisposeAsync()

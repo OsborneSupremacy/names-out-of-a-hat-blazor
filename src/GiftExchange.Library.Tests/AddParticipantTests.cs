@@ -1,6 +1,4 @@
-﻿using Amazon.DynamoDBv2;
-
-namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests;
 
 public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 {
@@ -10,75 +8,41 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly ILambdaContext _context;
 
-    private readonly DynamoDbService _dynamoDbService;
-
-    private readonly IAmazonDynamoDB _dynamoDbClient;
+    private readonly TestDataService _testDataService;
 
     public AddParticipantTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
 
-        _dynamoDbClient = dbFixture.CreateClient();
+        var dynamoDbClient = dbFixture.CreateClient();
 
         _context = new FakeLambdaContext();
         _jsonService = new JsonService();
         _serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
-            .AddSingleton(_dynamoDbClient)
+            .AddSingleton(dynamoDbClient)
             .BuildServiceProvider();
 
-        _dynamoDbService = _serviceProvider.GetRequiredService<DynamoDbService>();
+        var dynamoDbService = _serviceProvider.GetRequiredService<DynamoDbService>();
+        _testDataService = new TestDataService(dynamoDbService);
     }
 
     [Fact]
-    public async Task AddParticipant_ValidRequest_ParticipantAdded()
+    public async Task AddParticipant_ValidRequest_CreatedResponse()
     {
         // arrange
-
-        // create table
-
-
-        var newHat = new Hat
-        {
-            Id = Guid.NewGuid(),
-            Name = "Test Gift Exchange",
-            AdditionalInformation = string.Empty,
-            PriceRange = string.Empty,
-            Organizer = new Person
-            {
-                Email = "organizer@test.com",
-                Name = "Organizer Test"
-            },
-            Participants = [
-                new Participant
-                {
-                    Person = new Person
-                    {
-                        Email = "organizer@test.com",
-                        Name = "Organizer Test"
-                    },
-                    Recipients = [],
-                    PickedRecipient = Persons.Empty
-                }
-            ],
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
-
-        await _dynamoDbService.CreateHatAsync(newHat);
-
-        var innerRequest = new AddParticipantRequest
-        {
-            OrganizerEmail = newHat.Organizer.Email,
-            HatId = newHat.Id,
-            Name = "Joe Test",
-            Email = "participant@test.com"
-        };
+        var hat = await _testDataService.CreateTestHatAsync();
 
         var request = new APIGatewayProxyRequest
         {
-            Body = _jsonService.SerializeDefault(innerRequest)
+            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+            {
+                OrganizerEmail = hat.Organizer.Email,
+                HatId = hat.Id,
+                Name = "Joe Test",
+                Email = "participant@test.com"
+            })
         };
 
         var sut = new AddParticipant(_serviceProvider);
@@ -88,5 +52,81 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task AddParticipant_SameEmailAttempt_ConflictResponse()
+    {
+        // arrange
+        var hat = await _testDataService.CreateTestHatAsync();
+
+        var requestOne = new APIGatewayProxyRequest
+        {
+            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+            {
+                OrganizerEmail = hat.Organizer.Email,
+                HatId = hat.Id,
+                Name = "Joe Test",
+                Email = "participant@test.com"
+            })
+        };
+
+        var requestTwo = new APIGatewayProxyRequest
+        {
+            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+            {
+                OrganizerEmail = hat.Organizer.Email,
+                HatId = hat.Id,
+                Name = "Not Joe Test",
+                Email = "participant@test.com"
+            })
+        };
+
+        var sut = new AddParticipant(_serviceProvider);
+
+        // act
+        await sut.FunctionHandler(requestOne, _context);
+        var response = await sut.FunctionHandler(requestTwo, _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task AddParticipant_SameNameAttempt_ConflictResponse()
+    {
+        // arrange
+        var hat = await _testDataService.CreateTestHatAsync();
+
+        var requestOne = new APIGatewayProxyRequest
+        {
+            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+            {
+                OrganizerEmail = hat.Organizer.Email,
+                HatId = hat.Id,
+                Name = "Joe Test",
+                Email = "participant@test.com"
+            })
+        };
+
+        var requestTwo = new APIGatewayProxyRequest
+        {
+            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+            {
+                OrganizerEmail = hat.Organizer.Email,
+                HatId = hat.Id,
+                Name = "Joe Test",
+                Email = "joe@test.com"
+            })
+        };
+
+        var sut = new AddParticipant(_serviceProvider);
+
+        // act
+        await sut.FunctionHandler(requestOne, _context);
+        var response = await sut.FunctionHandler(requestTwo, _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
     }
 }

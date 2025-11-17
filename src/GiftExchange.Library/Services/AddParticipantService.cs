@@ -29,9 +29,9 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
 
         var hat = hatResult.Value;
 
-        // Check if a participant with the same email already exists
-        if(hat.Participants.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException($"Participant with email {request.Email} already exists in the hat."), HttpStatusCode.Conflict);
+        // Check if a participant with the same email or name already exists
+        if(hat.Participants.Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participant with provided email or name already exists. Participants must have unique email addresses and names."), HttpStatusCode.Conflict);
 
         var newPerson = new Person
         {
