@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Tests;
+﻿using GiftExchange.Library.Tests.Extensions;
+
+namespace GiftExchange.Library.Tests;
 
 public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 {
@@ -15,9 +17,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         DotEnv.Load();
 
         var dynamoDbClient = dbFixture.CreateClient();
-
         _context = new FakeLambdaContext();
-        _jsonService = new JsonService();
+
         IServiceProvider serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
@@ -25,6 +26,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             .BuildServiceProvider();
 
         var dynamoDbService = serviceProvider.GetRequiredService<DynamoDbService>();
+        _jsonService = serviceProvider.GetRequiredService<JsonService>();
+
         _testDataService = new TestDataService(dynamoDbService);
 
         _sut = new AddParticipant(serviceProvider).FunctionHandler;
@@ -36,16 +39,13 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var request = new APIGatewayProxyRequest
-        {
-            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+        var request = _jsonService.SerializeDefault(new AddParticipantRequest
             {
                 OrganizerEmail = hat.Organizer.Email,
                 HatId = hat.Id,
                 Name = "Joe Test",
                 Email = "participant@test.com"
-            })
-        };
+            }).ToApiGatewayProxyRequest();
 
         // act
         var response = await _sut(request, _context);
@@ -60,27 +60,21 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var requestOne = new APIGatewayProxyRequest
-        {
-            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+        var requestOne =_jsonService.SerializeDefault(new AddParticipantRequest
             {
                 OrganizerEmail = hat.Organizer.Email,
                 HatId = hat.Id,
                 Name = "Joe Test",
                 Email = "participant@test.com"
-            })
-        };
+            }).ToApiGatewayProxyRequest();
 
-        var requestTwo = new APIGatewayProxyRequest
-        {
-            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+        var requestTwo = _jsonService.SerializeDefault(new AddParticipantRequest
             {
                 OrganizerEmail = hat.Organizer.Email,
                 HatId = hat.Id,
                 Name = "Not Joe Test",
                 Email = "participant@test.com"
-            })
-        };
+            }).ToApiGatewayProxyRequest();
 
         // act
         await _sut(requestOne, _context);
@@ -96,28 +90,22 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var requestOne = new APIGatewayProxyRequest
-        {
-            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+        var requestOne = _jsonService.SerializeDefault(new AddParticipantRequest
             {
                 OrganizerEmail = hat.Organizer.Email,
                 HatId = hat.Id,
                 Name = "Joe Test",
                 Email = "participant@test.com"
-            })
-        };
+            }).ToApiGatewayProxyRequest();
 
-        var requestTwo = new APIGatewayProxyRequest
-        {
-            Body = _jsonService.SerializeDefault(new AddParticipantRequest
+
+        var requestTwo = _jsonService.SerializeDefault(new AddParticipantRequest
             {
                 OrganizerEmail = hat.Organizer.Email,
                 HatId = hat.Id,
                 Name = "Joe Test",
                 Email = "joe@test.com"
-            })
-        };
-
+            }).ToApiGatewayProxyRequest();
 
         // act
         await _sut(requestOne, _context);

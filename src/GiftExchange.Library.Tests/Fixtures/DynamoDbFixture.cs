@@ -25,9 +25,7 @@ public class DynamoDbFixture : IAsyncLifetime
         {
             ServiceURL = _container.GetConnectionString()
         };
-
-        var credentials = new BasicAWSCredentials("test", "test");
-        return new AmazonDynamoDBClient(credentials, config);
+        return new AmazonDynamoDBClient(new BasicAWSCredentials("test", "test"), config);
     }
 
     public async Task InitializeAsync()
