@@ -15,7 +15,7 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
         var dynamoDbClient = dbFixture.CreateClient();
         _context = new FakeLambdaContext();
 
-        IServiceProvider serviceProvider = new ServiceCollection()
+        var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
             .AddSingleton(dynamoDbClient)

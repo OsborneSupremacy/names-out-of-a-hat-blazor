@@ -1,4 +1,5 @@
 ﻿using Amazon.DynamoDBv2.Model;
+using GiftExchange.Library.DataModels;
 
 namespace GiftExchange.Library.Services;
 
@@ -18,6 +19,67 @@ public class DynamoDbService
         _dynamoDbClient = dynamoDbClient ?? throw new ArgumentNullException(nameof(dynamoDbClient));
         _tableName = EnvReader.GetStringValue("TABLE_NAME");
     }
+
+    public async Task<ImmutableList<HatMetaData>> GetHatsAsync(string organizerEmail)
+    {
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            KeyConditionExpression = "PK = :pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" }
+            }
+        };
+
+        var response = await _dynamoDbClient .QueryAsync(request)
+            .ConfigureAwait(false);
+
+        if (response.Items is not { Count: > 0 })
+            return [];
+
+        return response.Items
+            .Select(i => new HatMetaData
+            {
+                HatId = Guid.Parse(i["HatId"].S),
+                HatName = i["HatName"].S
+            })
+            .ToImmutableList();
+    }
+
+    public async Task<bool> CreateHatAsync(HatDataModel hatDataModel)
+    {
+        var item = new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new() { S = $"ORGANIZER#{hatDataModel.OrganizerEmail}#HAT" },
+            ["SK"] = new() { S = $"HAT#{hatDataModel.HatId}" },
+            ["HatId"] = new() { S = hatDataModel.HatId.ToString() },
+            ["OrganizerName"] = new() { S = hatDataModel.OrganizerName },
+            ["HatName"] = new() { S = hatDataModel.HatName },
+            ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
+            ["PriceRange"] = new() { S = hatDataModel.PriceRange },
+            ["OrganizerVerified"] = new() { BOOL = hatDataModel.OrganizerVerified },
+            ["RecipientsAssigned"] = new() { BOOL = hatDataModel.RecipientsAssigned }
+        };
+
+        var request = new PutItemRequest
+        {
+            TableName = _tableName,
+            Item = item
+        };
+
+        await _dynamoDbClient.PutItemAsync(request)
+            .ConfigureAwait(false);
+
+        return true;
+    }
+
+
+
+
+
+
+
 
     public async Task<(bool exists, Guid hatId)> DoesHatExistAsync(string organizerEmail)
     {
@@ -41,6 +103,9 @@ public class DynamoDbService
 
         return (false, Guid.Empty);
     }
+
+
+
 
     public async Task<Guid> CreateHatAsync(Hat hat)
     {

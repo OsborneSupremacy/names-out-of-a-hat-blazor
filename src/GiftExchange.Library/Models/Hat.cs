@@ -2,7 +2,6 @@
 
 public record Hat
 {
-    [Required]
     public required Guid Id { get; init; }
 
     public required string Name { get; init; }
