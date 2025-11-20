@@ -15,7 +15,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\NamesOutOfAHat2.Interface\NamesOutOfAHat2.Interface.csproj" />
 		<ProjectReference Include="..\NamesOutOfAHat2.Utility\NamesOutOfAHat2.Utility.csproj" />
 	</ItemGroup>
 

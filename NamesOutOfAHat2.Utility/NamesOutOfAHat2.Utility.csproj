@@ -12,8 +12,4 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj" />
-	</ItemGroup>
-
 </Project>

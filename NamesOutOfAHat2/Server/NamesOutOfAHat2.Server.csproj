@@ -20,7 +20,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\NamesOutOfAHat2.Server.Service\NamesOutOfAHat2.Server.Service.csproj" />
-		<ProjectReference Include="..\Client\NamesOutOfAHat2.Client.csproj" />
 	</ItemGroup>
 
 </Project>

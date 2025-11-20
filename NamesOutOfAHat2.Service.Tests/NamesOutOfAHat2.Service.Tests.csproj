@@ -24,10 +24,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\NamesOutOfAHat2.Interface\NamesOutOfAHat2.Interface.csproj" />
-		<ProjectReference Include="..\NamesOutOfAHat2.Model\NamesOutOfAHat2.Model.csproj" />
-		<ProjectReference Include="..\NamesOutOfAHat2.Server.Service\NamesOutOfAHat2.Server.Service.csproj" />
-		<ProjectReference Include="..\NamesOutOfAHat2.Service\NamesOutOfAHat2.Service.csproj" />
 		<ProjectReference Include="..\NamesOutOfAHat2.Test.Utility\NamesOutOfAHat2.Test.Utility.csproj" />
 		<ProjectReference Include="..\NamesOutOfAHat2.Utility\NamesOutOfAHat2.Utility.csproj" />
 	</ItemGroup>
