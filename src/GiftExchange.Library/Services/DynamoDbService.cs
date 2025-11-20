@@ -107,21 +107,25 @@ public class DynamoDbService
             }
         };
 
-        var response = await _dynamoDbClient.GetItemAsync(request).ConfigureAwait(false);
+        var response = await _dynamoDbClient
+            .GetItemAsync(request)
+            .ConfigureAwait(false);
 
         if (response.Item == null || response.Item.Count == 0)
             return (false, Hats.Empty);
 
         var hat = new Hat
         {
-            Id = Guid.Parse(response.Item["HatId"].S),
-            Name = response.Item["Name"].S,
+            Id = Guid.Parse(response.Item["HatId"].S), Name = response.Item["HatName"].S,
             AdditionalInformation = response.Item["AdditionalInformation"].S,
             PriceRange = response.Item["PriceRange"].S,
             OrganizerVerified = response.Item["OrganizerVerified"].BOOL ?? false,
             RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
-            Organizer = _jsonService.DeserializeDefault<Person>(response.Item["Organizer"].S) ?? Persons.Empty,
-            Participants = _jsonService.DeserializeDefault<ImmutableList<Participant>>(response.Item["Participants"].S) ?? [ ]
+            Organizer = new Person {
+                Name = response.Item["OrganizerName"].S,
+                Email = organizerEmail
+            },
+            Participants = []
         };
         return (true, hat);
     }
@@ -133,8 +137,8 @@ public class DynamoDbService
             TableName = _tableName,
             Key = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new() { S = request.OrganizerEmail },
-                ["SK"] = new() { S = request.HatId.ToString() }
+                ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{request.HatId}" }
             },
             UpdateExpression = "SET #name = :name, AdditionalInformation = :additionalInfo, PriceRange = :priceRange",
             ExpressionAttributeNames = new Dictionary<string, string>

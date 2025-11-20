@@ -44,12 +44,14 @@ public class EditHatTests : IClassFixture<DynamoDbFixture>
             PriceRange = "$20 - $30"
         };
 
-        var request = _jsonService.SerializeDefault(editHatRequest)
+        var request = _jsonService
+            .SerializeDefault(editHatRequest)
             .ToApiGatewayProxyRequest();
 
         // act
         var response = await _sut(request, _context);
-        var updatedHat = await _testDataService.GetHatAsync(editHatRequest.OrganizerEmail, hat.Id);
+        var updatedHat = await _testDataService
+            .GetHatAsync(editHatRequest.OrganizerEmail, hat.Id);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);
