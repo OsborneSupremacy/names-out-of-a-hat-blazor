@@ -6,7 +6,7 @@
         "Hats": {
             "type": "array",
             "items": {
-                "$ref": "#/$definitions/hatmetadata"
+                "$ref": "#/definitions/hatmetadata"
             },
             "description": "List of hat metadata."
         }
