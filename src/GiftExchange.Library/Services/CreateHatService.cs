@@ -36,6 +36,15 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
             .CreateHatAsync(newHat)
             .ConfigureAwait(false);
 
+        await _dynamoDbService
+            .CreateParticipantAsync(new AddParticipantRequest
+            {
+                HatId = newHat.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                Name = request.OrganizerName,
+                Email = request.OrganizerEmail,
+            });
+
         return new Result<CreateHatResponse>(new CreateHatResponse { HatId = newHat.HatId }, HttpStatusCode.Created);
     }
 }

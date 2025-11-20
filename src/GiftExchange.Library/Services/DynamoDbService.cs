@@ -67,7 +67,8 @@ public class DynamoDbService
         var request = new PutItemRequest
         {
             TableName = _tableName,
-            Item = item
+            Item = item,
+            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
         };
 
         await _dynamoDbClient.PutItemAsync(request)
@@ -150,6 +151,29 @@ public class DynamoDbService
         };
 
         await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
+    }
+
+    public async Task<bool> CreateParticipantAsync(AddParticipantRequest request)
+    {
+        var item = new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new() { S = $"HAT#{request.HatId}#ORGANIZER#{request.OrganizerEmail}#PARTICIPANT" },
+            ["SK"] = new() { S = $"PARTICIPANT#{request.Email}#NAME#{request.Name}" },
+            ["Name"] = new() { S = request.Name },
+            ["Email"] = new() { S = request.Email }
+        };
+
+        var putItemRequest = new PutItemRequest
+        {
+            TableName = _tableName,
+            Item = item,
+            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+        };
+
+        await _dynamoDbClient.PutItemAsync(putItemRequest)
+            .ConfigureAwait(false);
+
+        return true;
     }
 
     public async Task UpdateParticipantsAsync(

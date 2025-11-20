@@ -1,4 +1,5 @@
-﻿using GiftExchange.Library.DataModels;
+﻿using Amazon.DynamoDBv2.Model;
+using GiftExchange.Library.DataModels;
 
 namespace GiftExchange.Library.Tests;
 
@@ -84,4 +85,49 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
         ]);
     }
 
+    [Fact]
+    public async Task CreateParticipantAsync_GivenValidPayload_ShouldCreateItemInDynamoDb()
+    {
+        // arrange
+        var request = new AddParticipantRequest
+        {
+            HatId = Guid.NewGuid(),
+            OrganizerEmail = "jerry@test.tv",
+            Email = "ned@test.tv",
+            Name = "Ned"
+        };
+
+        // act
+        var result = await _sut.CreateParticipantAsync(request);
+
+        // assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateParticipantAsync_GivenDuplicatePayload_ShouldThrowException()
+    {
+        // arrange
+        var hatId = Guid.NewGuid();
+
+        var request = new AddParticipantRequest
+        {
+            HatId = hatId,
+            OrganizerEmail = "jerry@test.tv",
+            Email = "maude@test.tv",
+            Name = "Maude"
+        };
+
+        // act
+        var firstRequest = await _sut.CreateParticipantAsync(request);
+
+        Func<Task> secondRequest = async () =>
+        {
+            await _sut.CreateParticipantAsync(request);
+        };
+
+        // assert
+        firstRequest.Should().BeTrue();
+        await secondRequest.Should().ThrowAsync<ConditionalCheckFailedException>();
+    }
 }
