@@ -10,7 +10,7 @@ resource "aws_api_gateway_resource" "hats-email-resource" {
   path_part   = "{email}"
 }
 
-module "gateway-options-response-hat" {
+module "gateway-options-response-hats" {
   source = "./modules/gateway-options-response"
   gateway_rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
   gateway_resource_id = aws_api_gateway_resource.hats-resource.id

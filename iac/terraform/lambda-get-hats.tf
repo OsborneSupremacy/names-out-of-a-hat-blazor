@@ -1,4 +1,4 @@
-module "lambda-get-hat" {
+module "lambda-get-hats" {
   source                      = "./modules/lambda"
   environment_variables       = local.common_environment_variables
   gateway_rest_api_id         = aws_api_gateway_rest_api.giftexchange-gateway.id

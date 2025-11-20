@@ -1,34 +1,39 @@
 {
-  "$schema": "http://json-schema.org/draft/2020-12/schema",
-  "title": "GetHatsResponse",
-  "description": "The meta data of the gift exchanges.",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "Hats": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/HatMetaData" },
-      "description": "List of hat metadata."
-    }
-  },
-  "required": ["Hats"],
-  "$defs": {
-    "HatMetaData": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "HatId": {
-          "type": "string",
-          "format": "uuid",
-          "description": "The unique identifier for the hat."
-        },
-        "HatName": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The display name of the hat."
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "Hats": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$definitions/hatmetadata"
+            },
+            "description": "List of hat metadata."
         }
-      },
-      "required": ["HatId", "HatName"]
+    },
+    "required": [
+        "Hats"
+    ],
+    "definitions": {
+        "hatmetadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "hatId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique identifier for the hat."
+                },
+                "hatName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The display name of the hat."
+                }
+            },
+            "required": [
+                "hatId",
+                "hatName"
+            ]
+        }
     }
-  }
 }
