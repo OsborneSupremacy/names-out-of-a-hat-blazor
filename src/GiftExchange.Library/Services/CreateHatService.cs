@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Services;
+﻿using GiftExchange.Library.DataModels;
+
+namespace GiftExchange.Library.Services;
 
 public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResponse>
 {
@@ -18,31 +20,22 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
         if (hatExists)
             return new Result<CreateHatResponse>(new CreateHatResponse { HatId = hatId }, HttpStatusCode.OK);
 
-        var organizer = new Person { Name = request.OrganizerName, Email = request.OrganizerEmail };
-
-        var organizerParticipant = new Participant
+        var newHat = new HatDataModel
         {
-            PickedRecipient = Persons.Empty,
-            Person = organizer,
-            Recipients = []
-        };
-
-        var newHat = new Hat
-        {
-            Id = Guid.NewGuid(),
-            Name = request.HatName,
+            HatId = Guid.NewGuid(),
+            HatName = request.HatName,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
-            Organizer = organizer,
-            Participants = [ organizerParticipant ],
+            OrganizerEmail = request.OrganizerEmail,
+            OrganizerName = request.OrganizerName,
             OrganizerVerified = false,
             RecipientsAssigned = false
         };
 
-        var newHatId = await _dynamoDbService
+        await _dynamoDbService
             .CreateHatAsync(newHat)
             .ConfigureAwait(false);
 
-        return new Result<CreateHatResponse>(new CreateHatResponse { HatId = newHatId }, HttpStatusCode.Created);
+        return new Result<CreateHatResponse>(new CreateHatResponse { HatId = newHat.HatId }, HttpStatusCode.Created);
     }
 }

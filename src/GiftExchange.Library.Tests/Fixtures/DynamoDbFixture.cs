@@ -21,20 +21,12 @@ public class DynamoDbFixture : IAsyncLifetime
 
     public IAmazonDynamoDB CreateClient()
     {
-        var serviceUrl = _container.GetConnectionString();
-
-#if DEBUG
-        Console.WriteLine($"DynamoDB local service URL: {serviceUrl}");
-#endif
-
         var config = new AmazonDynamoDBConfig
         {
-            ServiceURL = serviceUrl
+            ServiceURL = _container.GetConnectionString()
         };
-
         return new AmazonDynamoDBClient(new BasicAWSCredentials("test", "test"), config);
     }
-
 
     public async Task InitializeAsync()
     {

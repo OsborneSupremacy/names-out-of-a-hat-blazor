@@ -1,4 +1,5 @@
-﻿using GiftExchange.Library.DataModels;
+﻿using Amazon.DynamoDBv2;
+using GiftExchange.Library.DataModels;
 
 namespace GiftExchange.Library.Tests;
 
@@ -19,7 +20,7 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
         var dynamoDbClient = dbFixture.CreateClient();
         _context = new FakeLambdaContext();
 
-        IServiceProvider serviceProvider = new ServiceCollection()
+        var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
             .AddSingleton(dynamoDbClient)
@@ -28,7 +29,7 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
 
-        _sut = new GetHats().FunctionHandler;
+        _sut = new GetHats(serviceProvider).FunctionHandler;
     }
 
     [Fact]

@@ -18,36 +18,34 @@ internal class TestDataService
 
     public async Task<Hat> CreateTestHatAsync()
     {
-        var newHat = new Hat
+        var newHat = new HatDataModel
         {
-            Id = Guid.NewGuid(),
-            Name = "Test Gift Exchange",
+            HatId = Guid.NewGuid(),
+            HatName = "Test Gift Exchange",
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
-            Organizer = new Person
-            {
-                Email = "organizer@test.com",
-                Name = "Organizer Test"
-            },
-            Participants = [
-                new Participant
-                {
-                    Person = new Person
-                    {
-                        Email = "organizer@test.com",
-                        Name = "Organizer Test"
-                    },
-                    Recipients = [],
-                    PickedRecipient = Persons.Empty
-                }
-            ],
+            OrganizerEmail = "organizer@test.com",
+            OrganizerName = "Organizer Test",
             OrganizerVerified = false,
             RecipientsAssigned = false
         };
 
         await _dynamoDbService.CreateHatAsync(newHat);
 
-        return newHat;
+        return new Hat
+        {
+            Id = newHat.HatId,
+            Name = newHat.HatName,
+            AdditionalInformation = newHat.AdditionalInformation,
+            PriceRange = newHat.PriceRange,
+            OrganizerVerified = newHat.OrganizerVerified,
+            RecipientsAssigned = newHat.RecipientsAssigned,
+            Organizer = new Person {
+                Email = newHat.OrganizerEmail,
+                Name = newHat.OrganizerName
+            },
+            Participants = []
+        };
     }
 
     public async Task<Hat> GetHatAsync(string organizerEmail, Guid hatId)

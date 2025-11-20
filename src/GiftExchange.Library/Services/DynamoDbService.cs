@@ -30,7 +30,8 @@ public class DynamoDbService
             {
                 [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
                 [":skPrefix"] = new() { S = "HAT#" }
-            }
+            },
+            ConsistentRead = true
         };
 
         var response = await _dynamoDbClient.QueryAsync(request)
@@ -103,35 +104,6 @@ public class DynamoDbService
             return (true, Guid.Parse(skAttr.S));
 
         return (false, Guid.Empty);
-    }
-
-
-
-
-    public async Task<Guid> CreateHatAsync(Hat hat)
-    {
-        var item = new Dictionary<string, AttributeValue>
-        {
-            ["PK"] = new() { S = hat.Organizer.Email },
-            ["SK"] = new() { S = hat.Id.ToString() },
-            ["HatId"] = new() { S = hat.Id.ToString() },
-            ["Name"] = new() { S = hat.Name },
-            ["AdditionalInformation"] = new() { S = hat.AdditionalInformation },
-            ["PriceRange"] = new() { S = hat.PriceRange },
-            ["OrganizerVerified"] = new() { BOOL = hat.OrganizerVerified },
-            ["RecipientsAssigned"] = new() { BOOL = hat.RecipientsAssigned },
-            ["Organizer"] = new() { S = _jsonService.SerializeDefault(hat.Organizer) },
-            ["Participants"] = new() { S = _jsonService.SerializeDefault(hat.Participants) }
-        };
-
-        var request = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item
-        };
-
-        await _dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
-        return hat.Id;
     }
 
     public async Task<(bool exists, Hat hat)> GetHatAsync(string organizerEmail, Guid hatId)
