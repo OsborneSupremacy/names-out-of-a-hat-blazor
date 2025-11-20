@@ -2,7 +2,7 @@
 
 namespace GiftExchange.Library.Tests;
 
-public class GetHatsTests : IClassFixture<DynamoDbFixture>
+public class GetHatTests: IClassFixture<DynamoDbFixture>
 {
     private readonly JsonService _jsonService;
 
@@ -12,7 +12,7 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
 
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
-    public GetHatsTests(DynamoDbFixture dbFixture)
+    public GetHatTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
 
@@ -28,14 +28,14 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
 
-        _sut = new GetHats(serviceProvider).FunctionHandler;
+        _sut = new GetHat(serviceProvider).FunctionHandler;
     }
 
     [Fact]
-    public async Task GetHats_ValidRequest_HatsReturned()
+    public async Task GetHat_ValidRequest_HatReturned()
     {
         // arrange
-        var hatOne = new HatDataModel
+        var hat = new HatDataModel
         {
             HatId = Guid.NewGuid(),
             OrganizerName = "Barney Organizer",
@@ -47,24 +47,23 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
             RecipientsAssigned = false
         };
 
-        var hatTwo = new HatDataModel
-        {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Barney Organizer",
-            OrganizerEmail = "barney@test.org",
-            HatName = "Test Hat Two",
-            AdditionalInformation = "This is another test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
+        await _testDataService.CreateHatAsync(hat);
 
-        await Task
-            .WhenAll(_testDataService.CreateHatAsync(hatOne), _testDataService.CreateHatAsync(hatTwo));
+        var getHatRequest = new GetHatRequest
+        {
+            OrganizerEmail = hat.OrganizerEmail,
+            HatId = hat.HatId,
+            ShowPickedRecipients = false
+        };
 
         var request = new APIGatewayProxyRequest
         {
-            PathParameters = new Dictionary<string, string> { ["email"] = "barney@test.org" }
+            QueryStringParameters = new Dictionary<string, string>
+            {
+                { "email", getHatRequest.OrganizerEmail },
+                { "id", getHatRequest.HatId.ToString() },
+                { "showpickedrecipients", getHatRequest.ShowPickedRecipients.ToString() }
+            }
         };
 
         // act
@@ -72,7 +71,7 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);
-        var getHatsResponse = _jsonService.DeserializeDefault<GetHatsResponse>(response.Body);
-        getHatsResponse!.Hats.Count.Should().Be(2);
+        var getHatResponse = _jsonService.DeserializeDefault<Hat>(response.Body);
+        getHatResponse!.Id.Should().Be(hat.HatId);
     }
 }
