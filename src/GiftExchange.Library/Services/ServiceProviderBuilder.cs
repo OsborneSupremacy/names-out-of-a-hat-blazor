@@ -39,6 +39,7 @@ internal static class ServiceProviderBuilder
             .AddSingleton<DeleteHatService>()
             .AddSingleton<EditHatService>()
             .AddSingleton<GetHatService>()
+            .AddSingleton<GetHatsService>()
 
             .AddSingleton<EligibilityValidationService>()
             .AddSingleton<ValidationService>()

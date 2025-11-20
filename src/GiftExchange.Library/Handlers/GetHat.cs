@@ -1,5 +1,6 @@
 namespace GiftExchange.Library.Handlers;
 
+// ReSharper disable once UnusedType.Global
 public class GetHat : ApiGatewayHandler<GetHatRequest, GetHatService, Hat>, IHasRequestParameters<GetHatRequest>, IHasResponseBody<Hat>
 {
     public GetHat() { }

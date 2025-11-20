@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Tests.Services;
+﻿using GiftExchange.Library.DataModels;
+
+namespace GiftExchange.Library.Tests.Services;
 
 internal class TestDataService
 {
@@ -10,6 +12,9 @@ internal class TestDataService
     {
         _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
     }
+
+    public Task<bool> CreateHatAsync(HatDataModel newHat) =>
+        _dynamoDbService.CreateHatAsync(newHat);
 
     public async Task<Hat> CreateTestHatAsync()
     {

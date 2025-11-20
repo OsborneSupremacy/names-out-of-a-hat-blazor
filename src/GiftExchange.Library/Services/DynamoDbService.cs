@@ -25,14 +25,15 @@ public class DynamoDbService
         var request = new QueryRequest
         {
             TableName = _tableName,
-            KeyConditionExpression = "PK = :pk",
+            KeyConditionExpression = "PK = :pk AND begins_with(SK, :skPrefix)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" }
+                [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
+                [":skPrefix"] = new() { S = "HAT#" }
             }
         };
 
-        var response = await _dynamoDbClient .QueryAsync(request)
+        var response = await _dynamoDbClient.QueryAsync(request)
             .ConfigureAwait(false);
 
         if (response.Items is not { Count: > 0 })
