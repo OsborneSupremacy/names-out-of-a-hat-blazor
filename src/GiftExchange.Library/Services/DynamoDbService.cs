@@ -76,34 +76,20 @@ public class DynamoDbService
         return true;
     }
 
-
-
-
-
-
-
-
-    public async Task<(bool exists, Guid hatId)> DoesHatExistAsync(string organizerEmail)
+    public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(
+        string organizerEmail,
+        string hatName
+    )
     {
-        var request = new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = organizerEmail }
-            },
-            ProjectionExpression = "SK",
-            Limit = 1
-        };
+        var hats = await GetHatsAsync(organizerEmail)
+            .ConfigureAwait(false);
 
-        var response = await _dynamoDbClient.QueryAsync(request).ConfigureAwait(false);
+        if(!hats.Any())
+            return (false, Guid.Empty);
 
-        if (response.Items is { Count: > 0 } &&
-            response.Items[0].TryGetValue("SK", out var skAttr))
-            return (true, Guid.Parse(skAttr.S));
-
-        return (false, Guid.Empty);
+        return hats.FirstOrDefault(h => h.HatName.ContentEquals(hatName)) is { } hat
+            ? (true, hat.HatId)
+            : (false, Guid.Empty);
     }
 
     public async Task<(bool exists, Hat hat)> GetHatAsync(string organizerEmail, Guid hatId)
@@ -116,8 +102,8 @@ public class DynamoDbService
             TableName = _tableName,
             Key = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new() { S = organizerEmail },
-                ["SK"] = new() { S = hatId.ToString() }
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{hatId}" }
             }
         };
 

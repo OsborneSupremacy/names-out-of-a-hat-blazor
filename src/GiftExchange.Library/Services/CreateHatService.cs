@@ -14,7 +14,7 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
     public async Task<Result<CreateHatResponse>> ExecuteAsync(CreateHatRequest request, ILambdaContext context)
     {
         var (hatExists, hatId) = await _dynamoDbService
-            .DoesHatExistAsync(request.OrganizerEmail)
+            .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)
             .ConfigureAwait(false);
 
         if (hatExists)
