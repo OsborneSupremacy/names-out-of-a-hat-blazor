@@ -12,7 +12,8 @@ public class EditHatService : IBusinessService<EditHatRequest, StatusCodeOnlyRes
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(EditHatRequest request, ILambdaContext context)
     {
         var (hatExists, _ ) = await _dynamoDbService
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+            .GetHatAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
 
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(

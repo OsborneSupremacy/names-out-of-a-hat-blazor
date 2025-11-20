@@ -140,11 +140,7 @@ public class DynamoDbService
                 ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT" },
                 ["SK"] = new() { S = $"HAT#{request.HatId}" }
             },
-            UpdateExpression = "SET #name = :name, AdditionalInformation = :additionalInfo, PriceRange = :priceRange",
-            ExpressionAttributeNames = new Dictionary<string, string>
-            {
-                ["#name"] = "Name"
-            },
+            UpdateExpression = "SET HatName = :name, AdditionalInformation = :additionalInfo, PriceRange = :priceRange",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":name"] = new() { S = request.Name },
