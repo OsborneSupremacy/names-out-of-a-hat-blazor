@@ -130,4 +130,43 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
         firstRequest.Should().BeTrue();
         await secondRequest.Should().ThrowAsync<ConditionalCheckFailedException>();
     }
+
+    [Fact]
+    public async Task GetParticipantAsync_GivenExistingParticipants_ShouldReturnParticipants()
+    {
+
+        // arrange
+        var hatId = Guid.NewGuid();
+        var organizerEmail = "RebeccaTBarr@dayrep.com";
+
+        await _sut.CreateParticipantAsync(new AddParticipantRequest
+        {
+            OrganizerEmail = organizerEmail,
+            HatId = hatId,
+            Name = "Orville",
+            Email = "orville@dayrep.com"
+        });
+
+        await _sut.CreateParticipantAsync(new AddParticipantRequest
+        {
+            OrganizerEmail = organizerEmail,
+            HatId = hatId,
+            Name = "Phillip",
+            Email = "phillip@dayrep.com"
+        });
+
+        await _sut.CreateParticipantAsync(new AddParticipantRequest
+        {
+            OrganizerEmail = organizerEmail,
+            HatId = hatId,
+            Name = "Debra",
+            Email = "debra@dayrep.com"
+        });
+
+        // act
+        var result = await _sut.GetParticipantsAsync(organizerEmail, hatId);
+
+
+
+    }
 }

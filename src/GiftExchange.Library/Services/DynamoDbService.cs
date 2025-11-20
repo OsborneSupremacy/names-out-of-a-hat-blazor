@@ -157,8 +157,8 @@ public class DynamoDbService
     {
         var item = new Dictionary<string, AttributeValue>
         {
-            ["PK"] = new() { S = $"HAT#{request.HatId}#ORGANIZER#{request.OrganizerEmail}#PARTICIPANT" },
-            ["SK"] = new() { S = $"PARTICIPANT#{request.Email}#NAME#{request.Name}" },
+            ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT#{request.HatId}#PARTICIPANT" },
+            ["SK"] = new() { S = $"PARTICIPANT#{request.Email}" },
             ["Name"] = new() { S = request.Name },
             ["Email"] = new() { S = request.Email }
         };
@@ -174,6 +174,44 @@ public class DynamoDbService
             .ConfigureAwait(false);
 
         return true;
+    }
+
+    public async Task<ImmutableList<Participant>> GetParticipantsAsync(
+        string organizerEmail,
+        Guid hatId
+        )
+    {
+        var request = new QueryRequest()
+        {
+            TableName = _tableName,
+            KeyConditionExpression = "PK = :pk AND begins_with(SK, :skPrefix)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
+                [":skPrefix"] = new() { S = "PARTICIPANT#" }
+            },
+            ConsistentRead = true
+        };
+
+        var response = await _dynamoDbClient
+            .QueryAsync(request)
+            .ConfigureAwait(false);
+
+        if (response.Items is not { Count: > 0 })
+            return [];
+
+        return response.Items
+            .Select(i => new Participant
+            {
+                PickedRecipient = Persons.Empty,
+                Person = new Person
+                {
+                    Email = i["Email"].S,
+                    Name = i["Name"].S
+                },
+                Recipients = []
+            })
+            .ToImmutableList();
     }
 
     public async Task UpdateParticipantsAsync(
