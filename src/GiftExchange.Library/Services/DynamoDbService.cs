@@ -217,33 +217,6 @@ public class DynamoDbService
             .ToImmutableList();
     }
 
-    public async Task UpdateParticipantsAsync(
-        string requestOrganizerEmail,
-        Guid requestHatId,
-        ImmutableList<Participant> newParticipants
-        )
-    {
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = requestOrganizerEmail },
-                ["SK"] = new() { S = requestHatId.ToString() }
-            },
-            UpdateExpression = "SET Participants = :participants, RecipientsAssigned = :recipientsAssigned",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":participants"] = new() { S = _jsonService.SerializeDefault(newParticipants) },
-                [":recipientsAssigned"] = new() { BOOL = false }
-            }
-        };
-
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
-            .ConfigureAwait(false);
-    }
-
     public async Task UpdateRecipientsAssignedAsync(string requestOrganizerEmail, Guid requestHatId, bool recipientsAssigned)
     {
         var updateRequest = new UpdateItemRequest
@@ -264,5 +237,31 @@ public class DynamoDbService
         await _dynamoDbClient
             .UpdateItemAsync(updateRequest)
             .ConfigureAwait(false);
+    }
+
+    public Task AddParticipantEligibleRecipientAsync(
+        string organizerEmail,
+        Guid hatId,
+        string participantEmail,
+        string recipientName
+        )
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
+                ["SK"] = new() { S = $"PARTICIPANT#{participantEmail}" }
+            },
+            UpdateExpression = "ADD EligibleParticipants :newRecipient",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":newRecipient"] = new() { SS = [recipientName] }
+            }
+        };
+
+        return _dynamoDbClient
+            .UpdateItemAsync(updateRequest);
     }
 }

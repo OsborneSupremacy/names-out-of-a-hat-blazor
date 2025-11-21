@@ -37,13 +37,13 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("The organizer cannot be removed."), HttpStatusCode.BadRequest);
 
         participantsOut.Remove(existingParticipant);
-
-        await _dynamoDbService
-            .UpdateParticipantsAsync(
-                request.OrganizerEmail,
-                request.HatId,
-                participantsOut.ToImmutableList()
-            );
+        //
+        // await _dynamoDbService
+        //     .UpdateParticipantsAsync(
+        //         request.OrganizerEmail,
+        //         request.HatId,
+        //         participantsOut.ToImmutableList()
+        //     );
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }

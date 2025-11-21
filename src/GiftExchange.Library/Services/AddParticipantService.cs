@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Services;
+﻿using GiftExchange.Library.Handlers;
+
+namespace GiftExchange.Library.Services;
 
 public class AddParticipantService : IBusinessService<AddParticipantRequest, StatusCodeOnlyResponse>
 {
@@ -21,55 +23,48 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
     {
-        var hatResult = await _getHatService
-            .ExecuteAsync(new GetHatRequest { HatId = request.HatId, OrganizerEmail = request.OrganizerEmail, ShowPickedRecipients = true }, context);
+        var (hatExists, _ ) = await _dynamoDbService
+            .GetHatAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
 
-        if(hatResult.IsFaulted)
-            return new Result<StatusCodeOnlyResponse>(hatResult.Exception, hatResult.StatusCode);
+        if(!hatExists)
+            return new Result<StatusCodeOnlyResponse>(
+                new KeyNotFoundException($"Hat with id {request.HatId} not found"),
+                HttpStatusCode.NotFound
+            );
 
-        var hat = hatResult.Value;
+        var existingParticipants = await _dynamoDbService
+            .GetParticipantsAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
 
         // Check if a participant with the same email or name already exists
-        if(hat.Participants.Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
+        if(existingParticipants.Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participant with provided email or name already exists. Participants must have unique email addresses and names."), HttpStatusCode.Conflict);
 
-        var newPerson = new Person
-        {
-            Name = request.Name,
-            Email = request.Email,
-        };
-
-        var newParticipant = new Participant
-        {
-            Person = newPerson,
-            PickedRecipient = Persons.Empty,
-            Recipients = hat.Participants
-                .Select(p => new Recipient
-                {
-                    Person = p.Person,
-                    Eligible = true
-                }).ToImmutableList()
-        };
-
-        var participantsOut = hat.Participants
-            .Select(p => p with
+        await _dynamoDbService
+            .CreateParticipantAsync(new AddParticipantRequest
             {
-                Recipients = p.Recipients
-                    .Concat([new Recipient
-                    {
-                        Person = newPerson,
-                        Eligible = true
-                    }])
-                    .ToImmutableList()
-            })
-            .Concat([newParticipant])
-            .ToImmutableList();
+                OrganizerEmail = request.OrganizerEmail,
+                HatId = request.HatId,
+                Name = request.Name,
+                Email = request.Email
+            }, existingParticipants)
+            .ConfigureAwait(false);
 
-        await _dynamoDbService.UpdateParticipantsAsync(
-            request.OrganizerEmail,
-            request.HatId,
-            participantsOut
-        ) .ConfigureAwait(false);
+        // make new participant eligible for all existing participants
+        var tasks = existingParticipants
+            .Select(participant =>
+                _dynamoDbService
+                    .AddParticipantEligibleRecipientAsync(
+                        request.OrganizerEmail,
+                        request.HatId,
+                        participant.Person.Email,
+                        request.Name
+                    ))
+            .ToList();
+
+        await Task.WhenAll(tasks)
+            .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(
             new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.Created},

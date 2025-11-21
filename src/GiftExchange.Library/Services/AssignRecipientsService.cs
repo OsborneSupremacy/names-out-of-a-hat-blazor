@@ -45,9 +45,9 @@ public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest,
         if (!shakeSuccess)
             return new Result<StatusCodeOnlyResponse>(new OperationCanceledException($"Valid recipient distribution not found after {ShakeAttempts} attempts"), HttpStatusCode.ServiceUnavailable);
 
-        await _dynamoDbService
-            .UpdateParticipantsAsync(request.OrganizerEmail, request.HatId, participantsOut)
-            .ConfigureAwait(false);
+        // await _dynamoDbService
+        //     .UpdateParticipantsAsync(request.OrganizerEmail, request.HatId, participantsOut)
+        //     .ConfigureAwait(false);
 
         await _dynamoDbService
             .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, true)

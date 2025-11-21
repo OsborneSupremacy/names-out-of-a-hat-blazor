@@ -41,12 +41,12 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
             Recipients = newRecipientList
         });
 
-        await _dynamoDbService
-            .UpdateParticipantsAsync(
-                request.OrganizerEmail,
-                request.HatId,
-                participantsOut.ToImmutableList()
-            );
+        // await _dynamoDbService
+        //     .UpdateParticipantsAsync(
+        //         request.OrganizerEmail,
+        //         request.HatId,
+        //         participantsOut.ToImmutableList()
+        //     );
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }
