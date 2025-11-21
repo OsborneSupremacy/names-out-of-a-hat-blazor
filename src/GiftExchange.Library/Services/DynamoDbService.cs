@@ -153,7 +153,7 @@ public class DynamoDbService
         await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
     }
 
-    public async Task<bool> CreateParticipantAsync(AddParticipantRequest request)
+    public async Task<bool> CreateParticipantAsync(AddParticipantRequest request, ImmutableList<Participant> existingParticipants)
     {
         var item = new Dictionary<string, AttributeValue>
         {
@@ -162,6 +162,9 @@ public class DynamoDbService
             ["Name"] = new() { S = request.Name },
             ["Email"] = new() { S = request.Email }
         };
+
+        if(existingParticipants.Any())
+            item.Add("EligibleParticipants", new() { SS = existingParticipants.Select(p => p.Person.Name).ToList()});
 
         var putItemRequest = new PutItemRequest
         {

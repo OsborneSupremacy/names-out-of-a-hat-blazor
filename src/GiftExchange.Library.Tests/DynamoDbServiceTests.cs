@@ -98,7 +98,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
         };
 
         // act
-        var result = await _sut.CreateParticipantAsync(request);
+        var result = await _sut.CreateParticipantAsync(request, []);
 
         // assert
         result.Should().BeTrue();
@@ -119,11 +119,11 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
         };
 
         // act
-        var firstRequest = await _sut.CreateParticipantAsync(request);
+        var firstRequest = await _sut.CreateParticipantAsync(request, []);
 
         Func<Task> secondRequest = async () =>
         {
-            await _sut.CreateParticipantAsync(request);
+            await _sut.CreateParticipantAsync(request, []);
         };
 
         // assert
@@ -134,7 +134,6 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
     [Fact]
     public async Task GetParticipantAsync_GivenExistingParticipants_ShouldReturnParticipants()
     {
-
         // arrange
         var hatId = Guid.NewGuid();
         var organizerEmail = "RebeccaTBarr@dayrep.com";
@@ -145,7 +144,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
             HatId = hatId,
             Name = "Orville",
             Email = "orville@dayrep.com"
-        });
+        }, []);
 
         await _sut.CreateParticipantAsync(new AddParticipantRequest
         {
@@ -153,7 +152,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
             HatId = hatId,
             Name = "Phillip",
             Email = "phillip@dayrep.com"
-        });
+        }, []);
 
         await _sut.CreateParticipantAsync(new AddParticipantRequest
         {
@@ -161,12 +160,12 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
             HatId = hatId,
             Name = "Debra",
             Email = "debra@dayrep.com"
-        });
+        }, []);
 
         // act
         var result = await _sut.GetParticipantsAsync(organizerEmail, hatId);
 
-
-
+        // assert
+        result.Count.Should().Be(3);
     }
 }

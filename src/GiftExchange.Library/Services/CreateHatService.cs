@@ -42,8 +42,8 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
                 HatId = newHat.HatId,
                 OrganizerEmail = request.OrganizerEmail,
                 Name = request.OrganizerName,
-                Email = request.OrganizerEmail,
-            });
+                Email = request.OrganizerEmail
+            }, []);
 
         return new Result<CreateHatResponse>(new CreateHatResponse { HatId = newHat.HatId }, HttpStatusCode.Created);
     }
