@@ -48,6 +48,13 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         };
 
         await _testDataService.CreateHatAsync(hat);
+        await _testDataService.AddParticipantAsync(new AddParticipantRequest
+        {
+            OrganizerEmail = hat.OrganizerEmail,
+            HatId = hat.HatId,
+            Name = hat.OrganizerName,
+            Email = hat.OrganizerEmail
+        }, []);
 
         var getHatRequest = new GetHatRequest
         {
@@ -73,5 +80,6 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);
         var getHatResponse = _jsonService.DeserializeDefault<Hat>(response.Body);
         getHatResponse!.Id.Should().Be(hat.HatId);
+        getHatResponse.Participants.Should().HaveCount(1);
     }
 }

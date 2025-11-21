@@ -115,6 +115,9 @@ public class DynamoDbService
         if (response.Item == null || response.Item.Count == 0)
             return (false, Hats.Empty);
 
+        var participants = await GetParticipantsAsync(organizerEmail, hatId)
+            .ConfigureAwait(false);
+
         var hat = new Hat
         {
             Id = Guid.Parse(response.Item["HatId"].S), Name = response.Item["HatName"].S,
@@ -126,7 +129,7 @@ public class DynamoDbService
                 Name = response.Item["OrganizerName"].S,
                 Email = organizerEmail
             },
-            Participants = []
+            Participants = participants
         };
         return (true, hat);
     }
@@ -206,14 +209,14 @@ public class DynamoDbService
         return response.Items
             .Select(i => new Participant
             {
-                PickedRecipient = Persons.Empty.Name,
+                PickedRecipient = i.TryGetValue("PickedRecipient", out var pr) ? pr.S : string.Empty,
                 Person = new Person
                 {
                     Email = i["Email"].S,
                     Name = i["Name"].S
                 },
-                EligibleRecipients = i.TryGetValue("EligibleParticipants", out var value)
-                    ? value.SS.ToImmutableList()
+                EligibleRecipients = i.TryGetValue("EligibleParticipants", out var er)
+                    ? er.SS.ToImmutableList()
                     : []
             })
             .ToImmutableList();

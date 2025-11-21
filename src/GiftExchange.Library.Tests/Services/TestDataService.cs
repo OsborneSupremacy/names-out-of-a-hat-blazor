@@ -1,5 +1,4 @@
-﻿using GiftExchange.Library.DataModels;
-
+﻿
 namespace GiftExchange.Library.Tests.Services;
 
 internal class TestDataService
@@ -54,4 +53,9 @@ internal class TestDataService
             .GetHatAsync(organizerEmail, hatId);
         return hat;
     }
+
+    public Task<bool> AddParticipantAsync(
+        AddParticipantRequest request,
+        ImmutableList<Participant> existingParticipants
+        ) => _dynamoDbService.CreateParticipantAsync(request, existingParticipants);
 }
