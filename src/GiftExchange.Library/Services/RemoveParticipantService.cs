@@ -23,7 +23,7 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
         var participantsOut = hat.Participants
             .Select(p => p with
             {
-                Recipients = GetUpdatedRecipientList(p, request)
+                EligibleRecipients = GetUpdatedRecipientList(p, request)
             })
             .ToList();
 
@@ -52,17 +52,17 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
         participant.Person.Email.ContentEquals(hat.Organizer.Email);
 
 
-    private ImmutableList<Recipient> GetUpdatedRecipientList(Participant participant, RemoveParticipantRequest request)
+    private ImmutableList<string> GetUpdatedRecipientList(Participant participant, RemoveParticipantRequest request)
     {
         if(participant.Person.Email.ContentEquals(request.Email))
             return [];
 
         var recipientsOut = participant
-            .Recipients
+            .EligibleRecipients
             .ToList();
 
         var existingRecipient = recipientsOut
-            .FirstOrDefault(r => r.Person.Email.ContentEquals(request.Email));
+            .FirstOrDefault(r => r.ContentEquals(request.Email));
 
         if (existingRecipient is not null)
             recipientsOut.Remove(existingRecipient);

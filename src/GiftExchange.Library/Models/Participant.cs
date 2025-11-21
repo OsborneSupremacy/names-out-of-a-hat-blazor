@@ -2,14 +2,11 @@
 
 public record Participant
 {
-    public required Person PickedRecipient { get; init; }
+    public required string PickedRecipient { get; init; }
 
-    [Required]
     public required Person Person { get; init; }
 
-
-    [Required, MinLength(1, ErrorMessage = "Each participant needs at least one possible recipient")]
-    public required ImmutableList<Recipient> Recipients { get; init; }
+    public required ImmutableList<string> EligibleRecipients { get; init; }
 }
 
 internal static class Participants
@@ -17,8 +14,8 @@ internal static class Participants
     public static Participant Empty => new()
     {
         Person = Persons.Empty,
-        PickedRecipient = Persons.Empty,
-        Recipients = []
+        PickedRecipient = string.Empty,
+        EligibleRecipients = []
     };
 }
 

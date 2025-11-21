@@ -33,12 +33,15 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
         if(participantsOut.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException($"Participant with email {request.Email} already exists"), HttpStatusCode.Conflict);
 
-        var newRecipientList = GetUpdatedRecipientList(participantsOut, request);
+        var newRecipientList = GetUpdatedEligibleRecipientNames(
+            participantsOut.Select(p => p.Person.Name).ToList(),
+            request
+        );
 
         // re-add the updated participant with the new details
         participantsOut.Add(existingParticipant with
         {
-            Recipients = newRecipientList
+            EligibleRecipients = newRecipientList
         });
 
         // await _dynamoDbService
@@ -55,12 +58,9 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
     /// Use this for the participant being edited.
     /// </summary>
     /// <returns></returns>
-    private ImmutableList<Recipient> GetUpdatedRecipientList(List<Participant> otherParticipants, EditParticipantRequest request) =>
+    private ImmutableList<string> GetUpdatedEligibleRecipientNames(List<string> otherParticipants, EditParticipantRequest request) =>
         otherParticipants
-            .Select(p => new Recipient
-            {
-                Person = p.Person,
-                Eligible = request.EligibleRecipientEmails.Contains(p.Person.Email, StringComparer.OrdinalIgnoreCase)
-            })
+            .Select(r => r)
+            .Where(r => request.EligibleRecipientEmails.Contains(r, StringComparer.OrdinalIgnoreCase))
             .ToImmutableList();
 }

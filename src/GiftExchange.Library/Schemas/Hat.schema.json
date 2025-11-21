@@ -94,8 +94,9 @@
             "type": "object",
             "properties": {
                 "pickedRecipient": {
-                    "$ref": "#/definitions/person",
-                    "description": "The person this participant will give a gift to"
+                    "type": "string",
+                    "format": "email",
+                    "description": "The email of the person this participant will give a gift to"
                 },
                 "person": {
                     "$ref": "#/definitions/person",
@@ -105,12 +106,11 @@
                     "type": "boolean",
                     "description": "Whether an invitation has been sent to this participant"
                 },
-                "recipients": {
+                "eligibleRecipients": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/recipient"
+                        "type": "string"
                     },
-                    "minItems": 1,
                     "description": "The list of potential recipients for this participant"
                 }
             },
@@ -118,7 +118,7 @@
                 "pickedRecipient",
                 "person",
                 "invitationSent",
-                "recipients"
+                "eligibleRecipients"
             ],
             "additionalProperties": false
         }

@@ -6,18 +6,11 @@ internal class EligibilityValidationService
     {
         var errors = new List<string>();
 
-        foreach (var participant in participants)
-        {
-            if (!(participant.Recipients.Any()))
-            {
-                errors.Add(new($"{participant.Person.Name} has no possible recipients"));
-                continue;
-            }
-            if (!(participant.Recipients.Any(x => x.Eligible)))
-            {
-                errors.Add(new($"{participant.Person.Name} has no eligible recipients"));
-            }
-        }
+        errors.AddRange(
+            participants
+                .Where(p => !p.EligibleRecipients.Any())
+                .Select(p => $"{p.Person.Name} has no eligible recipients")
+        );
 
         if (errors.Any())
             return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK);
@@ -25,14 +18,8 @@ internal class EligibilityValidationService
         var people = participants.Select(x => x.Person).ToList();
 
         foreach (var person in people)
-        {
-            if (!participants
-                .Where(x => x.Person.Email != person.Email)
-                .SelectMany(x => x.Recipients)
-                .Any(x => x.Eligible && x.Person.Email == person.Email))
-
+            if(!participants.SelectMany(p => p.EligibleRecipients).Contains(person.Name))
                 errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
-        }
 
         if (errors.Any())
             return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK);

@@ -30,7 +30,7 @@ public class GetHatService : IBusinessService<GetHatRequest, Hat>
             Participants = hat.Participants
                 .Select(p => p with
                 {
-                    PickedRecipient = p.PickedRecipient == Persons.Empty ? Persons.Empty : Persons.Reacted
+                    PickedRecipient = string.IsNullOrWhiteSpace(p.PickedRecipient) ? string.Empty : Persons.Redacted.Name
                 })
                 .ToImmutableList()
         };

@@ -15,5 +15,5 @@ internal static class Persons
         Email = string.Empty
     };
 
-    public static Person Reacted => new() { Name = "Hidden", Email = "someone@somedomain.com" };
+    public static Person Redacted => new() { Name = "Hidden", Email = "someone@somedomain.com" };
 }

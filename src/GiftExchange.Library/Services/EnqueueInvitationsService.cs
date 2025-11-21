@@ -54,7 +54,7 @@ public class EnqueueInvitationsService : IBusinessService<SendInvitationsRequest
                 HatId = request.HatId,
                 OrganizerEmail = request.OrganizerEmail,
                 HtmlBody = _emailCompositionService
-                    .ComposeEmail(hat, participant.Person.Name, participant.PickedRecipient.Name),
+                    .ComposeEmail(hat, participant.Person.Name, participant.PickedRecipient),
                 RecipientEmail = participant.Person.Email,
                 Subject = EmailCompositionService.GetSubject(hat)
             };

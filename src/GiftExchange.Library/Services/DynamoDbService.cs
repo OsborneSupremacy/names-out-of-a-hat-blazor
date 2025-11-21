@@ -206,13 +206,15 @@ public class DynamoDbService
         return response.Items
             .Select(i => new Participant
             {
-                PickedRecipient = Persons.Empty,
+                PickedRecipient = Persons.Empty.Name,
                 Person = new Person
                 {
                     Email = i["Email"].S,
                     Name = i["Name"].S
                 },
-                Recipients = []
+                EligibleRecipients = i.TryGetValue("EligibleParticipants", out var value)
+                    ? value.SS.ToImmutableList()
+                    : []
             })
             .ToImmutableList();
     }
