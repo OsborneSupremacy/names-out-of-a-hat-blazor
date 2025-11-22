@@ -1,6 +1,4 @@
-﻿using GiftExchange.Library.Handlers;
-
-namespace GiftExchange.Library.Services;
+﻿namespace GiftExchange.Library.Services;
 
 public class AddParticipantService : IBusinessService<AddParticipantRequest, StatusCodeOnlyResponse>
 {

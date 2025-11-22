@@ -1,5 +1,4 @@
 ﻿using Amazon.DynamoDBv2.Model;
-using GiftExchange.Library.DataModels;
 
 namespace GiftExchange.Library.Tests;
 

@@ -222,6 +222,45 @@ public class DynamoDbService
             .ToImmutableList();
     }
 
+    public async Task<(bool participantExists, Participant participant)> GetParticipantAsync(
+        string requestOrganizerEmail,
+        Guid requestHatId,
+        string requestParticipantEmail
+        )
+    {
+        var request = new GetItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT#{requestHatId}#PARTICIPANT" },
+                ["SK"] = new() { S = $"PARTICIPANT#{requestParticipantEmail}" }
+            }
+        };
+
+        var response = await _dynamoDbClient
+            .GetItemAsync(request)
+            .ConfigureAwait(false);
+
+        if (response.Item == null || response.Item.Count == 0)
+            return (false, Participants.Empty);
+
+        var participant = new Participant
+        {
+            PickedRecipient = response.Item.TryGetValue("PickedRecipient", out var pr) ? pr.S : string.Empty,
+            Person = new Person
+            {
+                Email = response.Item["Email"].S,
+                Name = response.Item["Name"].S
+            },
+            EligibleRecipients = response.Item.TryGetValue("EligibleParticipants", out var er)
+                ? er.SS.ToImmutableList()
+                : []
+        };
+
+        return (true, participant);
+    }
+
     public async Task UpdateRecipientsAssignedAsync(string requestOrganizerEmail, Guid requestHatId, bool recipientsAssigned)
     {
         var updateRequest = new UpdateItemRequest

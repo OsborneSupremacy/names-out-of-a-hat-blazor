@@ -1,6 +1,4 @@
-﻿using GiftExchange.Library.DataModels;
-
-namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests;
 
 public class GetHatsTests : IClassFixture<DynamoDbFixture>
 {
