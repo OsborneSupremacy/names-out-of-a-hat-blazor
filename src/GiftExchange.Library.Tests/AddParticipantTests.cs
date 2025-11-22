@@ -8,6 +8,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly TestDataService _testDataService;
 
+    private readonly AddParticipantRequestFaker _requestFaker;
+
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
     public AddParticipantTests(DynamoDbFixture dbFixture)
@@ -26,6 +28,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
 
+        _requestFaker = new AddParticipantRequestFaker();
+
         _sut = new AddParticipant(serviceProvider).FunctionHandler;
     }
 
@@ -35,13 +39,11 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var request = _jsonService.SerializeDefault(new AddParticipantRequest
-            {
-                OrganizerEmail = hat.Organizer.Email,
-                HatId = hat.Id,
-                Name = "Guy Test",
-                Email = "guy@test.com"
-            }).ToApiGatewayProxyRequest();
+        var request = _jsonService.SerializeDefault(_requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        }).ToApiGatewayProxyRequest();
 
         // act
         var response = await _sut(request, _context);
@@ -56,21 +58,20 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var requestOne =_jsonService.SerializeDefault(new AddParticipantRequest
-            {
-                OrganizerEmail = hat.Organizer.Email,
-                HatId = hat.Id,
-                Name = "Joe Test",
-                Email = "participant@test.com"
-            }).ToApiGatewayProxyRequest();
+        var innerRequest = _requestFaker.Generate();
 
-        var requestTwo = _jsonService.SerializeDefault(new AddParticipantRequest
-            {
-                OrganizerEmail = hat.Organizer.Email,
-                HatId = hat.Id,
-                Name = "Not Joe Test",
-                Email = "participant@test.com"
-            }).ToApiGatewayProxyRequest();
+        var requestOne =_jsonService.SerializeDefault(innerRequest with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        }).ToApiGatewayProxyRequest();
+
+        var requestTwo = _jsonService.SerializeDefault(_requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id,
+            Email = innerRequest.Email
+        }).ToApiGatewayProxyRequest();
 
         // act
         await _sut(requestOne, _context);
@@ -86,22 +87,20 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var requestOne = _jsonService.SerializeDefault(new AddParticipantRequest
-            {
-                OrganizerEmail = hat.Organizer.Email,
-                HatId = hat.Id,
-                Name = "Joe Test",
-                Email = "participant@test.com"
-            }).ToApiGatewayProxyRequest();
+        var innerRequest = _requestFaker.Generate();
 
+        var requestOne = _jsonService.SerializeDefault(innerRequest with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        }).ToApiGatewayProxyRequest();
 
-        var requestTwo = _jsonService.SerializeDefault(new AddParticipantRequest
-            {
-                OrganizerEmail = hat.Organizer.Email,
-                HatId = hat.Id,
-                Name = "Joe Test",
-                Email = "joe@test.com"
-            }).ToApiGatewayProxyRequest();
+        var requestTwo = _jsonService.SerializeDefault(_requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id,
+            Name = innerRequest.Name
+        }).ToApiGatewayProxyRequest();
 
         // act
         await _sut(requestOne, _context);

@@ -37,9 +37,8 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var personFaker = new Faker<Models.Person>()
-            .RuleFor(p => p.Name, f => f.Person.FirstName)
-            .RuleFor(p => p.Email, f => f.Person.Email);
+        var personFaker = new PersonFaker();
+        var participantFaker = new ParticipantFaker();
 
         var person = personFaker.Generate();
 
@@ -49,22 +48,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
             HatId = hat.Id,
             Name = person.Name,
             Email = person.Email
-        },
-            [
-                new Participant
-                {
-                    PickedRecipient = string.Empty,
-                    Person = personFaker.Generate(),
-                    EligibleRecipients = []
-                },
-                new Participant
-                {
-                    PickedRecipient = string.Empty,
-                    Person = personFaker.Generate(),
-                    EligibleRecipients = []
-                }
-            ]
-        );
+        }, participantFaker.Generate(2).ToImmutableList());
 
         // act
         var response = await _sut(new APIGatewayProxyRequest

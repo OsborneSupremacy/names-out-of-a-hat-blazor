@@ -29,7 +29,17 @@ public class EditParticipantTests : IClassFixture<DynamoDbFixture>
         _sut = new EditParticipant(serviceProvider).FunctionHandler;
     }
 
-    
+    [Fact]
+    public async Task EditParticpant_ValidPayload_OkResponse()
+    {
+        // arrange
 
 
+
+        // act
+
+
+        // assert
+
+    }
 }
