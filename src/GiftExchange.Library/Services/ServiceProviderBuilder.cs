@@ -14,7 +14,7 @@ internal static class ServiceProviderBuilder
             .BuildServiceProvider();
     }
 
-    internal static IServiceCollection AddVendorServices(this IServiceCollection services) =>
+    private static IServiceCollection AddVendorServices(this IServiceCollection services) =>
         services
             .AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>()
             .AddSingleton<IAmazonSimpleEmailService>(
@@ -32,6 +32,7 @@ internal static class ServiceProviderBuilder
             .AddSingleton<DynamoDbService>()
 
             .AddSingleton<AddParticipantService>()
+            .AddSingleton<GetParticipantService>()
             .AddSingleton<EditParticipantService>()
             .AddSingleton<RemoveParticipantService>()
 
