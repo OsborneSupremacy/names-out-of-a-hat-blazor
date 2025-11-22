@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Tests;
+﻿using Bogus;
+
+namespace GiftExchange.Library.Tests;
 
 public class GetParticipantTests : IClassFixture<DynamoDbFixture>
 {
@@ -35,15 +37,34 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var person = new Bogus.Faker().Person;
+        var personFaker = new Faker<Models.Person>()
+            .RuleFor(p => p.Name, f => f.Person.FirstName)
+            .RuleFor(p => p.Email, f => f.Person.Email);
+
+        var person = personFaker.Generate();
 
         await _testDataService.AddParticipantAsync(new AddParticipantRequest
         {
             OrganizerEmail = hat.Organizer.Email,
             HatId = hat.Id,
-            Name = person.FirstName,
+            Name = person.Name,
             Email = person.Email
-        }, []);
+        },
+            [
+                new Participant
+                {
+                    PickedRecipient = string.Empty,
+                    Person = personFaker.Generate(),
+                    EligibleRecipients = []
+                },
+                new Participant
+                {
+                    PickedRecipient = string.Empty,
+                    Person = personFaker.Generate(),
+                    EligibleRecipients = []
+                }
+            ]
+        );
 
         // act
         var response = await _sut(new APIGatewayProxyRequest
@@ -51,9 +72,6 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
             QueryStringParameters = new Dictionary<string, string>
             {
                 { "showpickedrecipients", "true" },
-            },
-            PathParameters = new Dictionary<string, string>
-            {
                 { "organizerEmail", hat.Organizer.Email },
                 { "hatId", hat.Id.ToString() },
                 { "participantEmail", person.Email }
@@ -62,6 +80,8 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
 
         // assert
         response.StatusCode.Should().Be(200);
+        var participant = _jsonService.DeserializeDefault<Participant>(response.Body);
+        participant.Should().NotBeNull();
+        participant.EligibleRecipients.Count.Should().Be(2);
     }
-
 }
