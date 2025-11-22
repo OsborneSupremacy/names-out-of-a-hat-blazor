@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Participant",
+  "type": "object",
+  "properties": {
+    "PickedRecipient": {
+      "type": "string"
+    },
+    "Person": {
+      "type": "object",
+      "description": "Person object structure goes here.",
+      "properties": {},
+      "additionalProperties": true
+    },
+    "EligibleRecipients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "PickedRecipient",
+    "Person",
+    "EligibleRecipients"
+  ],
+  "additionalProperties": false
+}
