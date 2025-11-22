@@ -8,11 +8,15 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
 
     private readonly TestDataService _testDataService;
 
+    private readonly HatDataModelFaker _hatDataModelFaker;
+
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
     public GetHatsTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
+
+        _hatDataModelFaker = new HatDataModelFaker();
 
         var dynamoDbClient = dbFixture.CreateClient();
         _context = new FakeLambdaContext();
@@ -33,28 +37,11 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
     public async Task GetHats_ValidRequest_HatsReturned()
     {
         // arrange
-        var hatOne = new HatDataModel
-        {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Barney Organizer",
-            OrganizerEmail = "barney@test.org",
-            HatName = "Test Hat One",
-            AdditionalInformation = "This is a test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
+        var hatOne = _hatDataModelFaker.Generate();
 
-        var hatTwo = new HatDataModel
+        var hatTwo = _hatDataModelFaker.Generate() with
         {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Barney Organizer",
-            OrganizerEmail = "barney@test.org",
-            HatName = "Test Hat Two",
-            AdditionalInformation = "This is another test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
+            OrganizerEmail = hatOne.OrganizerEmail
         };
 
         await Task
@@ -62,7 +49,7 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
 
         var request = new APIGatewayProxyRequest
         {
-            PathParameters = new Dictionary<string, string> { ["email"] = "barney@test.org" }
+            PathParameters = new Dictionary<string, string> { ["email"] = hatOne.OrganizerEmail }
         };
 
         // act

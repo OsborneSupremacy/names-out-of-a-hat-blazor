@@ -8,11 +8,15 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
 
     private readonly TestDataService _testDataService;
 
+    private readonly HatDataModelFaker _hatDataModelFaker;
+
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
     public GetHatTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
+
+        _hatDataModelFaker = new HatDataModelFaker();
 
         var dynamoDbClient = dbFixture.CreateClient();
         _context = new FakeLambdaContext();
@@ -33,17 +37,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
     public async Task GetHat_ValidRequest_HatReturned()
     {
         // arrange
-        var hat = new HatDataModel
-        {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Barney Organizer",
-            OrganizerEmail = "barney@test.org",
-            HatName = "Test Hat One",
-            AdditionalInformation = "This is a test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
+        var hat = _hatDataModelFaker.Generate();
 
         await _testDataService.CreateHatAsync(hat);
         await _testDataService.AddParticipantAsync(new AddParticipantRequest

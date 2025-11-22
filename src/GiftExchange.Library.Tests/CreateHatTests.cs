@@ -6,11 +6,15 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
 
     private readonly ILambdaContext _context;
 
+    private readonly CreateHatRequestFaker _requestFaker;
+
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
     public CreateHatTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
+
+        _requestFaker = new CreateHatRequestFaker();
 
         var dynamoDbClient = dbFixture.CreateClient();
         _context = new FakeLambdaContext();
@@ -29,12 +33,9 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
     public async Task CreateHat_ValidRequest_CreatedResponse()
     {
         // arrange
-        var request = _jsonService.SerializeDefault(new CreateHatRequest
-        {
-            HatName = "2025 Gift Exchange",
-            OrganizerName = "Alice Organizer",
-            OrganizerEmail = "alice@test.com"
-        }).ToApiGatewayProxyRequest();
+        var request = _jsonService
+            .SerializeDefault(_requestFaker.Generate())
+            .ToApiGatewayProxyRequest();
 
         // act
         var response = await _sut(request, _context);
@@ -47,12 +48,9 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
     public async Task CreateHat_HatAlreadyExists_OkResponse()
     {
         // arrange
-        var request = _jsonService.SerializeDefault(new CreateHatRequest
-        {
-            HatName = "2026 Gift Exchange",
-            OrganizerName = "Malice Organizer",
-            OrganizerEmail = "malice@test.com"
-        }).ToApiGatewayProxyRequest();
+        var request = _jsonService
+            .SerializeDefault(_requestFaker.Generate())
+            .ToApiGatewayProxyRequest();
 
         // act
         await _sut(request, _context);

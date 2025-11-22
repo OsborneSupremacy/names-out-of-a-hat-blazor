@@ -6,9 +6,17 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
 {
     private readonly DynamoDbService _sut;
 
+    private readonly HatDataModelFaker _hatDataModelFaker;
+
+    private readonly AddParticipantRequestFaker _addParticipantRequestFaker;
+
     public DynamoDbServiceTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
+
+        _hatDataModelFaker = new HatDataModelFaker();
+        _addParticipantRequestFaker = new AddParticipantRequestFaker();
+
         var dynamoDbClient = dbFixture.CreateClient();
 
         var serviceProvider = new ServiceCollection()
@@ -24,17 +32,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
     public async Task CreateHatAsync_GivenValidPayload_ShouldCreateItemInDynamoDb()
     {
         // arrange
-        var hat = new HatDataModel
-        {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Test Organizer",
-            OrganizerEmail = "test@test.org",
-            HatName = "Test Hat",
-            AdditionalInformation = "This is a test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
+        var hat = _hatDataModelFaker.Generate();
 
         // act
         var result = await _sut.CreateHatAsync(hat);
@@ -47,35 +45,19 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
     public async Task GetOrganizerHatsAsync_GivenExistingOrganizerEmail_ShouldReturnHats()
     {
         // arrange
-        var hatOne = new HatDataModel
-        {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Barney Organizer",
-            OrganizerEmail = "barney@test.org",
-            HatName = "Test Hat One",
-            AdditionalInformation = "This is a test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
+        var hats = _hatDataModelFaker.Generate(2);
 
-        var hatTwo = new HatDataModel
+        var hatOne = hats[0];
+        var hatTwo = hats[1] with
         {
-            HatId = Guid.NewGuid(),
-            OrganizerName = "Barney Organizer",
-            OrganizerEmail = "barney@test.org",
-            HatName = "Test Hat Two",
-            AdditionalInformation = "This is another test hat.",
-            PriceRange = "$10 - $20",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
+            OrganizerEmail = hatOne.OrganizerEmail,
         };
 
         await _sut.CreateHatAsync(hatOne);
         await _sut.CreateHatAsync(hatTwo);
 
         // act
-        var result = await _sut.GetHatsAsync("barney@test.org");
+        var result = await _sut.GetHatsAsync(hatOne.OrganizerEmail);
 
         // assert
         result.Should().BeEquivalentTo([
@@ -109,13 +91,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
         // arrange
         var hatId = Guid.NewGuid();
 
-        var request = new AddParticipantRequest
-        {
-            HatId = hatId,
-            OrganizerEmail = "jerry@test.tv",
-            Email = "maude@test.tv",
-            Name = "Maude"
-        };
+        var request = _addParticipantRequestFaker.Generate();
 
         // act
         var firstRequest = await _sut.CreateParticipantAsync(request, []);
@@ -137,29 +113,12 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
         var hatId = Guid.NewGuid();
         var organizerEmail = "RebeccaTBarr@dayrep.com";
 
-        await _sut.CreateParticipantAsync(new AddParticipantRequest
-        {
-            OrganizerEmail = organizerEmail,
-            HatId = hatId,
-            Name = "Orville",
-            Email = "orville@dayrep.com"
-        }, []);
-
-        await _sut.CreateParticipantAsync(new AddParticipantRequest
-        {
-            OrganizerEmail = organizerEmail,
-            HatId = hatId,
-            Name = "Phillip",
-            Email = "phillip@dayrep.com"
-        }, []);
-
-        await _sut.CreateParticipantAsync(new AddParticipantRequest
-        {
-            OrganizerEmail = organizerEmail,
-            HatId = hatId,
-            Name = "Debra",
-            Email = "debra@dayrep.com"
-        }, []);
+        foreach (var participant in _addParticipantRequestFaker.Generate(3))
+            await _sut.CreateParticipantAsync(participant with
+            {
+                HatId = hatId,
+                OrganizerEmail = organizerEmail
+            }, []);
 
         // act
         var result = await _sut.GetParticipantsAsync(organizerEmail, hatId);

@@ -1,6 +1,4 @@
-﻿using Bogus;
-
-namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests;
 
 public class GetParticipantTests : IClassFixture<DynamoDbFixture>
 {
