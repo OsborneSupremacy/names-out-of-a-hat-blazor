@@ -10,46 +10,60 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
         _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(EditParticipantRequest request, ILambdaContext context)
+    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(
+        EditParticipantRequest request,
+        ILambdaContext context
+        )
     {
         var (hatExists, hat) = await _dynamoDbService
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+            .GetHatAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
 
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
-        var participantsOut = hat.Participants
-            .ToList();
+        var (participantExists, participant) = await _dynamoDbService.GetParticipantAsync(
+            request.OrganizerEmail,
+            request.HatId,
+            request.Email
+        ).ConfigureAwait(false);
 
-        var existingParticipant = participantsOut
-            .FirstOrDefault(p => p.Person.Email.ContentEquals(request.Email));
-
-        if(existingParticipant is null)
+        if(!participantExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Participant with email `{request.Email}` not found"), HttpStatusCode.NotFound);
 
-        participantsOut.Remove(existingParticipant);
+        if(request.EligibleRecipients.Contains(participant.Person.Name, StringComparer.OrdinalIgnoreCase))
+            return new Result<StatusCodeOnlyResponse>(new ArgumentException("Participant cannot set themselves as an eligible recipient"), HttpStatusCode.BadRequest);
 
-        // check if a participant with the new email already exists
-        if(participantsOut.Any(p => p.Person.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase)))
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException($"Participant with email {request.Email} already exists"), HttpStatusCode.Conflict);
+        var otherParticipants = hat.Participants
+            .Where(p => !p.Person.Name.ContentEquals(participant.Person.Name))
+            .Select(p => p.Person.Name)
+            .ToImmutableList();
 
-        var newRecipientList = GetUpdatedEligibleRecipientNames(
-            participantsOut.Select(p => p.Person.Name).ToList(),
-            request
-        );
+        var invalidRecipients = request.EligibleRecipients
+            .Where(r => !otherParticipants.Contains(r, StringComparer.OrdinalIgnoreCase))
+            .ToImmutableList();
 
-        // re-add the updated participant with the new details
-        participantsOut.Add(existingParticipant with
+        if (invalidRecipients.Any())
         {
-            EligibleRecipients = newRecipientList
-        });
+            var errorMessage = $"""
+                                One or more provided recipients are not part of this gift exchange.
 
-        // await _dynamoDbService
-        //     .UpdateParticipantsAsync(
-        //         request.OrganizerEmail,
-        //         request.HatId,
-        //         participantsOut.ToImmutableList()
-        //     );
+                                Gift exchange participants: {string.Join(", ", otherParticipants)}
+                                Provided Recipients: {string.Join(", ", request.EligibleRecipients)}
+                                Invalid Recipients: {string.Join(", ", invalidRecipients)}
+
+
+                                """;
+
+            return new Result<StatusCodeOnlyResponse>(new ArgumentException(errorMessage), HttpStatusCode.BadRequest);
+        }
+
+        await _dynamoDbService.UpdateEligibleRecipientsAsync(
+            request.OrganizerEmail,
+            request.HatId,
+            request.Email,
+            request.EligibleRecipients
+        ).ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }
@@ -61,6 +75,6 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
     private ImmutableList<string> GetUpdatedEligibleRecipientNames(List<string> otherParticipants, EditParticipantRequest request) =>
         otherParticipants
             .Select(r => r)
-            .Where(r => request.EligibleRecipientEmails.Contains(r, StringComparer.OrdinalIgnoreCase))
+            .Where(r => request.EligibleRecipients.Contains(r, StringComparer.OrdinalIgnoreCase))
             .ToImmutableList();
 }

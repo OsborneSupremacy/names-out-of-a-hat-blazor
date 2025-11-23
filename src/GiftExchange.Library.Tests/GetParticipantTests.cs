@@ -40,7 +40,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
 
         var person = personFaker.Generate();
 
-        await _testDataService.AddParticipantAsync(new AddParticipantRequest
+        await _testDataService.CreateParticipantAsync(new AddParticipantRequest
         {
             OrganizerEmail = hat.Organizer.Email,
             HatId = hat.Id,

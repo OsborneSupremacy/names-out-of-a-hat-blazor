@@ -70,13 +70,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
     public async Task CreateParticipantAsync_GivenValidPayload_ShouldCreateItemInDynamoDb()
     {
         // arrange
-        var request = new AddParticipantRequest
-        {
-            HatId = Guid.NewGuid(),
-            OrganizerEmail = "jerry@test.tv",
-            Email = "ned@test.tv",
-            Name = "Ned"
-        };
+        var request =_addParticipantRequestFaker.Generate();
 
         // act
         var result = await _sut.CreateParticipantAsync(request, []);
@@ -89,8 +83,6 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
     public async Task CreateParticipantAsync_GivenDuplicatePayload_ShouldThrowException()
     {
         // arrange
-        var hatId = Guid.NewGuid();
-
         var request = _addParticipantRequestFaker.Generate();
 
         // act
@@ -111,7 +103,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
     {
         // arrange
         var hatId = Guid.NewGuid();
-        var organizerEmail = "RebeccaTBarr@dayrep.com";
+        var organizerEmail = new Bogus.Person().Email;
 
         foreach (var participant in _addParticipantRequestFaker.Generate(3))
             await _sut.CreateParticipantAsync(participant with

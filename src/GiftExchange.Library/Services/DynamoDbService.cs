@@ -283,7 +283,7 @@ public class DynamoDbService
             .ConfigureAwait(false);
     }
 
-    public Task AddParticipantEligibleRecipientAsync(
+    public async Task AddParticipantEligibleRecipientAsync(
         string organizerEmail,
         Guid hatId,
         string participantEmail,
@@ -305,7 +305,35 @@ public class DynamoDbService
             }
         };
 
-        return _dynamoDbClient
-            .UpdateItemAsync(updateRequest);
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
+    }
+
+    public async Task UpdateEligibleRecipientsAsync(
+        string organizerEmail,
+        Guid hatId,
+        string participantEmail,
+        ImmutableList<string> eligibleRecipients
+        )
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
+                ["SK"] = new() { S = $"PARTICIPANT#{participantEmail}" }
+            },
+            UpdateExpression = "SET EligibleParticipants = :eligibleRecipients",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":eligibleRecipients"] = new() { SS = eligibleRecipients.ToList() }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
     }
 }

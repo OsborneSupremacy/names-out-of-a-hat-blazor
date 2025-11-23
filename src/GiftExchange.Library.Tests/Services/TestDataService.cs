@@ -5,6 +5,8 @@ internal class TestDataService
 {
     private readonly DynamoDbService _dynamoDbService;
 
+    private readonly HatDataModelFaker _hatDataModelFaker = new HatDataModelFaker();
+
     public TestDataService(
         DynamoDbService dynamoDbService
         )
@@ -17,17 +19,7 @@ internal class TestDataService
 
     public async Task<Hat> CreateTestHatAsync()
     {
-        var newHat = new HatDataModel
-        {
-            HatId = Guid.NewGuid(),
-            HatName = "Test Gift Exchange",
-            AdditionalInformation = string.Empty,
-            PriceRange = string.Empty,
-            OrganizerEmail = "organizer@test.com",
-            OrganizerName = "Organizer Test",
-            OrganizerVerified = false,
-            RecipientsAssigned = false
-        };
+        var newHat = _hatDataModelFaker.Generate();
 
         await _dynamoDbService.CreateHatAsync(newHat);
 
@@ -54,8 +46,19 @@ internal class TestDataService
         return hat;
     }
 
-    public Task<bool> AddParticipantAsync(
+    public Task<bool> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
         ) => _dynamoDbService.CreateParticipantAsync(request, existingParticipants);
+
+    public async Task<Participant> GetParticipantAsync(
+        string organizerEmail,
+        Guid hatId,
+        string participantUtEmail
+        )
+    {
+        var (_, participant) = await _dynamoDbService
+            .GetParticipantAsync(organizerEmail, hatId, participantUtEmail);
+        return participant;
+    }
 }

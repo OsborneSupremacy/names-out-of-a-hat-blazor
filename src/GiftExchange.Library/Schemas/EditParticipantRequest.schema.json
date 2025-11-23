@@ -12,13 +12,12 @@
             "format": "uuid",
             "description": "The unique identifier of the hat"
         },
-        "eligibleRecipientEmails": {
+        "eligibleRecipients": {
             "type": "array",
             "items": {
-                "type": "string",
-                "format": "email"
+                "type": "string"
             },
-            "description": "The list of eligible recipient emails"
+            "description": "The list of eligible recipient n ames"
         },
         "email": {
             "type": "string",
@@ -29,7 +28,7 @@
     "required": [
         "organizerEmail",
         "hatId",
-        "eligibleRecipientEmails",
+        "eligibleRecipients",
         "email"
     ],
     "additionalProperties": false

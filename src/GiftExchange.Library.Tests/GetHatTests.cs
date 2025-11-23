@@ -40,7 +40,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         var hat = _hatDataModelFaker.Generate();
 
         await _testDataService.CreateHatAsync(hat);
-        await _testDataService.AddParticipantAsync(new AddParticipantRequest
+        await _testDataService.CreateParticipantAsync(new AddParticipantRequest
         {
             OrganizerEmail = hat.OrganizerEmail,
             HatId = hat.HatId,
