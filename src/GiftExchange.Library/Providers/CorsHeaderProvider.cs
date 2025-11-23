@@ -1,8 +1,8 @@
 using System.Net.Mime;
 
-namespace GiftExchange.Library.Services;
+namespace GiftExchange.Library.Providers;
 
-internal static class CorsHeaderService
+internal static class CorsHeaderProvider
 {
    public static Dictionary<string, string> GetCorsHeaders() =>
        new()

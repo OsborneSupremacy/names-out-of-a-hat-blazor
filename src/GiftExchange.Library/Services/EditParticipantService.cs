@@ -3,11 +3,11 @@
 [UsedImplicitly]
 public class EditParticipantService : IBusinessService<EditParticipantRequest, StatusCodeOnlyResponse>
 {
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
-    public EditParticipantService(DynamoDbService dynamoDbService)
+    public EditParticipantService(GiftExchangeDataProvider giftExchangeDataProvider)
     {
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(
@@ -15,14 +15,14 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
         ILambdaContext context
         )
     {
-        var (hatExists, hat) = await _dynamoDbService
+        var (hatExists, hat) = await _giftExchangeDataProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
-        var (participantExists, participant) = await _dynamoDbService.GetParticipantAsync(
+        var (participantExists, participant) = await _giftExchangeDataProvider.GetParticipantAsync(
             request.OrganizerEmail,
             request.HatId,
             request.Email
@@ -58,7 +58,7 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
             return new Result<StatusCodeOnlyResponse>(new ArgumentException(errorMessage), HttpStatusCode.BadRequest);
         }
 
-        await _dynamoDbService.UpdateEligibleRecipientsAsync(
+        await _giftExchangeDataProvider.UpdateEligibleRecipientsAsync(
             request.OrganizerEmail,
             request.HatId,
             request.Email,
@@ -67,14 +67,4 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }
-
-    /// <summary>
-    /// Use this for the participant being edited.
-    /// </summary>
-    /// <returns></returns>
-    private ImmutableList<string> GetUpdatedEligibleRecipientNames(List<string> otherParticipants, EditParticipantRequest request) =>
-        otherParticipants
-            .Select(r => r)
-            .Where(r => request.EligibleRecipients.Contains(r, StringComparer.OrdinalIgnoreCase))
-            .ToImmutableList();
 }

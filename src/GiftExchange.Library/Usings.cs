@@ -11,13 +11,13 @@ global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.DependencyInjection;
 
 global using System.Collections.Immutable;
-global using System.ComponentModel.DataAnnotations;
 global using System.Net;
 
 global using GiftExchange.Library.Abstractions;
 global using GiftExchange.Library.Extensions;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;
+global using GiftExchange.Library.Providers;
 global using GiftExchange.Library.Services;
 global using GiftExchange.Library.Utility;
 

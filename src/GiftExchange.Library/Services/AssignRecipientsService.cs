@@ -6,24 +6,24 @@ public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest,
 
     private readonly ValidationService _validationService;
 
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
     private const int ShakeAttempts = 25;
 
     public AssignRecipientsService(
         ILogger<AssignRecipientsService> logger,
-        DynamoDbService dynamoDbService,
+        GiftExchangeDataProvider giftExchangeDataProvider,
         ValidationService validationService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
         _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AssignRecipientsRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _dynamoDbService
+        var (hatExists, hat) = await _giftExchangeDataProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
 
         if(!hatExists)
@@ -45,11 +45,11 @@ public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest,
         if (!shakeSuccess)
             return new Result<StatusCodeOnlyResponse>(new OperationCanceledException($"Valid recipient distribution not found after {ShakeAttempts} attempts"), HttpStatusCode.ServiceUnavailable);
 
-        // await _dynamoDbService
+        // await _giftExchangeDataProvider
         //     .UpdateParticipantsAsync(request.OrganizerEmail, request.HatId, participantsOut)
         //     .ConfigureAwait(false);
 
-        await _dynamoDbService
+        await _giftExchangeDataProvider
             .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, true)
             .ConfigureAwait(false);
 

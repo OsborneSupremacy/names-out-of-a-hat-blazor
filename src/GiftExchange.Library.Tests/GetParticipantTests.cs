@@ -24,7 +24,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-        _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
+        _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeDataProvider>());
 
         _sut = new GetParticipant(serviceProvider).FunctionHandler;
     }

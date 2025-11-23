@@ -4,24 +4,20 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
 {
     private readonly ILogger<AddParticipantService> _logger;
 
-    private readonly GetHatService _getHatService;
-
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
-        DynamoDbService dynamoDbService,
-        GetHatService getHatService
+        GiftExchangeDataProvider giftExchangeDataProvider
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
-        _getHatService = getHatService ?? throw new ArgumentNullException(nameof(getHatService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
     {
-        var (hatExists, _ ) = await _dynamoDbService
+        var (hatExists, _ ) = await _giftExchangeDataProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
@@ -31,15 +27,16 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
                 HttpStatusCode.NotFound
             );
 
-        var existingParticipants = await _dynamoDbService
+        var existingParticipants = await _giftExchangeDataProvider
             .GetParticipantsAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
         // Check if a participant with the same email or name already exists
-        if(existingParticipants.Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
+        if(existingParticipants
+           .Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participant with provided email or name already exists. Participants must have unique email addresses and names."), HttpStatusCode.Conflict);
 
-        await _dynamoDbService
+        await _giftExchangeDataProvider
             .CreateParticipantAsync(new AddParticipantRequest
             {
                 OrganizerEmail = request.OrganizerEmail,
@@ -52,7 +49,7 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
         // make new participant eligible for all existing participants
         var tasks = existingParticipants
             .Select(participant =>
-                _dynamoDbService
+                _giftExchangeDataProvider
                     .AddParticipantEligibleRecipientAsync(
                         request.OrganizerEmail,
                         request.HatId,

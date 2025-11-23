@@ -4,26 +4,29 @@ public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHa
 {
     private const int Max = 30;
 
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
-    public ValidationService(DynamoDbService dynamoDbService)
+    public ValidationService(GiftExchangeDataProvider giftExchangeDataProvider)
     {
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
     }
 
     public async Task<Result<ValidateHatResponse>> ExecuteAsync(ValidateHatRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _dynamoDbService
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+        var (hatExists, hat) = await _giftExchangeDataProvider
+            .GetHatAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
 
         if(!hatExists)
             return new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
         var validCountResponse = ValidateCount(hat.Participants);
-            if(validCountResponse.IsFaulted || !validCountResponse.Value.Success) return validCountResponse;
+            if(validCountResponse.IsFaulted || !validCountResponse.Value.Success)
+                return validCountResponse;
 
         var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
-            if(validEligibilityResponse.IsFaulted || !validEligibilityResponse.Value.Success) return validEligibilityResponse;
+            if(validEligibilityResponse.IsFaulted || !validEligibilityResponse.Value.Success)
+                return validEligibilityResponse;
 
         return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors = []}, HttpStatusCode.OK);
     }

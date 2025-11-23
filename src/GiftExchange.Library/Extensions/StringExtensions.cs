@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Bogus;
+﻿using Bogus;
 
 namespace GiftExchange.Library.Extensions;
 
@@ -13,33 +12,6 @@ internal static class StringExtensions
 
     public static bool ContentEquals(this string input, string value) =>
         input.TrimNullSafe().Equals(value.TrimNullSafe(), StringComparison.OrdinalIgnoreCase);
-
-    public static string ToNaturalLanguageList(this IEnumerable<string> input)
-    {
-        var s = new StringBuilder();
-
-        var values = input.ToList();
-
-        for (int x = 0; x < values.Count; x++)
-        {
-            if (x > 0)
-            {
-                if (x == (values.Count - 1))
-                    s.Append(" or ");
-                else
-                    s.Append(", ");
-            }
-            s.Append(values[x]);
-        }
-
-        return s.ToString();
-    }
-
-    public static bool ToBoolOrDefault(this string? input, bool defaultValue)
-    {
-        if (bool.TryParse(input, out var result)) return result;
-        return defaultValue;
-    }
 
     private static readonly List<string> PersonEmojis =
     [

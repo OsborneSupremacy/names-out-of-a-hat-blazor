@@ -29,7 +29,7 @@ internal static class ServiceProviderBuilder
 
     internal static IServiceCollection AddBusinessServices(this IServiceCollection services) =>
         services
-            .AddSingleton<DynamoDbService>()
+            .AddSingleton<GiftExchangeDataProvider>()
 
             .AddSingleton<AddParticipantService>()
             .AddSingleton<GetParticipantService>()

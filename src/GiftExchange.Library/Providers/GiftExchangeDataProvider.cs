@@ -1,21 +1,19 @@
 ﻿using Amazon.DynamoDBv2.Model;
 using GiftExchange.Library.DataModels;
 
-namespace GiftExchange.Library.Services;
+namespace GiftExchange.Library.Providers;
 
 [UsedImplicitly]
-public class DynamoDbService
+public class GiftExchangeDataProvider
 {
-    private readonly JsonService _jsonService;
 
     private readonly IAmazonDynamoDB _dynamoDbClient;
 
     private readonly string _tableName;
 
     // ReSharper disable once ConvertToPrimaryConstructor
-    public DynamoDbService(IAmazonDynamoDB dynamoDbClient, JsonService jsonService)
+    public GiftExchangeDataProvider(IAmazonDynamoDB dynamoDbClient)
     {
-        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
         _dynamoDbClient = dynamoDbClient ?? throw new ArgumentNullException(nameof(dynamoDbClient));
         _tableName = EnvReader.GetStringValue("TABLE_NAME");
     }
@@ -156,7 +154,10 @@ public class DynamoDbService
         await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
     }
 
-    public async Task<bool> CreateParticipantAsync(AddParticipantRequest request, ImmutableList<Participant> existingParticipants)
+    public async Task<bool> CreateParticipantAsync(
+        AddParticipantRequest request,
+        ImmutableList<Participant> existingParticipants
+        )
     {
         var item = new Dictionary<string, AttributeValue>
         {
@@ -187,7 +188,7 @@ public class DynamoDbService
         Guid hatId
         )
     {
-        var request = new QueryRequest()
+        var request = new QueryRequest
         {
             TableName = _tableName,
             KeyConditionExpression = "PK = :pk AND begins_with(SK, :skPrefix)",
@@ -261,15 +262,19 @@ public class DynamoDbService
         return (true, participant);
     }
 
-    public async Task UpdateRecipientsAssignedAsync(string requestOrganizerEmail, Guid requestHatId, bool recipientsAssigned)
+    public async Task UpdateRecipientsAssignedAsync(
+        string requestOrganizerEmail,
+        Guid requestHatId,
+        bool recipientsAssigned
+        )
     {
         var updateRequest = new UpdateItemRequest
         {
             TableName = _tableName,
             Key = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new() { S = requestOrganizerEmail },
-                ["SK"] = new() { S = requestHatId.ToString() }
+                ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{requestHatId}" },
             },
             UpdateExpression = "SET RecipientsAssigned = :recipientsAssigned",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>

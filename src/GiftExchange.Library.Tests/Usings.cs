@@ -12,6 +12,7 @@ global using GiftExchange.Library.DataModels;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Handlers;
+global using GiftExchange.Library.Providers;
 global using GiftExchange.Library.Services;
 
 global using GiftExchange.Library.Tests.Extensions;

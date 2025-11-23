@@ -49,7 +49,7 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)innerRequest.StatusCode,
-                Headers = CorsHeaderService.GetCorsHeaders(),
+                Headers = CorsHeaderProvider.GetCorsHeaders(),
                 Body = innerRequest.Exception.Message
             };
 
@@ -61,7 +61,7 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.InternalServerError,
-                Headers = CorsHeaderService.GetCorsHeaders()
+                Headers = CorsHeaderProvider.GetCorsHeaders()
             };
         }
 
@@ -73,7 +73,7 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)serviceResponse.StatusCode,
-                Headers = CorsHeaderService.GetCorsHeaders(),
+                Headers = CorsHeaderProvider.GetCorsHeaders(),
                 Body = serviceResponse.Exception.Message
             };
 
@@ -81,14 +81,14 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
             return new APIGatewayProxyResponse
             {
                 StatusCode =  (int)serviceResponse.StatusCode,
-                Headers = CorsHeaderService.GetCorsHeaders(),
+                Headers = CorsHeaderProvider.GetCorsHeaders(),
                 Body = jsonService.SerializeDefault(serviceResponse.Value)
             };
 
         return new APIGatewayProxyResponse
         {
             StatusCode = (int)serviceResponse.StatusCode,
-            Headers = CorsHeaderService.GetCorsHeaders()
+            Headers = CorsHeaderProvider.GetCorsHeaders()
         };
     }
 

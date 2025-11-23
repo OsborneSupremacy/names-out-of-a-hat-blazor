@@ -2,15 +2,15 @@
 
 namespace GiftExchange.Library.Tests;
 
-public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
+public class GiftExchangeDataProviderTests : IClassFixture<DynamoDbFixture>
 {
-    private readonly DynamoDbService _sut;
+    private readonly GiftExchangeDataProvider _sut;
 
     private readonly HatDataModelFaker _hatDataModelFaker;
 
     private readonly AddParticipantRequestFaker _addParticipantRequestFaker;
 
-    public DynamoDbServiceTests(DynamoDbFixture dbFixture)
+    public GiftExchangeDataProviderTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
 
@@ -25,7 +25,7 @@ public class DynamoDbServiceTests : IClassFixture<DynamoDbFixture>
             .AddSingleton(dynamoDbClient)
             .BuildServiceProvider();
 
-        _sut = serviceProvider.GetRequiredService<DynamoDbService>();
+        _sut = serviceProvider.GetRequiredService<GiftExchangeDataProvider>();
     }
 
     [Fact]

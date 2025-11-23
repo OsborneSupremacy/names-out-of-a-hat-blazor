@@ -2,16 +2,16 @@
 
 public class GetHatService : IBusinessService<GetHatRequest, Hat>
 {
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
-    public GetHatService(DynamoDbService dynamoDbService)
+    public GetHatService(GiftExchangeDataProvider giftExchangeDataProvider)
     {
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
     }
 
     public async Task<Result<Hat>> ExecuteAsync(GetHatRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _dynamoDbService
+        var (hatExists, hat) = await _giftExchangeDataProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 

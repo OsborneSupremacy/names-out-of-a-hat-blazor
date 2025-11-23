@@ -3,25 +3,26 @@ namespace GiftExchange.Library.Tests.Services;
 
 internal class TestDataService
 {
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
-    private readonly HatDataModelFaker _hatDataModelFaker = new HatDataModelFaker();
+    private readonly HatDataModelFaker _hatDataModelFaker;
 
     public TestDataService(
-        DynamoDbService dynamoDbService
+        GiftExchangeDataProvider giftExchangeDataProvider
         )
     {
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _hatDataModelFaker = new HatDataModelFaker();
     }
 
     public Task<bool> CreateHatAsync(HatDataModel newHat) =>
-        _dynamoDbService.CreateHatAsync(newHat);
+        _giftExchangeDataProvider.CreateHatAsync(newHat);
 
     public async Task<Hat> CreateTestHatAsync()
     {
         var newHat = _hatDataModelFaker.Generate();
 
-        await _dynamoDbService.CreateHatAsync(newHat);
+        await _giftExchangeDataProvider.CreateHatAsync(newHat);
 
         return new Hat
         {
@@ -41,7 +42,7 @@ internal class TestDataService
 
     public async Task<Hat> GetHatAsync(string organizerEmail, Guid hatId)
     {
-        var (_, hat) = await _dynamoDbService
+        var (_, hat) = await _giftExchangeDataProvider
             .GetHatAsync(organizerEmail, hatId);
         return hat;
     }
@@ -49,7 +50,7 @@ internal class TestDataService
     public Task<bool> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
-        ) => _dynamoDbService.CreateParticipantAsync(request, existingParticipants);
+        ) => _giftExchangeDataProvider.CreateParticipantAsync(request, existingParticipants);
 
     public async Task<Participant> GetParticipantAsync(
         string organizerEmail,
@@ -57,7 +58,7 @@ internal class TestDataService
         string participantUtEmail
         )
     {
-        var (_, participant) = await _dynamoDbService
+        var (_, participant) = await _giftExchangeDataProvider
             .GetParticipantAsync(organizerEmail, hatId, participantUtEmail);
         return participant;
     }

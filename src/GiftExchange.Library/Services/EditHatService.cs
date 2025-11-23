@@ -2,16 +2,16 @@
 
 public class EditHatService : IBusinessService<EditHatRequest, StatusCodeOnlyResponse>
 {
-    private readonly DynamoDbService _dynamoDbService;
+    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
 
-    public EditHatService(DynamoDbService dynamoDbService)
+    public EditHatService(GiftExchangeDataProvider giftExchangeDataProvider)
     {
-        _dynamoDbService = dynamoDbService ?? throw new ArgumentNullException(nameof(dynamoDbService));
+        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(EditHatRequest request, ILambdaContext context)
     {
-        var (hatExists, _ ) = await _dynamoDbService
+        var (hatExists, _ ) = await _giftExchangeDataProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
@@ -21,7 +21,7 @@ public class EditHatService : IBusinessService<EditHatRequest, StatusCodeOnlyRes
                 HttpStatusCode.NotFound
             );
 
-        await _dynamoDbService.EditHatAsync(request)
+        await _giftExchangeDataProvider.EditHatAsync(request)
             .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);

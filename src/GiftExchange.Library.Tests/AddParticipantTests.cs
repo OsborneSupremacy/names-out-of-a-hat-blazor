@@ -26,7 +26,7 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-        _testDataService = new TestDataService(serviceProvider.GetRequiredService<DynamoDbService>());
+        _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeDataProvider>());
 
         _requestFaker = new AddParticipantRequestFaker();
 

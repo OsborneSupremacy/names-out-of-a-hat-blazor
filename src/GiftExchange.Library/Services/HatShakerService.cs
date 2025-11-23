@@ -76,9 +76,6 @@ internal static class HatShakerService
             assignedRecipients.Add(participantOut.PickedRecipient);
         }
 
-        if (!errors.Any())
-            return (true, participantsOut.ToImmutableList());
-
-        return (false, []);
+        return !errors.Any() ? (true, participantsOut.ToImmutableList()) : (false, []);
     }
 }
