@@ -46,50 +46,26 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
         var innerRequest = GetRequestObject(request, jsonService);
 
         if(innerRequest.IsFaulted)
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = (int)innerRequest.StatusCode,
-                Headers = CorsHeaderProvider.GetCorsHeaders(),
-                Body = innerRequest.Exception.Message
-            };
+            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
 
         var service = GetServiceProvider().GetService<TService>();
 
         if (service is null)
         {
             context.Logger.LogCritical($"Could not resolve service of type {typeof(TService).FullName}");
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = (int)HttpStatusCode.InternalServerError,
-                Headers = CorsHeaderProvider.GetCorsHeaders()
-            };
+            return ProxyResponseBuilder.Build(HttpStatusCode.ServiceUnavailable);
         }
 
         var serviceResponse = await service
             .ExecuteAsync(innerRequest.Value, context)
             .ConfigureAwait(false);
 
-        if(serviceResponse.IsFaulted)
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = (int)serviceResponse.StatusCode,
-                Headers = CorsHeaderProvider.GetCorsHeaders(),
-                Body = serviceResponse.Exception.Message
-            };
+        if (serviceResponse.IsFaulted)
+            return ProxyResponseBuilder.Build(serviceResponse.StatusCode, serviceResponse.Exception.Message);
 
-        if(this is IHasResponseBody<TResponse>)
-            return new APIGatewayProxyResponse
-            {
-                StatusCode =  (int)serviceResponse.StatusCode,
-                Headers = CorsHeaderProvider.GetCorsHeaders(),
-                Body = jsonService.SerializeDefault(serviceResponse.Value)
-            };
-
-        return new APIGatewayProxyResponse
-        {
-            StatusCode = (int)serviceResponse.StatusCode,
-            Headers = CorsHeaderProvider.GetCorsHeaders()
-        };
+        return this is IHasResponseBody<TResponse> ?
+            ProxyResponseBuilder.Build(serviceResponse.StatusCode, jsonService.SerializeDefault(serviceResponse.Value)) :
+            ProxyResponseBuilder.Build(serviceResponse.StatusCode);
     }
 
     private Result<TRequest> GetRequestObject(APIGatewayProxyRequest request, JsonService jsonService) =>
