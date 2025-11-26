@@ -9,7 +9,7 @@ public class GetHats : ApiGatewayHandler<GetHatsRequest, GetHatsService, GetHats
 
     public Result<GetHatsRequest> Transform(APIGatewayProxyRequest request)
     {
-        var organizerEmail = request.PathParameters["email"] ?? string.Empty;
+        var organizerEmail = request.PathParameters.TryGetValue("email", out var email) ? email : string.Empty;
         return new Result<GetHatsRequest>(new GetHatsRequest
         {
             OrganizerEmail = organizerEmail

@@ -5,8 +5,8 @@ module "lambda-get-hats" {
   gateway_resource_id         = aws_api_gateway_resource.hats-email-resource.id
   gateway_http_method         = "GET"
   gateway_http_operation_name = "GetHats"
-    gateway_method_request_parameters = {
-    "method.request.path.email"                = true
+  gateway_method_request_parameters = {
+    "method.request.path.email" = true
   }
   gateway_method_request_model_name                 = ""
   gateway_method_request_model_description          = ""

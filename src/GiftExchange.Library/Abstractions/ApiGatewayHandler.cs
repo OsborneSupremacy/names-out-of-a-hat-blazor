@@ -56,9 +56,7 @@ public abstract class ApiGatewayHandler<TRequest, TService, TResponse>
             return ProxyResponseBuilder.Build(HttpStatusCode.ServiceUnavailable);
         }
 
-        var serviceResponse = await service
-            .ExecuteAsync(innerRequest.Value, context)
-            .ConfigureAwait(false);
+        var serviceResponse = await service.ExecuteAsync(innerRequest.Value, context);
 
         if (serviceResponse.IsFaulted)
             return ProxyResponseBuilder.Build(serviceResponse.StatusCode, serviceResponse.Exception.Message);
