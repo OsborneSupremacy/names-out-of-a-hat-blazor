@@ -22,7 +22,7 @@ public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHa
             Validate(hat);
     }
 
-    internal Result<ValidateHatResponse> Validate(Hat hat)
+    internal static Result<ValidateHatResponse> Validate(Hat hat)
     {
         var validCountResponse = ValidateCount(hat.Participants);
         if(validCountResponse.IsFaulted || !validCountResponse.Value.Success)
@@ -35,7 +35,7 @@ public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHa
         return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors = []}, HttpStatusCode.OK);
     }
 
-    private Result<ValidateHatResponse> ValidateCount(IList<Participant> participants)
+    private static Result<ValidateHatResponse> ValidateCount(IList<Participant> participants)
     {
         var (isValid, error) = participants.Count switch
         {
