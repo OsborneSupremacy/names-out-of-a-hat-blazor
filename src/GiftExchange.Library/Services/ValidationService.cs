@@ -4,29 +4,33 @@ public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHa
 {
     private const int Max = 30;
 
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public ValidationService(GiftExchangeDataProvider giftExchangeDataProvider)
+    public ValidationService(GiftExchangeProvider giftExchangeProvider)
     {
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
     public async Task<Result<ValidateHatResponse>> ExecuteAsync(ValidateHatRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _giftExchangeDataProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
-        if(!hatExists)
-            return new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+        return !hatExists ?
+            new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound) :
+            Validate(hat);
+    }
 
+    internal Result<ValidateHatResponse> Validate(Hat hat)
+    {
         var validCountResponse = ValidateCount(hat.Participants);
-            if(validCountResponse.IsFaulted || !validCountResponse.Value.Success)
-                return validCountResponse;
+        if(validCountResponse.IsFaulted || !validCountResponse.Value.Success)
+            return validCountResponse;
 
         var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
-            if(validEligibilityResponse.IsFaulted || !validEligibilityResponse.Value.Success)
-                return validEligibilityResponse;
+        if(validEligibilityResponse.IsFaulted || !validEligibilityResponse.Value.Success)
+            return validEligibilityResponse;
 
         return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors = []}, HttpStatusCode.OK);
     }

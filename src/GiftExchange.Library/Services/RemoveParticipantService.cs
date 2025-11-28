@@ -4,17 +4,17 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
 {
     ILogger<RemoveParticipantService> _logger;
 
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public RemoveParticipantService(ILogger<RemoveParticipantService> logger, GiftExchangeDataProvider giftExchangeDataProvider)
+    public RemoveParticipantService(ILogger<RemoveParticipantService> logger, GiftExchangeProvider giftExchangeProvider)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(RemoveParticipantRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _giftExchangeDataProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
 
         if(!hatExists)
@@ -38,7 +38,7 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
 
         participantsOut.Remove(existingParticipant);
         //
-        // await _giftExchangeDataProvider
+        // await _giftExchangeProvider
         //     .UpdateParticipantsAsync(
         //         request.OrganizerEmail,
         //         request.HatId,

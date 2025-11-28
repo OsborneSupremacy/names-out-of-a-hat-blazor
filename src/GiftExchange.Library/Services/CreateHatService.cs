@@ -4,16 +4,16 @@ namespace GiftExchange.Library.Services;
 
 public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResponse>
 {
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public CreateHatService(GiftExchangeDataProvider giftExchangeDataProvider)
+    public CreateHatService(GiftExchangeProvider giftExchangeProvider)
     {
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
     public async Task<Result<CreateHatResponse>> ExecuteAsync(CreateHatRequest request, ILambdaContext context)
     {
-        var (hatExists, hatId) = await _giftExchangeDataProvider
+        var (hatExists, hatId) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)
             .ConfigureAwait(false);
 
@@ -32,11 +32,11 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
             RecipientsAssigned = false
         };
 
-        await _giftExchangeDataProvider
+        await _giftExchangeProvider
             .CreateHatAsync(newHat)
             .ConfigureAwait(false);
 
-        await _giftExchangeDataProvider
+        await _giftExchangeProvider
             .CreateParticipantAsync(new AddParticipantRequest
             {
                 HatId = newHat.HatId,

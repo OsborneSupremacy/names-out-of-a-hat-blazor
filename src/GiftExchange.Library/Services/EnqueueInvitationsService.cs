@@ -6,7 +6,7 @@ namespace GiftExchange.Library.Services;
 [UsedImplicitly]
 public class EnqueueInvitationsService : IBusinessService<SendInvitationsRequest, StatusCodeOnlyResponse>
 {
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
     private readonly JsonService _jsonService;
 
@@ -15,13 +15,13 @@ public class EnqueueInvitationsService : IBusinessService<SendInvitationsRequest
     private readonly IAmazonSQS _sqsClient;
 
     public EnqueueInvitationsService(
-        GiftExchangeDataProvider giftExchangeDataProvider,
+        GiftExchangeProvider giftExchangeProvider,
         JsonService jsonService,
         EmailCompositionService emailCompositionService,
         IAmazonSQS sqsClient
         )
     {
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
         _emailCompositionService =
             emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
@@ -30,7 +30,7 @@ public class EnqueueInvitationsService : IBusinessService<SendInvitationsRequest
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(SendInvitationsRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _giftExchangeDataProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
 
         if(!hatExists)

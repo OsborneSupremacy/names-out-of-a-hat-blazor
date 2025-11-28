@@ -2,16 +2,16 @@
 
 public class GetParticipantService : IBusinessService<GetParticipantRequest, Participant>
 {
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public GetParticipantService(GiftExchangeDataProvider giftExchangeDataProvider)
+    public GetParticipantService(GiftExchangeProvider giftExchangeProvider)
     {
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
     public async Task<Result<Participant>> ExecuteAsync(GetParticipantRequest request, ILambdaContext context)
     {
-        var (participantExists, participant) = await _giftExchangeDataProvider
+        var (participantExists, participant) = await _giftExchangeProvider
             .GetParticipantAsync(request.OrganizerEmail, request.HatId, request.ParticipantEmail)
             .ConfigureAwait(false);
 

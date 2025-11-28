@@ -2,15 +2,15 @@
 
 namespace GiftExchange.Library.Tests;
 
-public class GiftExchangeDataProviderTests : IClassFixture<DynamoDbFixture>
+public class GiftExchangeProviderTests : IClassFixture<DynamoDbFixture>
 {
-    private readonly GiftExchangeDataProvider _sut;
+    private readonly GiftExchangeProvider _sut;
 
     private readonly HatDataModelFaker _hatDataModelFaker;
 
     private readonly AddParticipantRequestFaker _addParticipantRequestFaker;
 
-    public GiftExchangeDataProviderTests(DynamoDbFixture dbFixture)
+    public GiftExchangeProviderTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
 
@@ -25,7 +25,7 @@ public class GiftExchangeDataProviderTests : IClassFixture<DynamoDbFixture>
             .AddSingleton(dynamoDbClient)
             .BuildServiceProvider();
 
-        _sut = serviceProvider.GetRequiredService<GiftExchangeDataProvider>();
+        _sut = serviceProvider.GetRequiredService<GiftExchangeProvider>();
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class GiftExchangeDataProviderTests : IClassFixture<DynamoDbFixture>
         var result = await _sut.CreateParticipantAsync(request, []);
 
         // assert
-        result.Should().BeTrue();
+        result.Should().BeOfType<Participant>();
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class GiftExchangeDataProviderTests : IClassFixture<DynamoDbFixture>
         };
 
         // assert
-        firstRequest.Should().BeTrue();
+        firstRequest.Should().BeOfType<Participant>();
         await secondRequest.Should().ThrowAsync<ConditionalCheckFailedException>();
     }
 

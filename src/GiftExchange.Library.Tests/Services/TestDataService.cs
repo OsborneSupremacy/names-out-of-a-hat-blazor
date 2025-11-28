@@ -3,26 +3,26 @@ namespace GiftExchange.Library.Tests.Services;
 
 internal class TestDataService
 {
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
     private readonly HatDataModelFaker _hatDataModelFaker;
 
     public TestDataService(
-        GiftExchangeDataProvider giftExchangeDataProvider
+        GiftExchangeProvider giftExchangeProvider
         )
     {
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _hatDataModelFaker = new HatDataModelFaker();
     }
 
     public Task<bool> CreateHatAsync(HatDataModel newHat) =>
-        _giftExchangeDataProvider.CreateHatAsync(newHat);
+        _giftExchangeProvider.CreateHatAsync(newHat);
 
     public async Task<Hat> CreateTestHatAsync()
     {
         var newHat = _hatDataModelFaker.Generate();
 
-        await _giftExchangeDataProvider.CreateHatAsync(newHat);
+        await _giftExchangeProvider.CreateHatAsync(newHat);
 
         return new Hat
         {
@@ -42,15 +42,15 @@ internal class TestDataService
 
     public async Task<Hat> GetHatAsync(string organizerEmail, Guid hatId)
     {
-        var (_, hat) = await _giftExchangeDataProvider
+        var (_, hat) = await _giftExchangeProvider
             .GetHatAsync(organizerEmail, hatId);
         return hat;
     }
 
-    public Task<bool> CreateParticipantAsync(
+    public Task<Participant> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
-        ) => _giftExchangeDataProvider.CreateParticipantAsync(request, existingParticipants);
+        ) => _giftExchangeProvider.CreateParticipantAsync(request, existingParticipants);
 
     public async Task<Participant> GetParticipantAsync(
         string organizerEmail,
@@ -58,7 +58,7 @@ internal class TestDataService
         string participantUtEmail
         )
     {
-        var (_, participant) = await _giftExchangeDataProvider
+        var (_, participant) = await _giftExchangeProvider
             .GetParticipantAsync(organizerEmail, hatId, participantUtEmail);
         return participant;
     }

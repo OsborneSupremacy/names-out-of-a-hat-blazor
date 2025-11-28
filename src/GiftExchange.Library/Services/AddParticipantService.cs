@@ -4,20 +4,20 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
 {
     private readonly ILogger<AddParticipantService> _logger;
 
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
-        GiftExchangeDataProvider giftExchangeDataProvider
+        GiftExchangeProvider giftExchangeProvider
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
     {
-        var (hatExists, _ ) = await _giftExchangeDataProvider
+        var (hatExists, _ ) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
@@ -27,7 +27,7 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
                 HttpStatusCode.NotFound
             );
 
-        var existingParticipants = await _giftExchangeDataProvider
+        var existingParticipants = await _giftExchangeProvider
             .GetParticipantsAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
@@ -36,7 +36,7 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
            .Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participant with provided email or name already exists. Participants must have unique email addresses and names."), HttpStatusCode.Conflict);
 
-        await _giftExchangeDataProvider
+        await _giftExchangeProvider
             .CreateParticipantAsync(new AddParticipantRequest
             {
                 OrganizerEmail = request.OrganizerEmail,
@@ -49,7 +49,7 @@ public class AddParticipantService : IBusinessService<AddParticipantRequest, Sta
         // make new participant eligible for all existing participants
         var tasks = existingParticipants
             .Select(participant =>
-                _giftExchangeDataProvider
+                _giftExchangeProvider
                     .AddParticipantEligibleRecipientAsync(
                         request.OrganizerEmail,
                         request.HatId,

@@ -3,11 +3,11 @@
 [UsedImplicitly]
 public class EditParticipantService : IBusinessService<EditParticipantRequest, StatusCodeOnlyResponse>
 {
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public EditParticipantService(GiftExchangeDataProvider giftExchangeDataProvider)
+    public EditParticipantService(GiftExchangeProvider giftExchangeProvider)
     {
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(
@@ -15,14 +15,14 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
         ILambdaContext context
         )
     {
-        var (hatExists, hat) = await _giftExchangeDataProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
-        var (participantExists, participant) = await _giftExchangeDataProvider.GetParticipantAsync(
+        var (participantExists, participant) = await _giftExchangeProvider.GetParticipantAsync(
             request.OrganizerEmail,
             request.HatId,
             request.Email
@@ -58,7 +58,7 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
             return new Result<StatusCodeOnlyResponse>(new ArgumentException(errorMessage), HttpStatusCode.BadRequest);
         }
 
-        await _giftExchangeDataProvider.UpdateEligibleRecipientsAsync(
+        await _giftExchangeProvider.UpdateEligibleRecipientsAsync(
             request.OrganizerEmail,
             request.HatId,
             request.Email,

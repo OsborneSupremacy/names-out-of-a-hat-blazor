@@ -6,24 +6,24 @@ public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest,
 
     private readonly ValidationService _validationService;
 
-    private readonly GiftExchangeDataProvider _giftExchangeDataProvider;
+    private readonly GiftExchangeProvider _giftExchangeProvider;
 
     private const int ShakeAttempts = 25;
 
     public AssignRecipientsService(
         ILogger<AssignRecipientsService> logger,
-        GiftExchangeDataProvider giftExchangeDataProvider,
+        GiftExchangeProvider giftExchangeProvider,
         ValidationService validationService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _giftExchangeDataProvider = giftExchangeDataProvider ?? throw new ArgumentNullException(nameof(giftExchangeDataProvider));
+        _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
     }
 
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AssignRecipientsRequest request, ILambdaContext context)
     {
-        var (hatExists, hat) = await _giftExchangeDataProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
 
         if(!hatExists)
@@ -45,11 +45,11 @@ public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest,
         if (!shakeSuccess)
             return new Result<StatusCodeOnlyResponse>(new OperationCanceledException($"Valid recipient distribution not found after {ShakeAttempts} attempts"), HttpStatusCode.ServiceUnavailable);
 
-        // await _giftExchangeDataProvider
+        // await _giftExchangeProvider
         //     .UpdateParticipantsAsync(request.OrganizerEmail, request.HatId, participantsOut)
         //     .ConfigureAwait(false);
 
-        await _giftExchangeDataProvider
+        await _giftExchangeProvider
             .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, true)
             .ConfigureAwait(false);
 

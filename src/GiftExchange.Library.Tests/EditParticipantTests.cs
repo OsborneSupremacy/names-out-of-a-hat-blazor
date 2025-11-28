@@ -28,7 +28,7 @@ public class EditParticipantTests : IClassFixture<DynamoDbFixture>
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-        _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeDataProvider>());
+        _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
         _sut = new EditParticipant(serviceProvider).FunctionHandler;
     }

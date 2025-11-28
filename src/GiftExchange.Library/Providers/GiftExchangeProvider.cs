@@ -4,7 +4,7 @@ using GiftExchange.Library.DataModels;
 namespace GiftExchange.Library.Providers;
 
 [UsedImplicitly]
-public class GiftExchangeDataProvider
+public class GiftExchangeProvider
 {
 
     private readonly IAmazonDynamoDB _dynamoDbClient;
@@ -12,7 +12,7 @@ public class GiftExchangeDataProvider
     private readonly string _tableName;
 
     // ReSharper disable once ConvertToPrimaryConstructor
-    public GiftExchangeDataProvider(IAmazonDynamoDB dynamoDbClient)
+    public GiftExchangeProvider(IAmazonDynamoDB dynamoDbClient)
     {
         _dynamoDbClient = dynamoDbClient ?? throw new ArgumentNullException(nameof(dynamoDbClient));
         _tableName = EnvReader.GetStringValue("TABLE_NAME");
@@ -154,7 +154,7 @@ public class GiftExchangeDataProvider
         await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
     }
 
-    public async Task<bool> CreateParticipantAsync(
+    public async Task<Participant> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
         )
@@ -167,8 +167,12 @@ public class GiftExchangeDataProvider
             ["Email"] = new() { S = request.Email }
         };
 
+        var eligibleParticipantNames = existingParticipants
+            .Select(p => p.Person.Name)
+            .ToList();
+
         if(existingParticipants.Any())
-            item.Add("EligibleParticipants", new() { SS = existingParticipants.Select(p => p.Person.Name).ToList()});
+            item.Add("EligibleParticipants", new() { SS = eligibleParticipantNames });
 
         var putItemRequest = new PutItemRequest
         {
@@ -180,7 +184,16 @@ public class GiftExchangeDataProvider
         await _dynamoDbClient.PutItemAsync(putItemRequest)
             .ConfigureAwait(false);
 
-        return true;
+        return new Participant
+        {
+            PickedRecipient = string.Empty,
+            Person = new Person
+            {
+                Name = request.Name,
+                Email =  request.Email
+            },
+            EligibleRecipients = eligibleParticipantNames.ToImmutableList()
+        };
     }
 
     public async Task<ImmutableList<Participant>> GetParticipantsAsync(
