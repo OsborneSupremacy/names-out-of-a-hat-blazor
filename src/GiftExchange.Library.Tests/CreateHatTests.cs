@@ -53,7 +53,7 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        await _sut(request, _context);
+        _ = await _sut(request, _context);
         var response = await _sut(request, _context);
 
         // assert

@@ -1,5 +1,6 @@
 provider "aws" {
-  region = "us-east-1"
+  region  = "us-east-1"
+  profile = "benosborne"
 
   default_tags {
     tags = {
@@ -20,6 +21,7 @@ terraform {
 
   backend "s3" {
     bucket       = "bro-tfstate"
+    profile      = "benosborne"
     use_lockfile = true
     key          = "giftexchange/live"
     region       = "us-east-1"

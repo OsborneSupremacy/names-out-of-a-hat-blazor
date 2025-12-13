@@ -47,6 +47,11 @@ public class GiftExchangeProvider
             .ToImmutableList();
     }
 
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="hatDataModel"></param>
+    /// <returns>true if hat was created, false is had already existed.</returns>
     public async Task<bool> CreateHatAsync(HatDataModel hatDataModel)
     {
         var item = new Dictionary<string, AttributeValue>
@@ -69,10 +74,15 @@ public class GiftExchangeProvider
             ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
         };
 
-        await _dynamoDbClient.PutItemAsync(request)
-            .ConfigureAwait(false);
-
-        return true;
+        try
+        {
+            await _dynamoDbClient.PutItemAsync(request)
+                .ConfigureAwait(false);
+            return true;
+        } catch (ConditionalCheckFailedException)
+        {
+            return false;
+        }
     }
 
     public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(

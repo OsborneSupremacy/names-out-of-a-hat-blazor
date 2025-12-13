@@ -26,11 +26,11 @@ public class InvitationQueueHandler
     }
 
     [UsedImplicitly]
-    public async Task FunctionHandler(SQSEvent evnt, ILambdaContext context)
+    public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
         var service = GetServiceProvider().GetService<InvitationQueueHandlerService>()!;
 
-        foreach (var record in evnt.Records)
+        foreach (var record in sqsEvent.Records)
             await service.ProcessRecordAsync(record, context)
                 .ConfigureAwait(false);
     }

@@ -32,9 +32,12 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
             RecipientsAssigned = false
         };
 
-        await _giftExchangeProvider
+        var created = await _giftExchangeProvider
             .CreateHatAsync(newHat)
             .ConfigureAwait(false);
+
+        if(!created)
+            return new Result<CreateHatResponse>(new CreateHatResponse { HatId = newHat.HatId }, HttpStatusCode.OK);
 
         await _giftExchangeProvider
             .CreateParticipantAsync(new AddParticipantRequest
