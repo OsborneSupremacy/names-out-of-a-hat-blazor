@@ -29,14 +29,16 @@ internal static class ServiceProviderBuilder
         services
             .AddSingleton<GiftExchangeProvider>()
 
+            .AddKeyedSingleton<IApiGatewayHandler, CreateHatService>("post/hat")
+
             .AddKeyedSingleton<IApiGatewayHandler, AddParticipantService>("post/participant")
+
             .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
             .AddSingleton<GetParticipantService>()
             .AddSingleton<EditParticipantService>()
             .AddSingleton<RemoveParticipantService>()
 
-            .AddSingleton<CreateHatService>()
             .AddSingleton<DeleteHatService>()
             .AddSingleton<EditHatService>()
             .AddSingleton<GetHatService>()

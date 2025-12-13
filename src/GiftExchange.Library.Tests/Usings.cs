@@ -8,6 +8,7 @@ global using FluentAssertions;
 
 global using Microsoft.Extensions.DependencyInjection;
 
+global using GiftExchange.Library.Abstractions;
 global using GiftExchange.Library.DataModels;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.Models;
@@ -24,5 +25,4 @@ global using System.Collections.Immutable;
 global using System.Net;
 
 global using Xunit;
-
 

@@ -1,4 +1,5 @@
-﻿namespace GiftExchange.Library.Tests.HandlerTests;
+﻿
+namespace GiftExchange.Library.Tests.HandlerTests;
 
 public class CreateHatTests : IClassFixture<DynamoDbFixture>
 {
@@ -8,7 +9,7 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
 
     private readonly CreateHatRequestFaker _requestFaker;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public CreateHatTests(DynamoDbFixture dbFixture)
     {
@@ -26,7 +27,7 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-        _sut = new CreateHat(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("post/hat");
     }
 
     [Fact]
@@ -38,7 +39,7 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(request, _context);
+        var response = await _sut.FunctionHandler(request, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Created);
@@ -53,8 +54,8 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        _ = await _sut(request, _context);
-        var response = await _sut(request, _context);
+        _ = await _sut.FunctionHandler(request, _context);
+        var response = await _sut.FunctionHandler(request, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);
