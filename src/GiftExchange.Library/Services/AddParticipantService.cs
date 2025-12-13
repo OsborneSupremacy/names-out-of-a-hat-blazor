@@ -10,7 +10,9 @@ public class AddParticipantService : IApiGatewayHandler
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
-        GiftExchangeProvider giftExchangeProvider, JsonService jsonService)
+        GiftExchangeProvider giftExchangeProvider,
+        JsonService jsonService
+        )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));

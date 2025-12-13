@@ -5,14 +5,12 @@ namespace GiftExchange.Library.Services;
 
 internal static class ServiceProviderBuilder
 {
-    public static IServiceProvider Build()
-    {
-        return new ServiceCollection()
+    public static IServiceProvider Build() =>
+        new ServiceCollection()
             .AddUtilities()
             .AddVendorServices()
             .AddBusinessServices()
             .BuildServiceProvider();
-    }
 
     private static IServiceCollection AddVendorServices(this IServiceCollection services) =>
         services
@@ -32,6 +30,7 @@ internal static class ServiceProviderBuilder
             .AddSingleton<GiftExchangeProvider>()
 
             .AddKeyedSingleton<IApiGatewayHandler, AddParticipantService>("post/participant")
+            .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
             .AddSingleton<GetParticipantService>()
             .AddSingleton<EditParticipantService>()
@@ -45,7 +44,6 @@ internal static class ServiceProviderBuilder
 
             .AddSingleton<EligibilityValidationService>()
             .AddSingleton<ValidationService>()
-            .AddSingleton<AssignRecipientsService>()
 
             .AddSingleton<VerifyOrganizerService>()
             .AddSingleton<EmailCompositionService>()

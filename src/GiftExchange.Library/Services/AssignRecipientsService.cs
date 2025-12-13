@@ -1,8 +1,10 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest, StatusCodeOnlyResponse>
+public class AssignRecipientsService : IApiGatewayHandler
 {
     private readonly ILogger<AssignRecipientsService> _logger;
+
+    private readonly JsonService _jsonService;
 
     private readonly ValidationService _validationService;
 
@@ -13,15 +15,37 @@ public class AssignRecipientsService : IBusinessService<AssignRecipientsRequest,
     public AssignRecipientsService(
         ILogger<AssignRecipientsService> logger,
         GiftExchangeProvider giftExchangeProvider,
-        ValidationService validationService
+        ValidationService validationService,
+        JsonService jsonService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
+        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AssignRecipientsRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> FunctionHandler(
+        APIGatewayProxyRequest request,
+        ILambdaContext context
+    )
+    {
+        var innerRequest = request.GetInnerRequest<AssignRecipientsRequest>(_jsonService);
+
+        if(innerRequest.IsFaulted)
+            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
+
+        var result = await AssignRecipientsAsync(innerRequest.Value, context);
+
+        return result.IsFaulted ?
+            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
+            ProxyResponseBuilder.Build(result.StatusCode);
+    }
+
+    public async Task<Result<StatusCodeOnlyResponse>> AssignRecipientsAsync(
+        AssignRecipientsRequest request,
+        ILambdaContext context
+        )
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
