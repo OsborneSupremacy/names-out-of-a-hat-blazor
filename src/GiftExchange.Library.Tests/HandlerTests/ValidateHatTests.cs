@@ -1,6 +1,6 @@
-﻿namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests.HandlerTests;
 
-public class EditHatTests : IClassFixture<DynamoDbFixture>
+public class ValidateHatTests : IClassFixture<DynamoDbFixture>
 {
     private readonly JsonService _jsonService;
 
@@ -8,11 +8,15 @@ public class EditHatTests : IClassFixture<DynamoDbFixture>
 
     private readonly TestDataService _testDataService;
 
+    private readonly AddParticipantRequestFaker _addParticipantRequestFaker;
+
     private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
 
-    public EditHatTests(DynamoDbFixture dbFixture)
+    public ValidateHatTests(DynamoDbFixture dbFixture)
     {
         DotEnv.Load();
+
+        _addParticipantRequestFaker = new AddParticipantRequestFaker();
 
         var dynamoDbClient = dbFixture.CreateClient();
         _context = new FakeLambdaContext();
@@ -26,37 +30,29 @@ public class EditHatTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = new EditHat(serviceProvider).FunctionHandler;
+        _sut = new ValidateHat(serviceProvider).FunctionHandler;
     }
 
     [Fact]
-    public async Task EditHat_ValidRequest_OkResponse()
+    public async Task ValidateHat_GivenValidPayload_ReturnsOkResponse()
     {
         // arrange
         var hat = await _testDataService.CreateTestHatAsync();
 
-        var editHatRequest = new EditHatRequest
+        var innerRequest = new ValidateHatRequest
         {
-            OrganizerEmail = hat.Organizer.Email,
             HatId = hat.Id,
-            Name = "New Hat Name",
-            AdditionalInformation = "New Additional Information",
-            PriceRange = "$20 - $30"
+            OrganizerEmail = hat.Organizer.Email,
         };
 
-        var request = _jsonService
-            .SerializeDefault(editHatRequest)
+        var apiRequest = _jsonService
+            .SerializeDefault(innerRequest)
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(request, _context);
-        var updatedHat = await _testDataService
-            .GetHatAsync(editHatRequest.OrganizerEmail, hat.Id);
+        var response = await _sut(apiRequest, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);
-        updatedHat.Name.Should().Be(editHatRequest.Name);
-        updatedHat.AdditionalInformation.Should().Be(editHatRequest.AdditionalInformation);
-        updatedHat.PriceRange.Should().Be(editHatRequest.PriceRange);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests.HandlerTests;
 
 public class GetHatsTests : IClassFixture<DynamoDbFixture>
 {

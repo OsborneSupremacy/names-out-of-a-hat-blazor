@@ -48,28 +48,6 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
         if(hat.RecipientsAssigned)
             await _giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false);
 
-        return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
-    }
-
-    private static bool ParticipantIsOrganizer(Participant participant, Hat hat) =>
-        participant.Person.Email.ContentEquals(hat.Organizer.Email);
-
-
-    private ImmutableList<string> GetUpdatedRecipientList(Participant participant, RemoveParticipantRequest request)
-    {
-        if(participant.Person.Email.ContentEquals(request.Email))
-            return [];
-
-        var recipientsOut = participant
-            .EligibleRecipients
-            .ToList();
-
-        var existingRecipient = recipientsOut
-            .FirstOrDefault(r => r.ContentEquals(request.Email));
-
-        if (existingRecipient is not null)
-            recipientsOut.Remove(existingRecipient);
-
-        return recipientsOut.ToImmutableList();
+        return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.NoContent}, HttpStatusCode.NoContent);
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Amazon.DynamoDBv2.Model;
 
-namespace GiftExchange.Library.Tests;
+namespace GiftExchange.Library.Tests.HandlerTests;
 
 public class GiftExchangeProviderTests : IClassFixture<DynamoDbFixture>
 {

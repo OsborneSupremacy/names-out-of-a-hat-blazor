@@ -1,4 +1,4 @@
-﻿namespace GiftExchange.Library.Tests;
+﻿namespace GiftExchange.Library.Tests.ServiceTests;
 
 public class ValidationServiceTests
 {
