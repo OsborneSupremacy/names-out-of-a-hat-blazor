@@ -15,10 +15,15 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
     public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(RemoveParticipantRequest request, ILambdaContext context)
     {
         var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+            .GetHatAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
 
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+
+        await _giftExchangeProvider
+            .DeleteParticipantAsync(request.OrganizerEmail, request.HatId, request.Email)
+            .ConfigureAwait(false);
 
         var participantsOut = hat.Participants
             .Select(p => p with

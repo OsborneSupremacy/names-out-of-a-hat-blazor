@@ -364,4 +364,21 @@ public class GiftExchangeProvider
             .UpdateItemAsync(updateRequest)
             .ConfigureAwait(false);
     }
+
+    public async Task DeleteParticipantAsync(string requestOrganizerEmail, Guid requestHatId, string requestEmail)
+    {
+        var deleteRequest = new DeleteItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT#{requestHatId}#PARTICIPANT" },
+                ["SK"] = new() { S = $"PARTICIPANT#{requestEmail}" }
+            }
+        };
+
+        await _dynamoDbClient
+            .DeleteItemAsync(deleteRequest)
+            .ConfigureAwait(false);
+    }
 }

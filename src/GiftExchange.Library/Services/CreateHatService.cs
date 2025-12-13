@@ -13,12 +13,12 @@ public class CreateHatService : IBusinessService<CreateHatRequest, CreateHatResp
 
     public async Task<Result<CreateHatResponse>> ExecuteAsync(CreateHatRequest request, ILambdaContext context)
     {
-        var (hatExists, hatId) = await _giftExchangeProvider
+        var (hatExists, existingHatId) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)
             .ConfigureAwait(false);
 
         if (hatExists)
-            return new Result<CreateHatResponse>(new CreateHatResponse { HatId = hatId }, HttpStatusCode.OK);
+            return new Result<CreateHatResponse>(new CreateHatResponse { HatId = existingHatId }, HttpStatusCode.OK);
 
         var newHat = new HatDataModel
         {
