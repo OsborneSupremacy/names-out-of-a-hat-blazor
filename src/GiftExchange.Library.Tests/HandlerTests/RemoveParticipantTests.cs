@@ -135,7 +135,9 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.NoContent);
 
-        var removed = await _testDataService.GetParticipantAsync(hat.Organizer.Email, hat.Id, participant.Email);
+        var removed = await _testDataService
+            .GetParticipantAsync(hat.Organizer.Email, hat.Id, participant.Email);
+
         removed.Should().Be(Participants.Empty);
     }
 }
