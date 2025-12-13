@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Tests.HandlerTests;
+﻿using GiftExchange.Library.Abstractions;
+
+namespace GiftExchange.Library.Tests.HandlerTests;
 
 public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 {
@@ -10,7 +12,7 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly AddParticipantRequestFaker _requestFaker;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public AddParticipantTests(DynamoDbFixture dbFixture)
     {
@@ -30,7 +32,7 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 
         _requestFaker = new AddParticipantRequestFaker();
 
-        _sut = new AddParticipant(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("post/participant");
     }
 
     [Fact]
@@ -46,7 +48,7 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         }).ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(request, _context);
+        var response = await _sut.FunctionHandler(request, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Created);
@@ -74,8 +76,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         }).ToApiGatewayProxyRequest();
 
         // act
-        await _sut(requestOne, _context);
-        var response = await _sut(requestTwo, _context);
+        await _sut.FunctionHandler(requestOne, _context);
+        var response = await _sut.FunctionHandler(requestTwo, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
@@ -103,8 +105,8 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
         }).ToApiGatewayProxyRequest();
 
         // act
-        await _sut(requestOne, _context);
-        var response = await _sut(requestTwo, _context);
+        await _sut.FunctionHandler(requestOne, _context);
+        var response = await _sut.FunctionHandler(requestTwo, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);

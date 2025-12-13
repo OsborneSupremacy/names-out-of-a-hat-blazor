@@ -31,7 +31,8 @@ internal static class ServiceProviderBuilder
         services
             .AddSingleton<GiftExchangeProvider>()
 
-            .AddSingleton<AddParticipantService>()
+            .AddKeyedSingleton<IApiGatewayHandler, AddParticipantService>("post/participant")
+
             .AddSingleton<GetParticipantService>()
             .AddSingleton<EditParticipantService>()
             .AddSingleton<RemoveParticipantService>()

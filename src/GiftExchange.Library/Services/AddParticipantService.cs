@@ -1,21 +1,40 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class AddParticipantService : IBusinessService<AddParticipantRequest, StatusCodeOnlyResponse>
+public class AddParticipantService : IApiGatewayHandler
 {
     private readonly ILogger<AddParticipantService> _logger;
+
+    private readonly JsonService _jsonService;
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
-        GiftExchangeProvider giftExchangeProvider
-        )
+        GiftExchangeProvider giftExchangeProvider, JsonService jsonService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(AddParticipantRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> FunctionHandler(
+        APIGatewayProxyRequest request,
+        ILambdaContext context
+        )
+    {
+        var innerRequest = request.GetInnerRequest<AddParticipantRequest>(_jsonService);
+
+        if(innerRequest.IsFaulted)
+            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
+
+        var result = await AddParticipantAsync(innerRequest.Value, context);
+
+        return result.IsFaulted ?
+            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
+            ProxyResponseBuilder.Build(result.StatusCode);
+    }
+
+    private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request, ILambdaContext context)
     {
         var (hatExists, _ ) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
