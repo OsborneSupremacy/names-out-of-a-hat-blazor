@@ -21,7 +21,7 @@
     "required": [
         "organizerEmail",
         "hatId",
-        "personId"
+        "email"
     ],
     "additionalProperties": false
 }

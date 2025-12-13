@@ -21,34 +21,32 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
+        if(request.Email.ContentEquals(hat.Organizer.Email))
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("The organizer cannot be removed."), HttpStatusCode.BadRequest);
+
+        var participant = hat.Participants
+            .FirstOrDefault(p => p.Person.Email.ContentEquals(request.Email));
+
+        if(participant is null)
+            return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.NoContent }, HttpStatusCode.NoContent);
+
+        // remove participant from eligible recipients of all other participants
+        await _giftExchangeProvider
+            .RemoveParticipantFromEligibleRecipientsAsync(
+                request.OrganizerEmail,
+                request.HatId,
+                participant.Person.Name
+            )
+            .ConfigureAwait(false);
+
+        // remove participant from hat
         await _giftExchangeProvider
             .DeleteParticipantAsync(request.OrganizerEmail, request.HatId, request.Email)
             .ConfigureAwait(false);
 
-        var participantsOut = hat.Participants
-            .Select(p => p with
-            {
-                EligibleRecipients = GetUpdatedRecipientList(p, request)
-            })
-            .ToList();
-
-        var existingParticipant = participantsOut
-            .FirstOrDefault(p => p.Person.Email.ContentEquals(request.Email));
-
-        if(existingParticipant is null)
-            return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK }, HttpStatusCode.OK);
-
-        if(ParticipantIsOrganizer(existingParticipant, hat))
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("The organizer cannot be removed."), HttpStatusCode.BadRequest);
-
-        participantsOut.Remove(existingParticipant);
-        //
-        // await _giftExchangeProvider
-        //     .UpdateParticipantsAsync(
-        //         request.OrganizerEmail,
-        //         request.HatId,
-        //         participantsOut.ToImmutableList()
-        //     );
+        // set recipients assigned to false since the hat composition has changed
+        if(hat.RecipientsAssigned)
+            await _giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }

@@ -381,4 +381,45 @@ public class GiftExchangeProvider
             .DeleteItemAsync(deleteRequest)
             .ConfigureAwait(false);
     }
+
+    public async Task RemoveParticipantFromEligibleRecipientsAsync(
+        string organizerEmail,
+        Guid hatId,
+        string participantNameToRemove
+        )
+    {
+        var (hatExists, hat) = await GetHatAsync(organizerEmail, hatId)
+            .ConfigureAwait(false);
+
+        if (!hatExists)
+            return;
+
+        var participants = hat.Participants
+            .Where(p => p.EligibleRecipients.Contains(participantNameToRemove, StringComparer.OrdinalIgnoreCase))
+            .ToImmutableList();
+
+        List<Task> updateTasks = [];
+
+        // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+        foreach (var participant in participants)
+        {
+            var updatedEligibleRecipients = participant
+                .EligibleRecipients
+                .Where(r => !r.ContentEquals(participantNameToRemove))
+                .ToImmutableList();
+
+            updateTasks.Add(
+                UpdateEligibleRecipientsAsync(
+                    organizerEmail,
+                    hatId,
+                    participant.Person.Email,
+                    updatedEligibleRecipients
+                )
+            );
+        }
+
+        await Task.WhenAll(updateTasks)
+            .ConfigureAwait(false);
+    }
+
 }
