@@ -1,15 +1,38 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class EditHatService : IBusinessService<EditHatRequest, StatusCodeOnlyResponse>
+public class EditHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public EditHatService(GiftExchangeProvider giftExchangeProvider)
+    private readonly JsonService _jsonService;
+
+    public EditHatService(
+        GiftExchangeProvider giftExchangeProvider,
+        JsonService jsonService
+        )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(EditHatRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> FunctionHandler(
+        APIGatewayProxyRequest request,
+        ILambdaContext context
+    )
+    {
+        var innerRequest = request.GetInnerRequest<EditHatRequest>(_jsonService);
+
+        if(innerRequest.IsFaulted)
+            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
+
+        var result = await EditHatAsync(innerRequest.Value, context);
+
+        return result.IsFaulted ?
+            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
+            ProxyResponseBuilder.Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
+    }
+
+    public async Task<Result<StatusCodeOnlyResponse>> EditHatAsync(EditHatRequest request, ILambdaContext context)
     {
         var (hatExists, _ ) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
