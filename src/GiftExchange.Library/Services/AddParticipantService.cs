@@ -19,15 +19,14 @@ internal class AddParticipantService : IApiGatewayHandler
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
-    public async Task<APIGatewayProxyResponse> FunctionHandler(
+    public Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context
         ) =>
-        await _adapter
+        _adapter
             .AdaptAsync<AddParticipantRequest, StatusCodeOnlyResponse>(
                 request,
-                AddParticipantAsync,
-                context
+                AddParticipantAsync
             );
 
     private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request)

@@ -21,8 +21,7 @@ internal class ApiGatewayAdapter
 
     public async Task<APIGatewayProxyResponse> AdaptAsync<TRequest, TResponse>(
         APIGatewayProxyRequest request,
-        Func<TRequest, Task<Result<TResponse>>> handler,
-        ILambdaContext context
+        Func<TRequest, Task<Result<TResponse>>> handler
     )
     {
         var innerRequest = request.GetInnerRequest<TRequest>(_jsonService);
@@ -36,5 +35,4 @@ internal class ApiGatewayAdapter
             ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
             ProxyResponseBuilder.Build(result.StatusCode);
     }
-
 }
