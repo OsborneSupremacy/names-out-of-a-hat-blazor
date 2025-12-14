@@ -1,16 +1,39 @@
 ﻿namespace GiftExchange.Library.Services;
 
 [UsedImplicitly]
-public class EditParticipantService : IBusinessService<EditParticipantRequest, StatusCodeOnlyResponse>
+public class EditParticipantService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public EditParticipantService(GiftExchangeProvider giftExchangeProvider)
+    private readonly JsonService _jsonService;
+
+    public EditParticipantService(
+        GiftExchangeProvider giftExchangeProvider,
+        JsonService jsonService
+        )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(
+    public async Task<APIGatewayProxyResponse> FunctionHandler(
+        APIGatewayProxyRequest request,
+        ILambdaContext context
+    )
+    {
+        var innerRequest = request.GetInnerRequest<EditParticipantRequest>(_jsonService);
+
+        if(innerRequest.IsFaulted)
+            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
+
+        var result = await EditParticipantAsync(innerRequest.Value, context);
+
+        return result.IsFaulted ?
+            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
+            ProxyResponseBuilder.Build(result.StatusCode);
+    }
+
+    public async Task<Result<StatusCodeOnlyResponse>> EditParticipantAsync(
         EditParticipantRequest request,
         ILambdaContext context
         )
@@ -22,11 +45,13 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
-        var (participantExists, participant) = await _giftExchangeProvider.GetParticipantAsync(
-            request.OrganizerEmail,
-            request.HatId,
-            request.Email
-        ).ConfigureAwait(false);
+        var (participantExists, participant) = await _giftExchangeProvider
+            .GetParticipantAsync(
+                request.OrganizerEmail,
+                request.HatId,
+                request.Email
+            )
+            .ConfigureAwait(false);
 
         if(!participantExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Participant with email `{request.Email}` not found"), HttpStatusCode.NotFound);
@@ -58,12 +83,14 @@ public class EditParticipantService : IBusinessService<EditParticipantRequest, S
             return new Result<StatusCodeOnlyResponse>(new ArgumentException(errorMessage), HttpStatusCode.BadRequest);
         }
 
-        await _giftExchangeProvider.UpdateEligibleRecipientsAsync(
-            request.OrganizerEmail,
-            request.HatId,
-            request.Email,
-            request.EligibleRecipients
-        ).ConfigureAwait(false);
+        await _giftExchangeProvider
+            .UpdateEligibleRecipientsAsync(
+                request.OrganizerEmail,
+                request.HatId,
+                request.Email,
+                request.EligibleRecipients
+            )
+            .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }

@@ -10,7 +10,7 @@ public class EditParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly AddParticipantRequestFaker _addParticipantRequestFaker;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public EditParticipantTests(DynamoDbFixture dbFixture)
     {
@@ -30,7 +30,7 @@ public class EditParticipantTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = new EditParticipant(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("put/participant");
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class EditParticipantTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(apiRequest, _context);
+        var response = await _sut.FunctionHandler(apiRequest, _context);
 
         var updatedParticipant = await _testDataService.GetParticipantAsync(
             hat.Organizer.Email,

@@ -8,7 +8,7 @@ public class EditHatTests : IClassFixture<DynamoDbFixture>
 
     private readonly TestDataService _testDataService;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public EditHatTests(DynamoDbFixture dbFixture)
     {
@@ -26,7 +26,7 @@ public class EditHatTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = new EditHat(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("put/hat");
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class EditHatTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(request, _context);
+        var response = await _sut.FunctionHandler(request, _context);
         var updatedHat = await _testDataService
             .GetHatAsync(editHatRequest.OrganizerEmail, hat.Id);
 
