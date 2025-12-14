@@ -23,7 +23,8 @@ internal static class ServiceProviderBuilder
     internal static IServiceCollection AddUtilities(this IServiceCollection services) =>
         services
             .AddLogging(builder => builder.AddLambdaLogger())
-            .AddSingleton<JsonService>();
+            .AddSingleton<JsonService>()
+            .AddSingleton<ApiGatewayAdapter>();
 
     internal static IServiceCollection AddBusinessServices(this IServiceCollection services) =>
         services
@@ -39,12 +40,11 @@ internal static class ServiceProviderBuilder
             .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
             .AddSingleton<GetParticipantService>()
-            .AddSingleton<EditParticipantService>()
+
             .AddSingleton<RemoveParticipantService>()
 
             .AddSingleton<DeleteHatService>()
-            .AddSingleton<EditHatService>()
-            .AddSingleton<GetHatService>()
+
             .AddSingleton<GetHatsService>()
 
             .AddSingleton<EligibilityValidationService>()

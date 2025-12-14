@@ -1,7 +1,7 @@
 ﻿namespace GiftExchange.Library.Services;
 
 [UsedImplicitly]
-public class EditParticipantService : IApiGatewayHandler
+internal class EditParticipantService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 

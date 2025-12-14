@@ -1,42 +1,36 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class AddParticipantService : IApiGatewayHandler
+internal class AddParticipantService : IApiGatewayHandler
 {
     private readonly ILogger<AddParticipantService> _logger;
 
-    private readonly JsonService _jsonService;
+    private readonly ApiGatewayAdapter _adapter;
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
-        GiftExchangeProvider giftExchangeProvider,
-        JsonService jsonService
+        ApiGatewayAdapter adapter,
+        GiftExchangeProvider giftExchangeProvider
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
-        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
     public async Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context
-        )
-    {
-        var innerRequest = request.GetInnerRequest<AddParticipantRequest>(_jsonService);
+        ) =>
+        await _adapter
+            .AdaptAsync<AddParticipantRequest, StatusCodeOnlyResponse>(
+                request,
+                AddParticipantAsync,
+                context
+            );
 
-        if(innerRequest.IsFaulted)
-            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
-
-        var result = await AddParticipantAsync(innerRequest.Value, context);
-
-        return result.IsFaulted ?
-            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
-            ProxyResponseBuilder.Build(result.StatusCode);
-    }
-
-    private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request, ILambdaContext context)
+    private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request)
     {
         var (hatExists, _ ) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)

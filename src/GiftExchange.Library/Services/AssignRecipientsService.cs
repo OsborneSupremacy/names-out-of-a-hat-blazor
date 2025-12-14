@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class AssignRecipientsService : IApiGatewayHandler
+internal class AssignRecipientsService : IApiGatewayHandler
 {
     private readonly ILogger<AssignRecipientsService> _logger;
 

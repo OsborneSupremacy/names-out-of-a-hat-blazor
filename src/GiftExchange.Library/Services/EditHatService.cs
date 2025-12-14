@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class EditHatService : IApiGatewayHandler
+internal class EditHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 

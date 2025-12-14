@@ -17,6 +17,7 @@ global using GiftExchange.Library.Abstractions;
 global using GiftExchange.Library.Builders;
 global using GiftExchange.Library.Extensions;
 global using GiftExchange.Library.Messaging;
+global using GiftExchange.Library.DataModels;
 global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Providers;
 global using GiftExchange.Library.Services;

@@ -2,7 +2,7 @@
 
 namespace GiftExchange.Library.Services;
 
-public class CreateHatService : IApiGatewayHandler
+internal class CreateHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
