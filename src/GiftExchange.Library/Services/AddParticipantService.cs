@@ -24,10 +24,7 @@ internal class AddParticipantService : IApiGatewayHandler
         ILambdaContext context
         ) =>
         _adapter
-            .AdaptAsync<AddParticipantRequest, StatusCodeOnlyResponse>(
-                request,
-                AddParticipantAsync
-            );
+            .AdaptAsync<AddParticipantRequest, StatusCodeOnlyResponse>(request, AddParticipantAsync);
 
     private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request)
     {
@@ -51,13 +48,14 @@ internal class AddParticipantService : IApiGatewayHandler
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participant with provided email or name already exists. Participants must have unique email addresses and names."), HttpStatusCode.Conflict);
 
         await _giftExchangeProvider
-            .CreateParticipantAsync(new AddParticipantRequest
-            {
-                OrganizerEmail = request.OrganizerEmail,
-                HatId = request.HatId,
-                Name = request.Name,
-                Email = request.Email
-            }, existingParticipants)
+            .CreateParticipantAsync(
+                new AddParticipantRequest
+                {
+                    OrganizerEmail = request.OrganizerEmail,
+                    HatId = request.HatId,
+                    Name = request.Name,
+                    Email = request.Email
+                }, existingParticipants)
             .ConfigureAwait(false);
 
         // make new participant eligible for all existing participants

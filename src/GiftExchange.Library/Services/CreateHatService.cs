@@ -1,40 +1,27 @@
-﻿using GiftExchange.Library.DataModels;
-
-namespace GiftExchange.Library.Services;
+﻿namespace GiftExchange.Library.Services;
 
 internal class CreateHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    private readonly JsonService _jsonService;
+    private readonly ApiGatewayAdapter _adapter;
 
     public CreateHatService(
         GiftExchangeProvider giftExchangeProvider,
-        JsonService jsonService
+        ApiGatewayAdapter adapter
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
-        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
-    public async Task<APIGatewayProxyResponse> FunctionHandler(
+    public Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context
-    )
-    {
-        var innerRequest = request.GetInnerRequest<CreateHatRequest>(_jsonService);
+    ) =>
+        _adapter.AdaptAsync<CreateHatRequest, CreateHatResponse>(request, CreateHatAsync);
 
-        if(innerRequest.IsFaulted)
-            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
-
-        var result = await CreateHatAsync(innerRequest.Value, context);
-
-        return result.IsFaulted ?
-            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
-            ProxyResponseBuilder.Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
-    }
-
-    public async Task<Result<CreateHatResponse>> CreateHatAsync(CreateHatRequest request, ILambdaContext context)
+    public async Task<Result<CreateHatResponse>> CreateHatAsync(CreateHatRequest request)
     {
         var (hatExists, existingHatId) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)

@@ -4,7 +4,7 @@ internal class AssignRecipientsService : IApiGatewayHandler
 {
     private readonly ILogger<AssignRecipientsService> _logger;
 
-    private readonly JsonService _jsonService;
+    private readonly ApiGatewayAdapter _adapter;
 
     private readonly ValidationService _validationService;
 
@@ -14,37 +14,25 @@ internal class AssignRecipientsService : IApiGatewayHandler
 
     public AssignRecipientsService(
         ILogger<AssignRecipientsService> logger,
+        ApiGatewayAdapter adapter,
         GiftExchangeProvider giftExchangeProvider,
-        ValidationService validationService,
-        JsonService jsonService
+        ValidationService validationService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
-        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
     }
 
-    public async Task<APIGatewayProxyResponse> FunctionHandler(
+    public Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context
-    )
-    {
-        var innerRequest = request.GetInnerRequest<AssignRecipientsRequest>(_jsonService);
-
-        if(innerRequest.IsFaulted)
-            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
-
-        var result = await AssignRecipientsAsync(innerRequest.Value, context);
-
-        return result.IsFaulted ?
-            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
-            ProxyResponseBuilder.Build(result.StatusCode);
-    }
+    ) =>
+        _adapter.AdaptAsync<AssignRecipientsRequest, StatusCodeOnlyResponse>(request, AssignRecipientsAsync);
 
     public async Task<Result<StatusCodeOnlyResponse>> AssignRecipientsAsync(
-        AssignRecipientsRequest request,
-        ILambdaContext context
+        AssignRecipientsRequest request
         )
     {
         var (hatExists, hat) = await _giftExchangeProvider
@@ -59,7 +47,7 @@ internal class AssignRecipientsService : IApiGatewayHandler
         {
             HatId = request.HatId,
             OrganizerEmail = request.OrganizerEmail
-        }, context);
+        }, null).ConfigureAwait(false);
 
         if (validResult.IsFaulted || validResult.Value.Success)
             return new Result<StatusCodeOnlyResponse>(new AggregateException("Validation failed"), HttpStatusCode.BadRequest);

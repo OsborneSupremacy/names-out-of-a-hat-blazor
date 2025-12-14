@@ -31,8 +31,13 @@ internal class ApiGatewayAdapter
 
         var result = await handler(innerRequest.Value);
 
-        return result.IsFaulted ?
-            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
-            ProxyResponseBuilder.Build(result.StatusCode);
+        if(result.IsFaulted)
+            return ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message);
+
+        if(result.Value is StatusCodeOnlyResponse)
+            return ProxyResponseBuilder.Build(result.StatusCode);
+
+        return ProxyResponseBuilder
+            .Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
     }
 }
