@@ -10,7 +10,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
 
     private readonly HatDataModelFaker _hatDataModelFaker;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public GetHatTests(DynamoDbFixture dbFixture)
     {
@@ -30,7 +30,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = new GetHat(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hat");
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         };
 
         // act
-        var response = await _sut(request, _context);
+        var response = await _sut.FunctionHandler(request, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);

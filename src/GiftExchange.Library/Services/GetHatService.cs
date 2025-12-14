@@ -1,15 +1,41 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class GetHatService : IBusinessService<GetHatRequest, Hat>
+public class GetHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public GetHatService(GiftExchangeProvider giftExchangeProvider)
+    private readonly JsonService _jsonService;
+
+    public GetHatService(
+        GiftExchangeProvider giftExchangeProvider,
+        JsonService jsonService
+        )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
     }
 
-    public async Task<Result<Hat>> ExecuteAsync(GetHatRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
+    {
+        var organizerEmail = request.QueryStringParameters["email"] ?? string.Empty;
+        var hatId = Guid.TryParse(request.QueryStringParameters["id"], out var id) ? id : Guid.Empty;
+        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
+
+        var getHatRequest = new GetHatRequest
+        {
+            OrganizerEmail = organizerEmail,
+            HatId = hatId,
+            ShowPickedRecipients = showPickedRecipients
+        };
+
+        var result = await GetHasAsync(getHatRequest, context);
+
+        return result.IsFaulted ?
+            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
+            ProxyResponseBuilder.Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
+    }
+
+    public async Task<Result<Hat>> GetHasAsync(GetHatRequest request, ILambdaContext context)
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)

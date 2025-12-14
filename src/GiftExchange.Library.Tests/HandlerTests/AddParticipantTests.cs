@@ -1,6 +1,4 @@
-﻿using GiftExchange.Library.Abstractions;
-
-namespace GiftExchange.Library.Tests.HandlerTests;
+﻿namespace GiftExchange.Library.Tests.HandlerTests;
 
 public class AddParticipantTests : IClassFixture<DynamoDbFixture>
 {
