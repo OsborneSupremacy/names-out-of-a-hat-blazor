@@ -43,11 +43,13 @@ internal class AssignRecipientsService : IApiGatewayHandler
 
         // the validation method should have been called first, but we'll re-validate.
         // Will not return details since the client should get those from the validation endpoint.
-        var validResult = await _validationService.ExecuteAsync(new ValidateHatRequest
-        {
-            HatId = request.HatId,
-            OrganizerEmail = request.OrganizerEmail
-        }, null).ConfigureAwait(false);
+        var validResult = await _validationService
+            .ValidateAsync(new ValidateHatRequest
+            {
+                HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail
+            })
+            .ConfigureAwait(false);
 
         if (validResult.IsFaulted || validResult.Value.Success)
             return new Result<StatusCodeOnlyResponse>(new AggregateException("Validation failed"), HttpStatusCode.BadRequest);

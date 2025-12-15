@@ -1,8 +1,8 @@
 ﻿namespace GiftExchange.Library.Services;
 
-internal class EligibilityValidationService
+internal static class EligibilityValidationService
 {
-    public Result<ValidateHatResponse> Validate(ImmutableList<Participant> participants)
+    public static Task<Result<ValidateHatResponse>> Validate(IList<Participant> participants)
     {
         var errors = new List<string>();
 
@@ -13,7 +13,9 @@ internal class EligibilityValidationService
         );
 
         if (errors.Any())
-            return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK);
+            return Task.FromResult(
+                new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK)
+            );
 
         var people = participants.Select(x => x.Person).ToList();
 
@@ -22,8 +24,12 @@ internal class EligibilityValidationService
                 errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
 
         if (errors.Any())
-            return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK);
+            return Task.FromResult(
+                new Result<ValidateHatResponse>(new ValidateHatResponse { Success = false, Errors = errors.ToImmutableList() }, HttpStatusCode.OK)
+            );
 
-        return new Result<ValidateHatResponse>(new ValidateHatResponse { Success = true, Errors =[] }, HttpStatusCode.OK);
+        return Task.FromResult(new Result<ValidateHatResponse>(
+            new ValidateHatResponse { Success = true, Errors =[] }, HttpStatusCode.OK)
+        );
     }
 }

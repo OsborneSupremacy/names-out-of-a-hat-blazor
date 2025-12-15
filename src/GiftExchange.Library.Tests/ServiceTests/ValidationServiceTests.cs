@@ -1,17 +1,33 @@
 ﻿namespace GiftExchange.Library.Tests.ServiceTests;
 
-public class ValidationServiceTests
+public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
 {
     private readonly PersonFaker _personFaker;
 
+
+    private readonly ValidationService _sut;
+
     // ReSharper disable once ConvertConstructorToMemberInitializers
-    public ValidationServiceTests()
+    public ValidationServiceTests(DynamoDbFixture dbFixture)
     {
+        DotEnv.Load();
+
+        var dynamoDbClient = dbFixture.CreateClient();
+
         _personFaker = new PersonFaker();
+
+        IServiceProvider serviceProvider = new ServiceCollection()
+            .AddUtilities()
+            .AddBusinessServices()
+            .AddSingleton(dynamoDbClient)
+            .BuildServiceProvider();
+
+        _sut = (serviceProvider
+            .GetRequiredKeyedService<IApiGatewayHandler>("post/hat/validate") as ValidationService)!;
     }
 
     [Fact]
-    public void Validate_GivenHatWithTooFewParticipants_ReturnsInvalidResult()
+    public async Task Validate_GivenHatWithTooFewParticipants_ReturnsInvalidResult()
     {
         // arrange
         var hat = new Hat
@@ -40,15 +56,15 @@ public class ValidationServiceTests
         };
 
         // act
-        var result = ValidationService.Validate(hat).Value;
+        var result = await _sut.ValidateAsync(hat);
 
         // assert
-        result.Success.Should().BeFalse();
-        result.Errors.First().Should().Be("A gift exchange of this type needs at least three people.");
+        result.Value.Success.Should().BeFalse();
+        result.Value.Errors.First().Should().Be("A gift exchange of this type needs at least three people.");
     }
 
     [Fact]
-    public void Validate_GivenParticipantWithNoEligibleParticipants_ReturnsInvalidResult()
+    public async Task Validate_GivenParticipantWithNoEligibleParticipants_ReturnsInvalidResult()
     {
         var people = _personFaker.Generate(3);
 
@@ -85,15 +101,15 @@ public class ValidationServiceTests
         };
 
         // act
-        var result = ValidationService.Validate(hat).Value;
+        var result = await _sut.ValidateAsync(hat);
 
         // assert
-        result.Success.Should().BeFalse();
-        result.Errors.First().Should().Be($"{people[2].Name} has no eligible recipients");
+        result.Value.Success.Should().BeFalse();
+        result.Value.Errors.First().Should().Be($"{people[2].Name} has no eligible recipients");
     }
 
     [Fact]
-    public void Validate_GivenParticipantWhoIsNotAnEligibleRecipient_ReturnsInvalidResult()
+    public async Task Validate_GivenParticipantWhoIsNotAnEligibleRecipient_ReturnsInvalidResult()
     {
         var people = _personFaker.Generate(4);
 
@@ -136,15 +152,15 @@ public class ValidationServiceTests
         };
 
         // act
-        var result = ValidationService.Validate(hat).Value;
+        var result = await _sut.ValidateAsync(hat);
 
         // assert
-        result.Success.Should().BeFalse();
-        result.Errors.First().Should().Be($"{people[3].Name} is not an eligible recipient for any participant. Their name will not be picked.");
+        result.Value.Success.Should().BeFalse();
+        result.Value.Errors.First().Should().Be($"{people[3].Name} is not an eligible recipient for any participant. Their name will not be picked.");
     }
 
     [Fact]
-    public void Validate_GivenValidHat_ReturnsValidResult()
+    public async Task Validate_GivenValidHat_ReturnsValidResult()
     {
         var people = _personFaker.Generate(4);
 
@@ -187,10 +203,10 @@ public class ValidationServiceTests
         };
 
         // act
-        var result = ValidationService.Validate(hat).Value;
+        var result = await _sut.ValidateAsync(hat);
 
         // assert
-        result.Success.Should().BeTrue();
+        result.Value.Success.Should().BeTrue();
     }
 }
 

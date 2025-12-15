@@ -1,17 +1,23 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHatResponse>
+internal class ValidationService : IApiGatewayHandler
 {
     private const int Max = 30;
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public ValidationService(GiftExchangeProvider giftExchangeProvider)
+    private readonly ApiGatewayAdapter _adapter;
+
+    public ValidationService(GiftExchangeProvider giftExchangeProvider, ApiGatewayAdapter adapter)
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
-    public async Task<Result<ValidateHatResponse>> ExecuteAsync(ValidateHatRequest request, ILambdaContext context)
+    public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context) =>
+        _adapter.AdaptAsync<ValidateHatRequest, ValidateHatResponse>(request, ValidateAsync);
+
+    public async Task<Result<ValidateHatResponse>> ValidateAsync(ValidateHatRequest request)
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
@@ -19,16 +25,16 @@ public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHa
 
         return !hatExists ?
             new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound) :
-            Validate(hat);
+            await ValidateAsync(hat);
     }
 
-    internal static Result<ValidateHatResponse> Validate(Hat hat)
+    internal async Task<Result<ValidateHatResponse>> ValidateAsync(Hat hat)
     {
         var validCountResponse = ValidateCount(hat.Participants);
         if(validCountResponse.IsFaulted || !validCountResponse.Value.Success)
             return validCountResponse;
 
-        var validEligibilityResponse = new EligibilityValidationService().Validate(hat.Participants);
+        var validEligibilityResponse = await EligibilityValidationService.Validate(hat.Participants);
         if(validEligibilityResponse.IsFaulted || !validEligibilityResponse.Value.Success)
             return validEligibilityResponse;
 
@@ -52,4 +58,6 @@ public class ValidationService : IBusinessService<ValidateHatRequest, ValidateHa
                 HttpStatusCode.OK)
         };
     }
+
+
 }

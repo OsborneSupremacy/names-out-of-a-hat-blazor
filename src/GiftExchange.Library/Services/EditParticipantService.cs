@@ -5,37 +5,27 @@ internal class EditParticipantService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    private readonly JsonService _jsonService;
+    private readonly ApiGatewayAdapter _adapter;
+
 
     public EditParticipantService(
         GiftExchangeProvider giftExchangeProvider,
-        JsonService jsonService
+        ApiGatewayAdapter adapter
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
-        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+
     }
 
-    public async Task<APIGatewayProxyResponse> FunctionHandler(
+    public Task<APIGatewayProxyResponse> FunctionHandler(
         APIGatewayProxyRequest request,
         ILambdaContext context
-    )
-    {
-        var innerRequest = request.GetInnerRequest<EditParticipantRequest>(_jsonService);
-
-        if(innerRequest.IsFaulted)
-            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
-
-        var result = await EditParticipantAsync(innerRequest.Value, context);
-
-        return result.IsFaulted ?
-            ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message) :
-            ProxyResponseBuilder.Build(result.StatusCode);
-    }
+    ) =>
+        _adapter.AdaptAsync<EditParticipantRequest, StatusCodeOnlyResponse>(request, EditParticipantAsync);
 
     public async Task<Result<StatusCodeOnlyResponse>> EditParticipantAsync(
-        EditParticipantRequest request,
-        ILambdaContext context
+        EditParticipantRequest request
         )
     {
         var (hatExists, hat) = await _giftExchangeProvider

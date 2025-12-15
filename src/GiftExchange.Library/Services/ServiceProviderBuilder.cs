@@ -39,6 +39,8 @@ internal static class ServiceProviderBuilder
 
             .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
+            .AddKeyedSingleton<IApiGatewayHandler, ValidationService>("post/hat/validate")
+
             .AddSingleton<GetParticipantService>()
 
             .AddSingleton<RemoveParticipantService>()
@@ -47,7 +49,6 @@ internal static class ServiceProviderBuilder
 
             .AddSingleton<GetHatsService>()
 
-            .AddSingleton<EligibilityValidationService>()
             .AddSingleton<ValidationService>()
 
             .AddSingleton<VerifyOrganizerService>()
