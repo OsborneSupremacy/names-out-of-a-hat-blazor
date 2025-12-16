@@ -40,4 +40,21 @@ internal class ApiGatewayAdapter
         return ProxyResponseBuilder
             .Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
     }
+
+    public async Task<APIGatewayProxyResponse> AdaptAsync<TRequest, TResponse>(
+        TRequest innerRequest,
+        Func<TRequest, Task<Result<TResponse>>> handler
+    )
+    {
+        var result = await handler(innerRequest);
+
+        if(result.IsFaulted)
+            return ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message);
+
+        if(result.Value is StatusCodeOnlyResponse)
+            return ProxyResponseBuilder.Build(result.StatusCode);
+
+        return ProxyResponseBuilder
+            .Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
+    }
 }
