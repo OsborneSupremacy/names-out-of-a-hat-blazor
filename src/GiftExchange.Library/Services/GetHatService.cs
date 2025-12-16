@@ -24,7 +24,7 @@ internal class GetHatService : IApiGatewayHandler
                 OrganizerEmail = organizerEmail,
                 HatId = hatId,
                 ShowPickedRecipients = showPickedRecipients
-            }, GetHasAsync);
+            }, GetHasAsync).ConfigureAwait(false);
     }
 
     public async Task<Result<Hat>> GetHasAsync(GetHatRequest request)

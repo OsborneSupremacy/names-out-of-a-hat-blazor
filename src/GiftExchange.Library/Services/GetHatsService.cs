@@ -1,15 +1,33 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class GetHatsService : IBusinessService<GetHatsRequest, GetHatsResponse>
+internal class GetHatsService : IApiGatewayHandler
 {
+    private readonly ApiGatewayAdapter _adapter;
+
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public GetHatsService(GiftExchangeProvider giftExchangeProvider)
+    public GetHatsService(
+        ApiGatewayAdapter adapter,
+        GiftExchangeProvider giftExchangeProvider
+        )
     {
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
     }
 
-    public async Task<Result<GetHatsResponse>> ExecuteAsync(GetHatsRequest request, ILambdaContext context)
+    public Task<APIGatewayProxyResponse> FunctionHandler(
+        APIGatewayProxyRequest request,
+        ILambdaContext context
+    )
+    {
+        var organizerEmail = request.PathParameters.TryGetValue("email", out var email) ? email : string.Empty;
+        return _adapter.AdaptAsync(new GetHatsRequest
+        {
+            OrganizerEmail = organizerEmail
+        }, ExecuteAsync);
+    }
+
+    public async Task<Result<GetHatsResponse>> ExecuteAsync(GetHatsRequest request)
     {
         var result = await _giftExchangeProvider
             .GetHatsAsync(request.OrganizerEmail)
