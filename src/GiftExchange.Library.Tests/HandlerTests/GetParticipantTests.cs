@@ -8,7 +8,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly TestDataService _testDataService;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public GetParticipantTests(DynamoDbFixture dbFixture)
     {
@@ -26,7 +26,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = new GetParticipant(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/participant");
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         }, participantFaker.Generate(2).ToImmutableList());
 
         // act
-        var response = await _sut(new APIGatewayProxyRequest
+        var response = await _sut.FunctionHandler(new APIGatewayProxyRequest
         {
             QueryStringParameters = new Dictionary<string, string>
             {

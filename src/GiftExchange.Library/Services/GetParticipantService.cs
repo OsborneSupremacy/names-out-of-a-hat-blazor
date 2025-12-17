@@ -1,15 +1,44 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class GetParticipantService : IBusinessService<GetParticipantRequest, Participant>
+internal class GetParticipantService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public GetParticipantService(GiftExchangeProvider giftExchangeProvider)
+    private readonly ApiGatewayAdapter _apiGatewayAdapter;
+
+    public GetParticipantService(
+        GiftExchangeProvider giftExchangeProvider,
+        ApiGatewayAdapter apiGatewayAdapter
+        )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _apiGatewayAdapter = apiGatewayAdapter ?? throw new ArgumentNullException(nameof(apiGatewayAdapter));
     }
 
-    public async Task<Result<Participant>> ExecuteAsync(GetParticipantRequest request, ILambdaContext context)
+    public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
+    {
+        var innerRequest = GetInnerRequest(request);
+        return _apiGatewayAdapter
+            .AdaptAsync(innerRequest.Value, GetParticipantAsync);
+    }
+
+    private Result<GetParticipantRequest> GetInnerRequest(APIGatewayProxyRequest request)
+    {
+        var organizerEmail = request.QueryStringParameters["organizerEmail"] ?? string.Empty;
+        var hatId = Guid.TryParse(request.QueryStringParameters["hatId"], out var hatid) ? hatid : Guid.Empty;
+        var participantEmail = request.QueryStringParameters["participantEmail"] ?? string.Empty;
+        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
+
+        return new Result<GetParticipantRequest>(new GetParticipantRequest
+        {
+            OrganizerEmail = organizerEmail,
+            HatId = hatId,
+            ParticipantEmail = participantEmail,
+            ShowPickedRecipients = showPickedRecipients
+        }, HttpStatusCode.OK);
+    }
+
+    public async Task<Result<Participant>> GetParticipantAsync(GetParticipantRequest request)
     {
         var (participantExists, participant) = await _giftExchangeProvider
             .GetParticipantAsync(request.OrganizerEmail, request.HatId, request.ParticipantEmail)
@@ -33,4 +62,5 @@ public class GetParticipantService : IBusinessService<GetParticipantRequest, Par
                 ? string.Empty
                 : Persons.Redacted.Name
         };
+
 }

@@ -19,12 +19,15 @@ internal class GetHatService : IApiGatewayHandler
         var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 
         return await _adapter
-            .AdaptAsync(new GetHatRequest
-            {
-                OrganizerEmail = organizerEmail,
-                HatId = hatId,
-                ShowPickedRecipients = showPickedRecipients
-            }, GetHasAsync).ConfigureAwait(false);
+            .AdaptAsync(
+                new GetHatRequest
+                {
+                    OrganizerEmail = organizerEmail,
+                    HatId = hatId,
+                    ShowPickedRecipients = showPickedRecipients
+                },
+                GetHasAsync)
+            .ConfigureAwait(false);
     }
 
     public async Task<Result<Hat>> GetHasAsync(GetHatRequest request)

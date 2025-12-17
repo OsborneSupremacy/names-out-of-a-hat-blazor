@@ -29,7 +29,7 @@ internal static class EligibilityValidationService
             );
 
         return Task.FromResult(new Result<ValidateHatResponse>(
-            new ValidateHatResponse { Success = true, Errors =[] }, HttpStatusCode.OK)
+            new ValidateHatResponse { Success = true, Errors = [] }, HttpStatusCode.OK)
         );
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace GiftExchange.Library.Services;
+﻿namespace GiftExchange.Library.Utility;
 
 /// <summary>
 /// Boilerplate code for adapting an ApiGateway request and response to/from a business class
