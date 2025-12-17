@@ -39,6 +39,7 @@ internal static class ServiceProviderBuilder
             .AddKeyedSingleton<IApiGatewayHandler, AddParticipantService>("post/participant")
             .AddKeyedSingleton<IApiGatewayHandler, EditParticipantService>("put/participant")
             .AddKeyedSingleton<IApiGatewayHandler, GetParticipantService>("get/participant")
+            .AddKeyedSingleton<IApiGatewayHandler, RemoveParticipantService>("delete/participant")
 
             .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 

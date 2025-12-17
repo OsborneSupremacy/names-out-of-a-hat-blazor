@@ -1,18 +1,28 @@
 ﻿namespace GiftExchange.Library.Services;
 
-public class RemoveParticipantService : IBusinessService<RemoveParticipantRequest, StatusCodeOnlyResponse>
+internal class RemoveParticipantService : IApiGatewayHandler
 {
     ILogger<RemoveParticipantService> _logger;
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    public RemoveParticipantService(ILogger<RemoveParticipantService> logger, GiftExchangeProvider giftExchangeProvider)
+    private readonly ApiGatewayAdapter _adapter;
+
+    public RemoveParticipantService(
+        ILogger<RemoveParticipantService> logger,
+        GiftExchangeProvider giftExchangeProvider,
+        ApiGatewayAdapter adapter
+        )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(RemoveParticipantRequest request, ILambdaContext context)
+    public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context) =>
+        _adapter.AdaptAsync<RemoveParticipantRequest, StatusCodeOnlyResponse>(request, ExecuteAsync);
+
+    internal async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(RemoveParticipantRequest request)
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
@@ -50,4 +60,5 @@ public class RemoveParticipantService : IBusinessService<RemoveParticipantReques
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.NoContent}, HttpStatusCode.NoContent);
     }
+
 }

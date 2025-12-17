@@ -10,7 +10,7 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly CreateHatRequestFaker _requestFaker;
 
-    private readonly Func<APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayProxyResponse>> _sut;
+    private readonly IApiGatewayHandler _sut;
 
     public RemoveParticipantTests(DynamoDbFixture dbFixture)
     {
@@ -29,7 +29,7 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
-        _sut = new RemoveParticipant(serviceProvider).FunctionHandler;
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("delete/participant");
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(apiRequest, _context);
+        var response = await _sut.FunctionHandler(apiRequest, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
@@ -72,7 +72,7 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(apiRequest, _context);
+        var response = await _sut.FunctionHandler(apiRequest, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
@@ -96,7 +96,7 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(apiRequest, _context);
+        var response = await _sut.FunctionHandler(apiRequest, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.NoContent);
@@ -130,7 +130,7 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
             .ToApiGatewayProxyRequest();
 
         // act
-        var response = await _sut(apiRequest, _context);
+        var response = await _sut.FunctionHandler(apiRequest, _context);
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.NoContent);
