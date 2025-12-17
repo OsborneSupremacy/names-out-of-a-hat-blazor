@@ -4,9 +4,11 @@ using Amazon.SQS.Model;
 namespace GiftExchange.Library.Services;
 
 [UsedImplicitly]
-public class EnqueueInvitationsService : IBusinessService<SendInvitationsRequest, StatusCodeOnlyResponse>
+internal class EnqueueInvitationsService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
+
+    private readonly ApiGatewayAdapter _adapter;
 
     private readonly JsonService _jsonService;
 
@@ -16,19 +18,24 @@ public class EnqueueInvitationsService : IBusinessService<SendInvitationsRequest
 
     public EnqueueInvitationsService(
         GiftExchangeProvider giftExchangeProvider,
+        ApiGatewayAdapter adapter,
         JsonService jsonService,
         EmailCompositionService emailCompositionService,
         IAmazonSQS sqsClient
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
         _emailCompositionService =
             emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
         _sqsClient = sqsClient ?? throw new ArgumentNullException(nameof(sqsClient));
     }
 
-    public async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(SendInvitationsRequest request, ILambdaContext context)
+    public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context) =>
+        _adapter.AdaptAsync<SendInvitationsRequest, StatusCodeOnlyResponse>(request, ExecuteAsync);
+
+    internal async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(SendInvitationsRequest request)
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
