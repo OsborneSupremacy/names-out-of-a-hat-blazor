@@ -24,9 +24,9 @@ internal class GetParticipantService : IApiGatewayHandler
 
     private Result<GetParticipantRequest> GetInnerRequest(APIGatewayProxyRequest request)
     {
-        var organizerEmail = request.QueryStringParameters["organizerEmail"] ?? string.Empty;
-        var hatId = Guid.TryParse(request.QueryStringParameters["hatId"], out var hatid) ? hatid : Guid.Empty;
-        var participantEmail = request.QueryStringParameters["participantEmail"] ?? string.Empty;
+        var organizerEmail = request.PathParameters["organizerEmail"] ?? string.Empty;
+        var hatId = Guid.TryParse(request.PathParameters["hatId"], out var id) ? id : Guid.Empty;
+        var participantEmail = request.PathParameters["participantEmail"] ?? string.Empty;
         var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 
         return new Result<GetParticipantRequest>(new GetParticipantRequest

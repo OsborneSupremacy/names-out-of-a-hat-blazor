@@ -1,13 +1,13 @@
 module "lambda-get-participant" {
   source                      = "./modules/api"
   gateway_rest_api_id         = aws_api_gateway_rest_api.giftexchange-gateway.id
-  gateway_resource_id         = aws_api_gateway_resource.participant-resource.id
+  gateway_resource_id         = aws_api_gateway_resource.participant-organizeremail-hatid-participantemail-resource.id
   gateway_http_method         = "GET"
   gateway_http_operation_name = "GetParticipant"
   gateway_method_request_parameters = {
-    "method.request.querystring.organizerEmail"       = true,
-    "method.request.querystring.hatId"                = true,
-    "method.request.querystring.participantEmail"     = true,
+    "method.request.path.organizerEmail"              = true,
+    "method.request.path.hatId"                       = true,
+    "method.request.path.participantEmail"            = true,
     "method.request.querystring.showpickedrecipients" = true,
   }
   gateway_method_request_model_name                 = ""
