@@ -1,0 +1,92 @@
+resource "aws_lambda_function" "giftexchange_app" {
+  function_name    = "giftexchange"
+  description      = "Lambda function to handle API Gateway and other requests for the Gift Exchange application"
+  handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.Router::FunctionHandler"
+  runtime          = "dotnet8"
+  architectures    = ["arm64"]
+  memory_size      = 128
+  timeout          = 30
+  filename         = data.archive_file.lambda_function.output_path
+  source_code_hash = data.archive_file.lambda_function.output_base64sha256
+  role             = aws_iam_role.giftexchange_app_exec_role.arn
+  environment {
+    variables = local.common_environment_variables
+  }
+}
+
+resource "aws_iam_role" "giftexchange_app_exec_role" {
+  name = "giftexchange-app-exec-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Effect = "Allow"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "giftexchange_app_exec_role_attachment_lambda_basic_execution" {
+  role       = aws_iam_role.giftexchange_app_exec_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_lambda_permission" "giftexchange_app_allow_apigw_invoke" {
+  statement_id  = "AllowExecutionFromAPIGateway-Invoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.giftexchange_app.arn
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.giftexchange-gateway.id}/*/*/*"
+}
+
+resource "aws_iam_role_policy" "giftexchange_app_dynamodb_policy" {
+  name = "giftexchange-app-dynamodb-policy"
+  role = aws_iam_role.giftexchange_app_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [
+          aws_dynamodb_table.giftexchange.arn,
+          "${aws_dynamodb_table.giftexchange.arn}/index/*" # Allow access to any GSI/LSI on the table
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "giftexchange_app_sqs_policy" {
+  name = "giftexchange-app-sqs-policy"
+  role = aws_iam_role.giftexchange_app_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueUrl"
+        ]
+        Resource = [
+          aws_sqs_queue.invitations-queue.arn
+        ]
+      }
+    ]
+  })
+}
