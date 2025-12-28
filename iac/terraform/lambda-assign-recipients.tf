@@ -16,7 +16,6 @@ module "lambda-assign-recipients" {
   function_description                              = "Assign recipients"
   function_memory_size                              = 128
   function_name                                     = "giftexchange-assign-recipients"
-  function_net_class                                = "AssignRecipients"
   deployment_package_filename                       = data.archive_file.lambda_function.output_path
   deployment_package_source_code_hash               = data.archive_file.lambda_function.output_base64sha256
   dynamodb_table_arn                                = aws_dynamodb_table.giftexchange.arn

@@ -41,11 +41,6 @@ variable "function_name" {
   type = string
 }
 
-variable "function_net_class" {
-  description = "The name of the .NET class that contains the handler function (FunctionHandler is the assumed method name)"
-  type = string
-}
-
 variable "function_description" {
   type = string
 }

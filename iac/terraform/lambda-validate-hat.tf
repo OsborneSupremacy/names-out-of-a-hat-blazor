@@ -16,7 +16,6 @@ module "lambda-validate-hat" {
   function_description                              = "Validate a hat"
   function_memory_size                              = 128
   function_name                                     = "giftexchange-validate-hat"
-  function_net_class                                = "ValidateHat"
   deployment_package_filename                       = data.archive_file.lambda_function.output_path
   deployment_package_source_code_hash               = data.archive_file.lambda_function.output_base64sha256
   dynamodb_table_arn                                = aws_dynamodb_table.giftexchange.arn

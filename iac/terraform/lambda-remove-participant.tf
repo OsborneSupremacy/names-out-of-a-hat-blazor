@@ -16,7 +16,6 @@ module "lambda-remove-participant" {
   function_description                              = "Remove a participant"
   function_memory_size                              = 128
   function_name                                     = "giftexchange-remove-participant"
-  function_net_class                                = "RemoveParticipant"
   deployment_package_filename                       = data.archive_file.lambda_function.output_path
   deployment_package_source_code_hash               = data.archive_file.lambda_function.output_base64sha256
   dynamodb_table_arn                                = aws_dynamodb_table.giftexchange.arn

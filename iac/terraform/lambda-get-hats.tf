@@ -18,7 +18,6 @@ module "lambda-get-hats" {
   function_description                              = "Get the meta data for the gift exchange owed by the provided organizer"
   function_memory_size                              = 128
   function_name                                     = "giftexchange-get-hats"
-  function_net_class                                = "GetHats"
   deployment_package_filename                       = data.archive_file.lambda_function.output_path
   deployment_package_source_code_hash               = data.archive_file.lambda_function.output_base64sha256
   dynamodb_table_arn                                = aws_dynamodb_table.giftexchange.arn
