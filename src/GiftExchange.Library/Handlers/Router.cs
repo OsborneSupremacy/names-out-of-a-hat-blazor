@@ -28,7 +28,7 @@ public class Router
         ILambdaContext context
     )
     {
-        var serviceKey = $"{request.HttpMethod}/{request.Resource}".ToLowerInvariant();
+        var serviceKey = $"{request.HttpMethod}{request.Resource}".ToLowerInvariant();
         var service = GetServiceProvider()
             .GetKeyedService<IApiGatewayHandler>(serviceKey);
 
