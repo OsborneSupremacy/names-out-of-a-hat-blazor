@@ -1,12 +1,12 @@
 module "lambda-get-hat" {
   source                      = "./modules/api"
   gateway_rest_api_id         = aws_api_gateway_rest_api.giftexchange-gateway.id
-  gateway_resource_id         = aws_api_gateway_resource.hat-resource.id
+  gateway_resource_id         = aws_api_gateway_resource.hat-email-id-resource.id
   gateway_http_method         = "GET"
   gateway_http_operation_name = "GetHat"
   gateway_method_request_parameters = {
-    "method.request.querystring.email"                = true,
-    "method.request.querystring.id"                   = true,
+    "method.request.path.email"                       = true,
+    "method.request.path.id"                          = true,
     "method.request.querystring.showpickedrecipients" = true,
   }
   gateway_method_request_model_name                 = ""

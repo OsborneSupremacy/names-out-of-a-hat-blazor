@@ -30,8 +30,8 @@ internal static class ServiceProviderBuilder
         services
             .AddSingleton<GiftExchangeProvider>()
 
-            .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat")
-            .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats")
+            .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
+            .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")
 
             .AddKeyedSingleton<IApiGatewayHandler, CreateHatService>("post/hat")
             .AddKeyedSingleton<IApiGatewayHandler, EditHatService>("put/hat")
