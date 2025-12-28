@@ -26,7 +26,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/participant");
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/participant/{organizeremail}/{hatid}/{participantemail}");
     }
 
     [Fact]
@@ -51,12 +51,15 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         // act
         var response = await _sut.FunctionHandler(new APIGatewayProxyRequest
         {
-            QueryStringParameters = new Dictionary<string, string>
+            PathParameters = new Dictionary<string, string>
             {
-                { "showpickedrecipients", "true" },
                 { "organizerEmail", hat.Organizer.Email },
                 { "hatId", hat.Id.ToString() },
                 { "participantEmail", person.Email }
+            },
+            QueryStringParameters = new Dictionary<string, string>
+            {
+                { "showpickedrecipients", "true" }
             }
         }, _context);
 

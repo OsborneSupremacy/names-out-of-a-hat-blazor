@@ -1,4 +1,6 @@
-﻿using Amazon.SimpleEmail;
+﻿using Amazon;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.SimpleEmail;
 using Amazon.SQS;
 
 namespace GiftExchange.Library.Services;
@@ -14,11 +16,13 @@ internal static class ServiceProviderBuilder
 
     private static IServiceCollection AddVendorServices(this IServiceCollection services) =>
         services
-            .AddSingleton<IAmazonDynamoDB, AmazonDynamoDBClient>()
-            .AddSingleton<IAmazonSimpleEmailService>(
-                new AmazonSimpleEmailServiceClient(
-                    Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION")!)))
-            .AddSingleton<IAmazonSQS, AmazonSQSClient>();
+            .AddDefaultAWSOptions(new AWSOptions
+            {
+                Region = RegionEndpoint.GetBySystemName(EnvReader.GetStringValue("AWS_REGION")),
+            })
+            .AddAWSService<IAmazonDynamoDB>()
+            .AddSingleton<IAmazonSimpleEmailService>()
+            .AddSingleton<IAmazonSQS>();
 
     internal static IServiceCollection AddUtilities(this IServiceCollection services) =>
         services

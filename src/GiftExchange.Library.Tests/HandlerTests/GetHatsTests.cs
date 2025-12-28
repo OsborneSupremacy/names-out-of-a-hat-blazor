@@ -30,7 +30,7 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hats");
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hats/{email}");
     }
 
     [Fact]

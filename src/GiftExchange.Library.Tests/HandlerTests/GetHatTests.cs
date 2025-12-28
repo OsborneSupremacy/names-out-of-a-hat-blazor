@@ -30,7 +30,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hat");
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hat/{email}/{id}");
     }
 
     [Fact]
@@ -57,10 +57,13 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
 
         var request = new APIGatewayProxyRequest
         {
-            QueryStringParameters = new Dictionary<string, string>
+            PathParameters = new Dictionary<string, string>
             {
                 { "email", getHatRequest.OrganizerEmail },
-                { "id", getHatRequest.HatId.ToString() },
+                { "id", getHatRequest.HatId.ToString() }
+            },
+            QueryStringParameters = new Dictionary<string, string>
+            {
                 { "showpickedrecipients", getHatRequest.ShowPickedRecipients.ToString() }
             }
         };
