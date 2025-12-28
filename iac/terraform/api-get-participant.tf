@@ -18,5 +18,5 @@ module "lambda-get-participant" {
   good_response_model_description                   = "A gift exchange participant."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/Participant.schema.json"
   api_name                                          = "giftexchange-get-participant"
-  lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.arn
+  lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
 }

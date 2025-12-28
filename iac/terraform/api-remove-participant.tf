@@ -13,5 +13,5 @@ module "lambda-remove-participant" {
   good_response_model_description                   = ""
   good_response_model_schema_file_location          = ""
   api_name                                          = "giftexchange-remove-participant"
-  lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.arn
+  lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
 }

@@ -13,5 +13,5 @@ module "lambda-create-hat" {
   good_response_model_description                   = "A response to a request to create a hat."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/CreateHatResponse.schema.json"
   api_name                                          = "giftexchange-create-hat"
-  lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.arn
+  lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
 }
