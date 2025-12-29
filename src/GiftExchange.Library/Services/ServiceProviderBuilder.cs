@@ -14,15 +14,15 @@ internal static class ServiceProviderBuilder
             .AddBusinessServices()
             .BuildServiceProvider();
 
-    private static IServiceCollection AddVendorServices(this IServiceCollection services) =>
-        services
-            .AddDefaultAWSOptions(new AWSOptions
-            {
-                Region = RegionEndpoint.GetBySystemName(EnvReader.GetStringValue("AWS_REGION")),
-            })
+    private static IServiceCollection AddVendorServices(this IServiceCollection services)
+    {
+        var region = RegionEndpoint.GetBySystemName(EnvReader.GetStringValue("AWS_REGION"));
+        return services
+            .AddDefaultAWSOptions(new AWSOptions { Region = region })
             .AddAWSService<IAmazonDynamoDB>()
-            .AddAWSService<IAmazonSimpleEmailService>()
-            .AddAWSService<IAmazonSQS>();
+            .AddAWSService<IAmazonSQS>()
+            .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(); // AddAWSService fails for SES
+    }
 
     internal static IServiceCollection AddUtilities(this IServiceCollection services) =>
         services
