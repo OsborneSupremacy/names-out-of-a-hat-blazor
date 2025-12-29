@@ -381,6 +381,33 @@ public class GiftExchangeProvider
             .ConfigureAwait(false);
     }
 
+    public async Task UpdateParticipantPickedRecipientAsync(
+        string organizerEmail,
+        Guid hatId,
+        string participantEmail,
+        string pickedRecipientName
+        )
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
+                ["SK"] = new() { S = $"PARTICIPANT#{participantEmail}" }
+            },
+            UpdateExpression = "SET PickedRecipient = :pickedRecipient",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":pickedRecipient"] = new() { S = pickedRecipientName }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
+    }
+
     public async Task RemoveParticipantFromEligibleRecipientsAsync(
         string organizerEmail,
         Guid hatId,
@@ -420,5 +447,4 @@ public class GiftExchangeProvider
         await Task.WhenAll(updateTasks)
             .ConfigureAwait(false);
     }
-
 }

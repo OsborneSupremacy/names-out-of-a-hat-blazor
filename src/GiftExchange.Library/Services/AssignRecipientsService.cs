@@ -54,14 +54,25 @@ internal class AssignRecipientsService : IApiGatewayHandler
         if (validResult.IsFaulted || validResult.Value.Success)
             return new Result<StatusCodeOnlyResponse>(new AggregateException("Validation failed"), HttpStatusCode.BadRequest);
 
-        var (shakeSuccess, participantsOut) = HatShakerService.ShakeMultiple(hat.Participants, ShakeAttempts);
+        var (shakeSuccess, participantsOut) = HatShakerService
+            .ShakeMultiple(hat.Participants, ShakeAttempts);
 
         if (!shakeSuccess)
             return new Result<StatusCodeOnlyResponse>(new OperationCanceledException($"Valid recipient distribution not found after {ShakeAttempts} attempts"), HttpStatusCode.ServiceUnavailable);
 
-        // await _giftExchangeProvider
-        //     .UpdateParticipantsAsync(request.OrganizerEmail, request.HatId, participantsOut)
-        //     .ConfigureAwait(false);
+        var updateParticipantsTasks = new List<Task>();
+
+        foreach (var participant in participantsOut)
+            updateParticipantsTasks.Add(_giftExchangeProvider
+                .UpdateParticipantPickedRecipientAsync(
+                    request.OrganizerEmail,
+                    request.HatId,
+                    participant.Person.Email,
+                    participant.PickedRecipient
+                ));
+
+        await Task.WhenAll(updateParticipantsTasks)
+            .ConfigureAwait(false);
 
         await _giftExchangeProvider
             .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, true)
