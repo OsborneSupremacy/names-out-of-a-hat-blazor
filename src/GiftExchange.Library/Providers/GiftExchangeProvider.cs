@@ -5,7 +5,6 @@ namespace GiftExchange.Library.Providers;
 [UsedImplicitly]
 public class GiftExchangeProvider
 {
-
     private readonly IAmazonDynamoDB _dynamoDbClient;
 
     private readonly string _tableName;
@@ -161,6 +160,43 @@ public class GiftExchangeProvider
         };
 
         await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
+    }
+
+    public async Task DeleteHatAsync(DeleteHatRequest request)
+    {
+        List<Task> deleteTasks = [];
+
+        var deleteHatRequest = new DeleteItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{request.HatId}" }
+            }
+        };
+
+        deleteTasks.Add(_dynamoDbClient.DeleteItemAsync(deleteHatRequest));
+
+        var participants = await GetParticipantsAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
+
+        foreach (var participant in participants)
+        {
+            var deleteParticipantRequest = new DeleteItemRequest
+            {
+                TableName = _tableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT#{request.HatId}#PARTICIPANT" },
+                    ["SK"] = new() { S = $"PARTICIPANT#{participant.Person.Email}" }
+                }
+            };
+
+            deleteTasks.Add(_dynamoDbClient .DeleteItemAsync(deleteParticipantRequest) );
+        }
+
+        await Task.WhenAll(deleteTasks).ConfigureAwait(false);
     }
 
     public async Task<Participant> CreateParticipantAsync(

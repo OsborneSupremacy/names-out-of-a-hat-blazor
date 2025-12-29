@@ -40,6 +40,8 @@ internal static class ServiceProviderBuilder
             .AddKeyedSingleton<IApiGatewayHandler, CreateHatService>("post/hat")
             .AddKeyedSingleton<IApiGatewayHandler, EditHatService>("put/hat")
 
+            .AddKeyedSingleton<IApiGatewayHandler, DeleteHatService>("delete/hat")
+
             .AddKeyedSingleton<IApiGatewayHandler, AddParticipantService>("post/participant")
             .AddKeyedSingleton<IApiGatewayHandler, EditParticipantService>("put/participant")
             .AddKeyedSingleton<IApiGatewayHandler, GetParticipantService>("get/participant/{organizeremail}/{hatid}/{participantemail}")
