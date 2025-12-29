@@ -21,8 +21,8 @@ internal static class ServiceProviderBuilder
                 Region = RegionEndpoint.GetBySystemName(EnvReader.GetStringValue("AWS_REGION")),
             })
             .AddAWSService<IAmazonDynamoDB>()
-            .AddSingleton<IAmazonSimpleEmailService>()
-            .AddSingleton<IAmazonSQS>();
+            .AddAWSService<IAmazonSimpleEmailService>()
+            .AddAWSService<IAmazonSQS>();
 
     internal static IServiceCollection AddUtilities(this IServiceCollection services) =>
         services
