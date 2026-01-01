@@ -32,7 +32,8 @@ internal class ApiGatewayAdapter
         var result = await handler(innerRequest.Value);
 
         if(result.IsFaulted)
-            return ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message);
+            return ProxyResponseBuilder
+                .Build(result.StatusCode, BuildSerializedErrorResponse(result.Exception.Message));
 
         if(result.Value is StatusCodeOnlyResponse)
             return ProxyResponseBuilder.Build(result.StatusCode);
@@ -49,12 +50,21 @@ internal class ApiGatewayAdapter
         var result = await handler(innerRequest);
 
         if(result.IsFaulted)
-            return ProxyResponseBuilder.Build(result.StatusCode, result.Exception.Message);
+            return ProxyResponseBuilder.Build(result.StatusCode, BuildSerializedErrorResponse(result.Exception.Message));
 
         if(result.Value is StatusCodeOnlyResponse)
             return ProxyResponseBuilder.Build(result.StatusCode);
 
         return ProxyResponseBuilder
             .Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
+    }
+
+    private string BuildSerializedErrorResponse(string errorMessage)
+    {
+        var errorResponse = new ErrorResponse
+        {
+            Errors = [errorMessage]
+        };
+        return _jsonService.SerializeDefault(errorResponse);
     }
 }

@@ -19,7 +19,7 @@ internal class DeleteHatService : IApiGatewayHandler
         =>
             _adapter.AdaptAsync<DeleteHatRequest, StatusCodeOnlyResponse>(request, DeleteHatAsync);
 
-    public async Task<Result<StatusCodeOnlyResponse>> DeleteHatAsync(DeleteHatRequest request)
+    internal async Task<Result<StatusCodeOnlyResponse>> DeleteHatAsync(DeleteHatRequest request)
     {
         await _giftExchangeProvider
             .DeleteHatAsync(request)
