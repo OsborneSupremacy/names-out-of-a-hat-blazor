@@ -58,6 +58,4 @@ internal class ValidationService : IApiGatewayHandler
                 HttpStatusCode.OK)
         };
     }
-
-
 }

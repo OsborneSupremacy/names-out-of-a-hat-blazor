@@ -63,7 +63,7 @@ internal class ApiGatewayAdapter
     {
         var errorResponse = new ErrorResponse
         {
-            Errors = [errorMessage]
+            Message = errorMessage
         };
         return _jsonService.SerializeDefault(errorResponse);
     }

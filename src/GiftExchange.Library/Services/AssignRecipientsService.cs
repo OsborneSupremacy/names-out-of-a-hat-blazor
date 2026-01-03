@@ -51,8 +51,8 @@ internal class AssignRecipientsService : IApiGatewayHandler
             })
             .ConfigureAwait(false);
 
-        if (validResult.IsFaulted || validResult.Value.Success)
-            return new Result<StatusCodeOnlyResponse>(new AggregateException("Validation failed"), HttpStatusCode.BadRequest);
+        if (validResult.IsFaulted || !validResult.Value.Success)
+            return new Result<StatusCodeOnlyResponse>(new AggregateException("Validation failed."), HttpStatusCode.BadRequest);
 
         var (shakeSuccess, participantsOut) = HatShakerService
             .ShakeMultiple(hat.Participants, ShakeAttempts);
