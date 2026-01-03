@@ -82,6 +82,10 @@ internal class EditParticipantService : IApiGatewayHandler
             )
             .ConfigureAwait(false);
 
+        if (hat.RecipientsAssigned) // unassign recipients if they were already assigned
+            await _giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false)
+                .ConfigureAwait(false);
+
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }
 }

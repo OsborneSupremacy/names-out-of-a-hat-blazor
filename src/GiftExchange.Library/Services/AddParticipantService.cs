@@ -28,7 +28,7 @@ internal class AddParticipantService : IApiGatewayHandler
 
     private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request)
     {
-        var (hatExists, _ ) = await _giftExchangeProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
@@ -69,6 +69,9 @@ internal class AddParticipantService : IApiGatewayHandler
                         request.Name
                     ))
             .ToList();
+
+        if (hat.RecipientsAssigned) // unassign recipients if they were already assigned
+            tasks.Add(_giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false));
 
         await Task.WhenAll(tasks)
             .ConfigureAwait(false);

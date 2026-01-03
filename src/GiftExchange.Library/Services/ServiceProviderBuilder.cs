@@ -47,20 +47,14 @@ internal static class ServiceProviderBuilder
             .AddKeyedSingleton<IApiGatewayHandler, GetParticipantService>("get/participant/{organizeremail}/{hatid}/{participantemail}")
             .AddKeyedSingleton<IApiGatewayHandler, RemoveParticipantService>("delete/participant")
 
-            .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
-
             .AddKeyedSingleton<IApiGatewayHandler, ValidationService>("post/hat/validate")
 
-            .AddSingleton<GetParticipantService>()
+            .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
-            .AddSingleton<RemoveParticipantService>()
+            .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
 
-            .AddSingleton<DeleteHatService>()
-
-            .AddSingleton<ValidationService>()
-
+            .AddSingleton<ValidationService>() // registered separately for direct use
             .AddSingleton<VerifyOrganizerService>()
             .AddSingleton<EmailCompositionService>()
-            .AddSingleton<EnqueueInvitationsService>()
             .AddSingleton<InvitationQueueHandlerService>();
 }

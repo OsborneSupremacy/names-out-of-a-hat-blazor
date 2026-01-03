@@ -44,7 +44,7 @@ internal class InvitationQueueHandlerService
             Destination = new Destination { ToAddresses = [recipient] },
             Message = new Message
             {
-                Subject = new Content(invitation.Subject),
+                Subject = new Content(invitation.Subject + (!_liveMode ? string.Empty : " - TEST MODE")),
                 Body = new Body { Html = new Content(invitation.HtmlBody) }
             }
         };

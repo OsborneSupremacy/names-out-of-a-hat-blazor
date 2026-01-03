@@ -7,7 +7,7 @@ public class InvitationQueueHandler
     private IServiceProvider? _serviceProvider;
     private readonly object _serviceProviderLock = new();
 
-    protected InvitationQueueHandler() { }
+    public InvitationQueueHandler() { }
 
     protected InvitationQueueHandler(IServiceProvider serviceProvider)
     {
