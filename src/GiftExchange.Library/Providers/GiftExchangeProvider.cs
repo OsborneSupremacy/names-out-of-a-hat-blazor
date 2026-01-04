@@ -135,7 +135,11 @@ public class GiftExchangeProvider
                 Name = response.Item["OrganizerName"].S,
                 Email = organizerEmail
             },
-            Participants = participants
+            Participants = participants,
+            InvitationsQueued = response.Item.TryGetValue("InvitationsQueued", out var iq) && (iq.BOOL ?? false),
+            InvitationsQueuedDate = response.Item.TryGetValue("InvitationsQueuedDate", out var iqd)
+                ? DateTimeOffset.Parse(iqd.S)
+                : DateTimeOffset.MinValue
         };
         return (true, hat);
     }

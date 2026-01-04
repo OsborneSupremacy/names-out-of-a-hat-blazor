@@ -17,6 +17,10 @@ public record Hat
     public required bool OrganizerVerified { get; init; }
 
     public required bool RecipientsAssigned { get; init; }
+
+    public required bool InvitationsQueued { get; init; }
+
+    public required DateTimeOffset InvitationsQueuedDate { get; init; }
 }
 
 internal static class Hats
@@ -30,7 +34,9 @@ internal static class Hats
         Organizer = Persons.Empty,
         Participants = [],
         OrganizerVerified = false,
-        RecipientsAssigned = false
+        RecipientsAssigned = false,
+        InvitationsQueued = false,
+        InvitationsQueuedDate = DateTimeOffset.MinValue
     };
 }
 

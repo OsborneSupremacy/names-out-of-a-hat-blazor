@@ -52,7 +52,9 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                 }
             ],
             OrganizerVerified = false,
-            RecipientsAssigned = false
+            RecipientsAssigned = false,
+            InvitationsQueued = false,
+            InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
         // act
@@ -97,7 +99,9 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                 }
             ],
             OrganizerVerified = false,
-            RecipientsAssigned = false
+            RecipientsAssigned = false,
+            InvitationsQueued = false,
+            InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
         // act
@@ -148,7 +152,9 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                 }
             ],
             OrganizerVerified = false,
-            RecipientsAssigned = false
+            RecipientsAssigned = false,
+            InvitationsQueued = false,
+            InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
         // act
@@ -199,7 +205,9 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                 }
             ],
             OrganizerVerified = false,
-            RecipientsAssigned = false
+            RecipientsAssigned = false,
+            InvitationsQueued = false,
+            InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
         // act

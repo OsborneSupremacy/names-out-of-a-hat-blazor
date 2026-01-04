@@ -36,7 +36,9 @@ internal class TestDataService
                 Email = newHat.OrganizerEmail,
                 Name = newHat.OrganizerName
             },
-            Participants = []
+            Participants = [],
+            InvitationsQueued = false,
+            InvitationsQueuedDate = DateTimeOffset.MinValue
         };
     }
 
