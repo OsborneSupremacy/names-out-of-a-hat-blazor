@@ -23,7 +23,7 @@ internal class EditHatService : IApiGatewayHandler
 
     public async Task<Result<StatusCodeOnlyResponse>> EditHatAsync(EditHatRequest request)
     {
-        var (hatExists, _ ) = await _giftExchangeProvider
+        var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
@@ -31,6 +31,12 @@ internal class EditHatService : IApiGatewayHandler
             return new Result<StatusCodeOnlyResponse>(
                 new KeyNotFoundException($"Hat with id {request.HatId} not found"),
                 HttpStatusCode.NotFound
+            );
+
+        if(hat.InvitationsQueued)
+            return new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException("Cannot edit hat after invitations have been sent."),
+                HttpStatusCode.Conflict
             );
 
         await _giftExchangeProvider.EditHatAsync(request)

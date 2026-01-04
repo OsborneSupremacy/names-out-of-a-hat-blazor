@@ -38,6 +38,12 @@ internal class AddParticipantService : IApiGatewayHandler
                 HttpStatusCode.NotFound
             );
 
+        if(hat.InvitationsQueued)
+            return new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException("Cannot add participants after invitations have been sent."),
+                HttpStatusCode.Conflict
+            );
+
         var existingParticipants = await _giftExchangeProvider
             .GetParticipantsAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);

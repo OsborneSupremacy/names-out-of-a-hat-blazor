@@ -47,4 +47,10 @@ resource "aws_api_gateway_stage" "live-stage" {
   deployment_id = aws_api_gateway_deployment.default.id
 }
 
-
+resource "aws_api_gateway_model" "error_response_model" {
+  rest_api_id  = aws_api_gateway_rest_api.giftexchange-gateway.id
+  name         = "BadRequestOrConflictResponse"
+  description  = "A response model for 404 Not Found or 409 Conflict errors."
+  content_type = "application/json"
+  schema       = file("../../src/GiftExchange.Library/Schemas/ErrorResponse.schema.json")
+}

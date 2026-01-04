@@ -41,6 +41,9 @@ internal class AssignRecipientsService : IApiGatewayHandler
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
+        if(hat.InvitationsQueued)
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Cannot assign recipients after invitations have been sent."), HttpStatusCode.Conflict);
+
         // the validation method should have been called first, but we'll re-validate.
         // Will not return details since the client should get those from the validation endpoint.
         var validResult = await _validationService

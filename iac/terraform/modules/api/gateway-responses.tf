@@ -15,6 +15,26 @@ resource "aws_api_gateway_method_response" "get_404_response" {
   ]
 }
 
+resource "aws_api_gateway_method_response" "conflict_409_response" {
+  rest_api_id = var.gateway_rest_api_id
+  resource_id = var.gateway_resource_id
+  http_method = var.gateway_http_method
+  status_code = "409"
+  response_models = {
+    "application/json" = "BadRequestOrConflictResponse"
+  }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Origins" = true
+  }
+  count = var.include_409_response ? 1 : 0
+
+  depends_on = [
+    aws_api_gateway_method.gateway-operation-method
+  ]
+}
+
 resource "aws_api_gateway_method_response" "get_200_response" {
   rest_api_id = var.gateway_rest_api_id
   resource_id = var.gateway_resource_id

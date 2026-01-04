@@ -48,6 +48,9 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
             return new Result<StatusCodeOnlyResponse>(new AggregateException("Recipients have not yet been assigned."),
                 HttpStatusCode.BadRequest);
 
+        if(hat.InvitationsQueued)
+            return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
+
         var queueUrl = EnvReader.GetStringValue("INVITATIONS_QUEUE_URL");
 
         var messageGroupId = $"group-hat-{hat.Id}-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}";

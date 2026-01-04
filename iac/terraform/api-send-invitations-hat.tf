@@ -9,6 +9,7 @@ module "lambda-send-invitations-hat" {
   gateway_method_request_model_description          = "A request to send invitations to the gift exchange's participants."
   gateway_method_request_model_schema_file_location = "../../src/GiftExchange.Library/Schemas/ValidateHatRequest.schema.json"
   include_404_response                              = true
+  include_409_response                              = true
   good_response_model_name                          = ""
   good_response_model_description                   = ""
   good_response_model_schema_file_location          = ""

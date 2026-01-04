@@ -50,6 +50,11 @@ variable "include_404_response" {
   default = false
 }
 
+variable "include_409_response" {
+  type    = bool
+  default = false
+}
+
 variable "good_response_model_name" {
   type = string
 }

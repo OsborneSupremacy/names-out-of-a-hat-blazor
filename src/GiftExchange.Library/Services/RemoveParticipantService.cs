@@ -31,6 +31,9 @@ internal class RemoveParticipantService : IApiGatewayHandler
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
+        if(hat.InvitationsQueued)
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participants cannot be removed after invitations have been queued."), HttpStatusCode.BadRequest);
+
         if(request.Email.ContentEquals(hat.Organizer.Email))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("The organizer cannot be removed."), HttpStatusCode.BadRequest);
 

@@ -35,6 +35,9 @@ internal class EditParticipantService : IApiGatewayHandler
         if(!hatExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
 
+        if(hat.InvitationsQueued)
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Cannot edit participants after invitations have been sent."), HttpStatusCode.Conflict);
+
         var (participantExists, participant) = await _giftExchangeProvider
             .GetParticipantAsync(
                 request.OrganizerEmail,
