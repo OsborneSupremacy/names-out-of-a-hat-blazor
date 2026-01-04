@@ -516,4 +516,50 @@ public class GiftExchangeProvider
             .UpdateItemAsync(updateRequest)
             .ConfigureAwait(false);
     }
+
+    public async Task CreateVerificationCodeAsync(
+        string organizerEmail,
+        Guid hatId,
+        string verificationCode
+        )
+    {
+        var ttl = DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds();
+        var item = new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" },
+            ["ttl"] = new() { N = ttl.ToString() }
+        };
+
+        var putItemRequest = new PutItemRequest
+        {
+            TableName = _tableName,
+            Item = item
+        };
+
+        await _dynamoDbClient
+            .PutItemAsync(putItemRequest)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> VerifyVerificationCodeAsync(
+        string organizerEmail,
+        Guid hatId,
+        string verificationCode
+        )
+    {
+        var request = new GetItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" }
+            }
+        };
+
+        var response = await _dynamoDbClient
+            .GetItemAsync(request)
+            .ConfigureAwait(false);
+
+        return response.Item is { Count: > 0 };
+    }
 }

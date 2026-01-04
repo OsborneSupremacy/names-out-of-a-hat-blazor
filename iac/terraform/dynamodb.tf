@@ -13,4 +13,9 @@ resource "aws_dynamodb_table" "giftexchange" {
     name = "SK"
     type = "S"
   }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
 }
