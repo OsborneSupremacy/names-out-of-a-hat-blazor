@@ -37,6 +37,15 @@
         "recipientsAssigned": {
             "type": "boolean",
             "description": "Whether recipients have been assigned to participants"
+        },
+        "invitationsQueued": {
+            "type": "boolean",
+            "description": "Whether invitations have been queued for sending"
+        },
+        "invitationsQueuedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when invitations were queued"
         }
     },
     "required": [
@@ -47,7 +56,9 @@
         "organizer",
         "participants",
         "organizerVerified",
-        "recipientsAssigned"
+        "recipientsAssigned",
+        "invitationsQueued",
+        "invitationsQueuedDate"
     ],
     "additionalProperties": false,
     "definitions": {

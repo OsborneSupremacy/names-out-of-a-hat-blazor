@@ -62,7 +62,9 @@ public class GiftExchangeProvider
             ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
             ["PriceRange"] = new() { S = hatDataModel.PriceRange },
             ["OrganizerVerified"] = new() { BOOL = hatDataModel.OrganizerVerified },
-            ["RecipientsAssigned"] = new() { BOOL = hatDataModel.RecipientsAssigned }
+            ["RecipientsAssigned"] = new() { BOOL = hatDataModel.RecipientsAssigned },
+            ["InvitationsQueued"] = new() { BOOL = false },
+            ["InvitationsQueuedDate"] = new() { S = DateTimeOffset.MinValue.ToString("o") }
         };
 
         var request = new PutItemRequest
@@ -82,6 +84,7 @@ public class GiftExchangeProvider
             return false;
         }
     }
+
 
     public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(
         string organizerEmail,
@@ -485,6 +488,32 @@ public class GiftExchangeProvider
         }
 
         await Task.WhenAll(updateTasks)
+            .ConfigureAwait(false);
+    }
+
+    public async Task MarkInvitationsAsQueuedAsync(
+        string organizerEmail,
+        Guid hatId
+        )
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{hatId}" }
+            },
+            UpdateExpression = "SET InvitationsQueued = :invitationsQueued, InvitationsQueuedDate = :invitationsQueuedDate",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":invitationsQueued"] = new() { BOOL = true },
+                [":invitationsQueuedDate"] = new() { S = DateTimeOffset.UtcNow.ToString("o") }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
             .ConfigureAwait(false);
     }
 }

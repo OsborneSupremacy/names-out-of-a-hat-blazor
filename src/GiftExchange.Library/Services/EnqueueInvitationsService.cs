@@ -81,6 +81,10 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         await Task.WhenAll(sqsTasks)
             .ConfigureAwait(false);
 
+        await _giftExchangeProvider
+            .MarkInvitationsAsQueuedAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
+
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }
 }
