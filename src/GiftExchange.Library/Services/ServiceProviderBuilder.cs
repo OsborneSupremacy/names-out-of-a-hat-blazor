@@ -51,7 +51,7 @@ internal static class ServiceProviderBuilder
 
             .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
-            .AddKeyedSingleton<IApiGatewayHandler, StartOrganizerVerificationService>("post/organizer/{organizeremail}/verification")
+            .AddKeyedSingleton<IApiGatewayHandler, StartOrganizerVerificationService>("post/organizer/verification")
 
             .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
 
