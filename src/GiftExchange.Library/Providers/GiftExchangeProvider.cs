@@ -527,6 +527,7 @@ public class GiftExchangeProvider
         var item = new Dictionary<string, AttributeValue>
         {
             ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" },
+            ["SK"] = new() { S = "VERIFICATION" },
             ["ttl"] = new() { N = ttl.ToString() }
         };
 
@@ -552,7 +553,8 @@ public class GiftExchangeProvider
             TableName = _tableName,
             Key = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" }
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" },
+                ["SK"] = new() { S = "VERIFICATION" }
             }
         };
 
