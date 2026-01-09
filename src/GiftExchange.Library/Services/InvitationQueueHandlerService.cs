@@ -28,7 +28,7 @@ internal class InvitationQueueHandlerService
 
     public async Task ProcessRecordAsync(SQSEvent.SQSMessage record, ILambdaContext context)
     {
-        var invitation = _jsonService.DeserializeDefault<ParticipantInvitationRequest>(record.Body);
+        var invitation = _jsonService.DeserializeDefault<GiftExchangeEmailRequest>(record.Body);
 
         if (invitation is null)
             throw new AggregateException($"Invalid message body: {record.Body}");

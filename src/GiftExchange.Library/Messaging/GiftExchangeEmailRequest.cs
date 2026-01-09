@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Messaging;
 
-internal record ParticipantInvitationRequest
+internal record GiftExchangeEmailRequest
 {
     public required Guid HatId { get; init; }
 

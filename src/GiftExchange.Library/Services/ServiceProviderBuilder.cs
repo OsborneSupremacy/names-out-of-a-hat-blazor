@@ -51,10 +51,12 @@ internal static class ServiceProviderBuilder
 
             .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
+            .AddKeyedSingleton<IApiGatewayHandler, StartOrganizerVerificationService>("post/organizer/{organizeremail}/verification")
+
             .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
 
             .AddSingleton<ValidationService>() // registered separately for direct use
-            .AddSingleton<InitiateOrganizerVerificationService>()
+            .AddSingleton<StartOrganizerVerificationService>()
             .AddSingleton<EmailCompositionService>()
             .AddSingleton<InvitationQueueHandlerService>();
 }

@@ -60,7 +60,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
         foreach(var participant in hat.Participants)
         {
-            var invitation = new ParticipantInvitationRequest
+            var invitation = new GiftExchangeEmailRequest
             {
                 HatId = request.HatId,
                 OrganizerEmail = request.OrganizerEmail,

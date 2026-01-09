@@ -1,6 +1,6 @@
 ﻿namespace GiftExchange.Library.Messaging;
 
-internal record InitiateOrganizerVerificationRequest
+internal record StartOrganizerVerificationRequest
 {
     public required string OrganizerEmail { get; init; }
 

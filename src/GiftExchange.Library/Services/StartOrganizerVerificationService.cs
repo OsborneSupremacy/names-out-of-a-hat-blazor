@@ -4,7 +4,7 @@ using Amazon.SQS.Model;
 
 namespace GiftExchange.Library.Services;
 
-internal class InitiateOrganizerVerificationService : IApiGatewayHandler
+internal class StartOrganizerVerificationService : IApiGatewayHandler
 {
     private readonly ApiGatewayAdapter _adapter;
 
@@ -16,7 +16,7 @@ internal class InitiateOrganizerVerificationService : IApiGatewayHandler
 
     private readonly string _queueUrl;
 
-    public InitiateOrganizerVerificationService(
+    public StartOrganizerVerificationService(
         GiftExchangeProvider giftExchangeProvider,
         ApiGatewayAdapter adapter,
         JsonService jsonService,
@@ -31,10 +31,10 @@ internal class InitiateOrganizerVerificationService : IApiGatewayHandler
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
-        => _adapter.AdaptAsync<InitiateOrganizerVerificationRequest, StatusCodeOnlyResponse>(request, InitiateOrganizerVerificationAsync);
+        => _adapter.AdaptAsync<StartOrganizerVerificationRequest, StatusCodeOnlyResponse>(request, InitiateOrganizerVerificationAsync);
 
     internal async Task<Result<StatusCodeOnlyResponse>> InitiateOrganizerVerificationAsync(
-        InitiateOrganizerVerificationRequest request
+        StartOrganizerVerificationRequest request
         )
     {
         var (hatExists, hat) = await _giftExchangeProvider
@@ -46,7 +46,7 @@ internal class InitiateOrganizerVerificationService : IApiGatewayHandler
 
         var verificationCode = new Random().Next(1000, 9999).ToString();
 
-        var jsonInvitation = _jsonService.SerializeDefault(new ParticipantInvitationRequest
+        var jsonInvitation = _jsonService.SerializeDefault(new GiftExchangeEmailRequest
         {
             HatId = request.HatId,
             OrganizerEmail = request.OrganizerEmail,
