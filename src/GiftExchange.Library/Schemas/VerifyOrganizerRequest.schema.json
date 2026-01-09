@@ -11,10 +11,16 @@
             "type": "string",
             "format": "uuid",
             "description": "The unique identifier of the hat to verify"
+        },
+        "verificationCode": {
+            "type": "string",
+            "description": "The verification code sent to the organizer"
         }
     },
     "required": [
-        "hatId"
+        "organizerEmail",
+        "hatId",
+        "verificationCode"
     ],
     "additionalProperties": false
 }
