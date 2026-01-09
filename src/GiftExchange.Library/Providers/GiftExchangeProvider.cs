@@ -564,4 +564,29 @@ public class GiftExchangeProvider
 
         return response.Item is { Count: > 0 };
     }
+
+    public async Task MarkOrganizerVerifiedAsync(
+        string organizerEmail,
+        Guid hatId
+        )
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{hatId}" }
+            },
+            UpdateExpression = "SET OrganizerVerified = :organizerVerified",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":organizerVerified"] = new() { BOOL = true }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
+    }
 }
