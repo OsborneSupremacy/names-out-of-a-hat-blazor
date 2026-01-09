@@ -31,7 +31,7 @@ internal class AssignRecipientsService : IApiGatewayHandler
     ) =>
         _adapter.AdaptAsync<AssignRecipientsRequest, StatusCodeOnlyResponse>(request, AssignRecipientsAsync);
 
-    public async Task<Result<StatusCodeOnlyResponse>> AssignRecipientsAsync(
+    internal async Task<Result<StatusCodeOnlyResponse>> AssignRecipientsAsync(
         AssignRecipientsRequest request
         )
     {

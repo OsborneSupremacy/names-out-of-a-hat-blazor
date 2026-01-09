@@ -38,7 +38,7 @@ internal class GetParticipantService : IApiGatewayHandler
         }, HttpStatusCode.OK);
     }
 
-    public async Task<Result<Participant>> GetParticipantAsync(GetParticipantRequest request)
+    internal async Task<Result<Participant>> GetParticipantAsync(GetParticipantRequest request)
     {
         var (participantExists, participant) = await _giftExchangeProvider
             .GetParticipantAsync(request.OrganizerEmail, request.HatId, request.ParticipantEmail)

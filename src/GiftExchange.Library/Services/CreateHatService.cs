@@ -21,7 +21,7 @@ internal class CreateHatService : IApiGatewayHandler
     ) =>
         _adapter.AdaptAsync<CreateHatRequest, CreateHatResponse>(request, CreateHatAsync);
 
-    public async Task<Result<CreateHatResponse>> CreateHatAsync(CreateHatRequest request)
+    internal async Task<Result<CreateHatResponse>> CreateHatAsync(CreateHatRequest request)
     {
         var (hatExists, existingHatId) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)

@@ -21,7 +21,7 @@ internal class EditHatService : IApiGatewayHandler
     ) =>
         _adapter.AdaptAsync<EditHatRequest, StatusCodeOnlyResponse>(request, EditHatAsync);
 
-    public async Task<Result<StatusCodeOnlyResponse>> EditHatAsync(EditHatRequest request)
+    internal async Task<Result<StatusCodeOnlyResponse>> EditHatAsync(EditHatRequest request)
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)

@@ -27,7 +27,7 @@ internal class GetHatsService : IApiGatewayHandler
         }, ExecuteAsync);
     }
 
-    public async Task<Result<GetHatsResponse>> ExecuteAsync(GetHatsRequest request)
+    internal async Task<Result<GetHatsResponse>> ExecuteAsync(GetHatsRequest request)
     {
         var result = await _giftExchangeProvider
             .GetHatsAsync(request.OrganizerEmail)

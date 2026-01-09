@@ -16,6 +16,8 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
     private readonly IAmazonSQS _sqsClient;
 
+    private readonly string _queueUrl;
+
     public EnqueueInvitationsService(
         GiftExchangeProvider giftExchangeProvider,
         ApiGatewayAdapter adapter,
@@ -30,6 +32,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         _emailCompositionService =
             emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
         _sqsClient = sqsClient ?? throw new ArgumentNullException(nameof(sqsClient));
+        _queueUrl = EnvReader.GetStringValue("INVITATIONS_QUEUE_URL");
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context) =>
@@ -51,8 +54,6 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         if(hat.InvitationsQueued)
             return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
 
-        var queueUrl = EnvReader.GetStringValue("INVITATIONS_QUEUE_URL");
-
         var messageGroupId = $"group-hat-{hat.Id}-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}";
 
         var sqsTasks = new List<Task>();
@@ -73,7 +74,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
             var sqsRequest = new SendMessageRequest
             {
-                QueueUrl = queueUrl,
+                QueueUrl = _queueUrl,
                 MessageBody = jsonInvitation,
                 MessageGroupId = messageGroupId
             };

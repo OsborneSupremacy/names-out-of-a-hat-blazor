@@ -54,7 +54,7 @@ internal static class ServiceProviderBuilder
             .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
 
             .AddSingleton<ValidationService>() // registered separately for direct use
-            .AddSingleton<VerifyOrganizerService>()
+            .AddSingleton<InitiateOrganizerVerificationService>()
             .AddSingleton<EmailCompositionService>()
             .AddSingleton<InvitationQueueHandlerService>();
 }

@@ -24,7 +24,7 @@ internal class EditParticipantService : IApiGatewayHandler
     ) =>
         _adapter.AdaptAsync<EditParticipantRequest, StatusCodeOnlyResponse>(request, EditParticipantAsync);
 
-    public async Task<Result<StatusCodeOnlyResponse>> EditParticipantAsync(
+    internal async Task<Result<StatusCodeOnlyResponse>> EditParticipantAsync(
         EditParticipantRequest request
         )
     {
