@@ -46,6 +46,7 @@ public class EmailCompositionService
             true => $"{hat.Organizer.Name} has added you to a gift exchange!",
             _ => $"Thank you for participating in {GetQualifiedName(hat.Name)}!"
         };
+
     private static string GetQualifiedName(string name) =>
         name.StartsWith("the ", StringComparison.OrdinalIgnoreCase) ? name : $"the {name}";
 }

@@ -5,7 +5,7 @@ namespace GiftExchange.Library.Handlers;
 public class InvitationQueueHandler
 {
     private IServiceProvider? _serviceProvider;
-    private readonly object _serviceProviderLock = new();
+    private readonly Lock _serviceProviderLock = new();
 
     public InvitationQueueHandler() { }
 
@@ -17,7 +17,7 @@ public class InvitationQueueHandler
     private IServiceProvider GetServiceProvider()
     {
         if(_serviceProvider is not null) return _serviceProvider;
-        lock (_serviceProviderLock)
+        using (_serviceProviderLock.EnterScope())
         {
             if(_serviceProvider is not null) return _serviceProvider;
             _serviceProvider = ServiceProviderBuilder.Build();

@@ -85,7 +85,6 @@ public class GiftExchangeProvider
         }
     }
 
-
     public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(
         string organizerEmail,
         string hatName
