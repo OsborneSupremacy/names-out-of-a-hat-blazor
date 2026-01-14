@@ -52,7 +52,7 @@ internal class StartOrganizerVerificationService : IApiGatewayHandler
             OrganizerEmail = request.OrganizerEmail,
             HtmlBody =  ComposeVerificationEmailAsync(hat, verificationCode),
             RecipientEmail = hat.Organizer.Email,
-            Subject = EmailCompositionService.GetSubject(hat)
+            Subject = "Your Names Out Of A Hat Verification Code"
         });
 
         await _giftExchangeProvider
