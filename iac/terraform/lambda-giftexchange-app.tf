@@ -2,7 +2,7 @@ resource "aws_lambda_function" "giftexchange_app" {
   function_name    = "giftexchange"
   description      = "Lambda function to handle API Gateway and other requests for the Gift Exchange application"
   handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.Router::FunctionHandler"
-  runtime          = "dotnet8"
+  runtime          = "dotnet10"
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 30

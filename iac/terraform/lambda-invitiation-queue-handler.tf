@@ -2,7 +2,7 @@ resource "aws_lambda_function" "invitation-queue-handler" {
   function_name    = "giftexchange-invitation-queue-handler"
   description      = "Function that consumes messages from the SQS email invitations queue and sends emails"
   handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.InvitationQueueHandler::FunctionHandler"
-  runtime          = "dotnet8"
+  runtime          = "dotnet10"
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 300
