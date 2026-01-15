@@ -49,10 +49,14 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
         if (!hat.RecipientsAssigned)
             return new Result<StatusCodeOnlyResponse>(new AggregateException("Recipients have not yet been assigned."),
-                HttpStatusCode.BadRequest);
+                HttpStatusCode.Conflict);
 
         if(hat.InvitationsQueued)
             return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
+
+        if (!hat.OrganizerVerified)
+            return new Result<StatusCodeOnlyResponse>(new AggregateException("Organizer email has not been verified."),
+                HttpStatusCode.Conflict);
 
         var messageGroupId = $"group-hat-{hat.Id}-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}";
 
