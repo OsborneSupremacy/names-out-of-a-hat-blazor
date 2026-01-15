@@ -10,7 +10,7 @@ internal class InvitationQueueHandlerService
 
     private readonly JsonService _jsonService;
 
-    private const string SenderEmail = "namesoutofahat@osbornesupremacy.com";
+    private const string SenderEmail = "donotreply@namesoutofahat.com";
 
     private const string TestRecipient = "osborne.ben@gmail.com";
 
