@@ -11,4 +11,3 @@ cd bin/publish
 zip -r ../giftexchange_function.zip .
 cd -
 ```
-
