@@ -9,5 +9,6 @@ cd GiftExchange.Library
 dotnet publish -o bin/publish -c Release --framework "net10.0" /p:GenerateRuntimeConfigurationFiles=true --runtime linux-arm64 --self-contained false
 cd bin/publish
 zip -r ../giftexchange_function.zip .
+cd -
 ```
 
