@@ -28,3 +28,13 @@ output "cognito_hosted_ui_url" {
   description = "The Cognito Hosted UI URL"
   value       = "https://${aws_cognito_user_pool_domain.namesoutofahat.domain}.auth.${data.aws_region.current.region}.amazoncognito.com"
 }
+
+output "api_gateway_url" {
+  description = "The API Gateway URL"
+  value       = "${aws_api_gateway_stage.live-stage.invoke_url}"
+}
+
+output "api_gateway_authorizer_id" {
+  description = "The ID of the Cognito authorizer for the API Gateway"
+  value       = aws_api_gateway_authorizer.cognito.id
+}

@@ -14,4 +14,5 @@ module "lambda-create-hat" {
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/CreateHatResponse.schema.json"
   api_name                                          = "giftexchange-create-hat"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
+  authorizer_id                                     = aws_api_gateway_authorizer.cognito.id
 }

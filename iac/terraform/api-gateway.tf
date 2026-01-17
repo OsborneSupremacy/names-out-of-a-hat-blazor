@@ -54,3 +54,12 @@ resource "aws_api_gateway_model" "error_response_model" {
   content_type = "application/json"
   schema       = file("../../src/GiftExchange.Library/Schemas/ErrorResponse.schema.json")
 }
+
+# Cognito Authorizer for API Gateway
+resource "aws_api_gateway_authorizer" "cognito" {
+  name            = "cognito-authorizer"
+  rest_api_id     = aws_api_gateway_rest_api.giftexchange-gateway.id
+  type            = "COGNITO_USER_POOLS"
+  provider_arns   = [aws_cognito_user_pool.namesoutofahat.arn]
+  identity_source = "method.request.header.Authorization"
+}

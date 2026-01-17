@@ -15,4 +15,5 @@ module "lambda-assign-recipients" {
   good_response_model_schema_file_location          = ""
   api_name                                          = "giftexchange-assign-recipients"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
+  authorizer_id                                     = aws_api_gateway_authorizer.cognito.id
 }

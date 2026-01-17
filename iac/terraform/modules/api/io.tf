@@ -67,3 +67,8 @@ variable "good_response_model_schema_file_location" {
   type = string
 }
 
+variable "authorizer_id" {
+  description = "The ID of the API Gateway authorizer to use for authentication"
+  type        = string
+  default     = ""
+}

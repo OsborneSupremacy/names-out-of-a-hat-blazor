@@ -2,7 +2,8 @@ resource "aws_api_gateway_method" "gateway-operation-method" {
   rest_api_id          = var.gateway_rest_api_id
   resource_id          = var.gateway_resource_id
   http_method          = var.gateway_http_method
-  authorization        = "NONE"
+  authorization        = var.authorizer_id != "" ? "COGNITO_USER_POOLS" : "NONE"
+  authorizer_id        = var.authorizer_id != "" ? var.authorizer_id : null
   operation_name       = var.gateway_http_operation_name
   request_validator_id = aws_api_gateway_request_validator.request_validator.id
 
