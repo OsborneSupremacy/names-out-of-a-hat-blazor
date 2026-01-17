@@ -28,7 +28,7 @@ resource "aws_api_gateway_deployment" "default" {
   rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
 
   triggers = {
-    redeployment = data.archive_file.lambda_function.output_base64sha256
+    redeployment = filebase64sha256(local.publish_zip_path)
   }
 
   lifecycle {

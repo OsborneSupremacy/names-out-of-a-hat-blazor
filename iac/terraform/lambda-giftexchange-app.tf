@@ -6,8 +6,8 @@ resource "aws_lambda_function" "giftexchange_app" {
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 30
-  filename         = data.archive_file.lambda_function.output_path
-  source_code_hash = data.archive_file.lambda_function.output_base64sha256
+  filename         = local.publish_zip_path
+  source_code_hash = filebase64sha256(local.publish_zip_path)
   role             = aws_iam_role.giftexchange_app_exec_role.arn
   environment {
     variables = local.common_environment_variables

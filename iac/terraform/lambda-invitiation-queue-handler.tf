@@ -6,8 +6,8 @@ resource "aws_lambda_function" "invitation-queue-handler" {
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 300
-  filename         = data.archive_file.lambda_function.output_path
-  source_code_hash = data.archive_file.lambda_function.output_base64sha256
+  filename         = local.publish_zip_path
+  source_code_hash = filebase64sha256(local.publish_zip_path)
   role             = aws_iam_role.invitation-queue-handler-role.arn
 
   environment {
