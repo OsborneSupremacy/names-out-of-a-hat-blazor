@@ -66,9 +66,9 @@ resource "aws_cognito_user_pool" "namesoutofahat" {
     enabled = true
   }
 
-  # User pool add-ons
-  user_pool_add_ons {
-    advanced_security_mode = "ENFORCED"
+  # Require verification when attributes are updated
+  user_attribute_update_settings {
+    attributes_require_verification_before_update = ["email"]
   }
 
   # Prevent accidental deletion
