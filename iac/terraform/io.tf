@@ -38,3 +38,18 @@ output "api_gateway_authorizer_id" {
   description = "The ID of the Cognito authorizer for the API Gateway"
   value       = aws_api_gateway_authorizer.cognito.id
 }
+
+output "frontend_bucket_name" {
+  description = "The name of the frontend S3 bucket"
+  value       = aws_s3_bucket.frontend.id
+}
+
+output "frontend_bucket_website_endpoint" {
+  description = "The website endpoint of the frontend S3 bucket"
+  value       = aws_s3_bucket_website_configuration.frontend.website_endpoint
+}
+
+output "frontend_bucket_website_url" {
+  description = "The full URL of the frontend website"
+  value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
+}
