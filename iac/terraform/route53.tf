@@ -43,15 +43,15 @@ resource "aws_route53_record" "frontend_root" {
   }
 }
 
-# Route53 record for www subdomain -> CloudFront redirect
+# Route53 record for www subdomain -> same CloudFront distribution
 resource "aws_route53_record" "frontend_www" {
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "www.namesoutofahat.com"
   type    = "A"
 
   alias {
-    name                   = aws_cloudfront_distribution.frontend_redirect.domain_name
-    zone_id                = aws_cloudfront_distribution.frontend_redirect.hosted_zone_id
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
     evaluate_target_health = false
   }
 }
