@@ -1,4 +1,4 @@
-# Names Out Of A Hat Blazor
+# Names Out Of A Hat
 
 A web application to facilitate a "names out of hat" type gift exchange, written with Blazor. You can try it out at [giftexchange.azurewebsites.net](https://giftexchange.azurewebsites.net/).
 
@@ -66,60 +66,3 @@ So I'm taking a brute force approach to picking names. I'm not trying to find an
 
 There is a limit to the number of times the application will attempt to successfully resolve a gift exchange. That limit can be increased. I don't anticipate that being necessary, however. If the application needs to handle gift exchanges that complex, it might be worth trying smarter algorithms after _n_ failed attempts with the brute force algorithm.
 
-## Running the Application
-
-### Prerequisites
-
-The application uses SendGrid to send emails. This is abstracted with `IEmailService`, so if someone wants to use something else, they could create a different implementation.
-
-If you do want to use SendGrid, you'll need an API key. You can register for a free one at [https://app.sendgrid.com/](https://app.sendgrid.com/).
-
-Add the key to **NamesOutOfAHat2\Server\appsettings.json** (or your user secrets, when running locally):
-
-```json
-  "configKeys": {
-    "sendgrid": "SendGrid API key"
-  }
-```
-
-In addition, you will need to modify values of the `settings` object as follows:
-
-* `siteUrl`. The URL of the deployed instance of this application. I know that the application can find this, but I thought it was simple enough to store it here.
-* `senderName`. The name that you want to appear as the sender of the email.
-* `senderEmail`. The email address you want to appear as the sender of the email. You will need to authorize SendGrid to use that email address.
-* `sendEmails`. Whether to _really_ send emails. I have three reasons for having this setting.
-
-    1. When running / testing the application locally, I don't want to send/recieve emails.
-    2. I want to be able to test the application in production without sending emails.
-    3. I want to ensure that anyone else running this application doesn't inadvertently send emails (which is why it is off by default).
-
-### Debugging
-
-In Visual Studio, set `NamesOutOfAHat2.Server` as the startup project and run it.
-
-## Hosting
-
-If hosting on Azure, your app service's configuration should contain these settings (from "Advanced Edit"), if/when you want to override the values in appsettings.json.
-
-```json
-  {
-    "name": "configKeys__sendgrid",
-    "value": "your SendGrid API key that you get form https://app.sendgrid.com/",
-    "slotSetting": false
-  },
-  {
-    "name": "settings__sendEmails",
-    "value": true,
-    "slotSetting": false
-  },
-  {
-    "name": "settings__senderEmail",
-    "value": "noreply@namesoutofahat.biz",
-    "slotSetting": false
-  },
-  {
-    "name": "settings__siteUrl",
-    "value": "https://namesoutofahat.biz",
-    "slotSetting": false
-  }
-```
