@@ -11,3 +11,13 @@ cd bin/publish
 zip -r ../giftexchange_function.zip .
 cd -
 ```
+
+## Deploy the React Application
+
+Build and deploy the React application to AWS S3:
+
+```bash
+cd src/app
+npm run build
+aws s3 sync dist/ s3://bro-namesoutofahat-frontend --profile benosborne
+```
