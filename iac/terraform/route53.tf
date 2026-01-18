@@ -29,3 +29,29 @@ resource "aws_route53_record" "api_stage" {
     evaluate_target_health = true
   }
 }
+
+# Route53 record for root domain (namesoutofahat.com) -> CloudFront
+resource "aws_route53_record" "frontend_root" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "namesoutofahat.com"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# Route53 record for www subdomain -> CloudFront redirect
+resource "aws_route53_record" "frontend_www" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "www.namesoutofahat.com"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend_redirect.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend_redirect.hosted_zone_id
+    evaluate_target_health = false
+  }
+}

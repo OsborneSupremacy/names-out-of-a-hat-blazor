@@ -53,3 +53,18 @@ output "frontend_bucket_website_url" {
   description = "The full URL of the frontend website"
   value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
 }
+
+output "frontend_cloudfront_domain" {
+  description = "The CloudFront domain name for the frontend"
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+output "frontend_url" {
+  description = "The custom domain URL for the frontend"
+  value       = "https://namesoutofahat.com"
+}
+
+output "frontend_cloudfront_id" {
+  description = "The CloudFront distribution ID (for cache invalidation)"
+  value       = aws_cloudfront_distribution.frontend.id
+}
