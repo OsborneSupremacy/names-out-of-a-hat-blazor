@@ -68,3 +68,13 @@ output "frontend_cloudfront_id" {
   description = "The CloudFront distribution ID (for cache invalidation)"
   value       = aws_cloudfront_distribution.frontend.id
 }
+
+output "frontend_web_acl_id" {
+  description = "The AWS-managed WAF Web ACL ID for the frontend"
+  value       = data.aws_wafv2_web_acl.cloudfront_managed.id
+}
+
+output "frontend_web_acl_arn" {
+  description = "The AWS-managed WAF Web ACL ARN for the frontend"
+  value       = data.aws_wafv2_web_acl.cloudfront_managed.arn
+}

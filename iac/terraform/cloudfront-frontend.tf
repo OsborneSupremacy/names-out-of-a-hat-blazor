@@ -60,5 +60,7 @@ resource "aws_cloudfront_distribution" "frontend" {
     Name = "frontend-distribution"
   }
 
+  web_acl_id = data.aws_wafv2_web_acl.cloudfront_managed.arn
+
   depends_on = [aws_acm_certificate_validation.frontend]
 }
