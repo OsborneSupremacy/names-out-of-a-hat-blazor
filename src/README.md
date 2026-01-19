@@ -19,5 +19,6 @@ Build and deploy the React application to AWS S3:
 ```bash
 cd src/app
 npm run build
-aws s3 sync dist/ s3://bro-namesoutofahat-frontend --profile benosborne
+aws s3 sync dist/ s3://bro-namesoutofahat-frontend --delete --profile benosborne
+aws cloudfront create-invalidation --distribution-id E1WP2SNZE07ZF0 --paths "/*" --profile benosborne
 ```

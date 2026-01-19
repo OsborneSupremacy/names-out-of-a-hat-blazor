@@ -139,7 +139,7 @@ resource "aws_cognito_user_pool_domain" "namesoutofahat" {
 resource "aws_iam_role" "cognito_ses" {
   name = "namesoutofahat-cognito-ses-role"
 
-  assume_role_policy = jsonencode({
+  assume_role_policy = jsonencode({ 
     Version = "2012-10-17"
     Statement = [
       {
