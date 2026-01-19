@@ -1,6 +1,18 @@
 # Gift Exchange Application
 
-## .NET Lambda Function
+## Generate API Documentation
+
+```bash
+aws apigateway get-export \
+  --rest-api-id bz8vg16gqk \
+  --stage-name live \
+  --export-type oas30 \
+  --accepts application/yaml \
+  --profile benosborne \
+  ../docs/namesoutofahat_api.yaml
+```
+
+## .NET Lambda Function(s)
 
 Build .NET 10.0 Lambda function and create deployment package:
 
