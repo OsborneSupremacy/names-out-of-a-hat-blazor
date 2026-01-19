@@ -4,7 +4,10 @@ import './App.css'
 
 function App() {
   return (
-    <Authenticator>
+    <Authenticator
+      loginMechanisms={['email']}
+      signUpAttributes={['given_name']}
+    >
       {({ signOut, user }) => (
         <main>
           <h1>Hello {user?.signInDetails?.loginId}</h1>
