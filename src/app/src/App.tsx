@@ -1,6 +1,26 @@
 import { Authenticator } from '@aws-amplify/ui-react'
+import { fetchUserAttributes } from 'aws-amplify/auth'
+import { useEffect, useState } from 'react'
 import '@aws-amplify/ui-react/styles.css'
 import './App.css'
+
+function AuthenticatedContent({ signOut }: { signOut: () => void }) {
+  const [givenName, setGivenName] = useState<string>('')
+
+  useEffect(() => {
+    fetchUserAttributes().then((attributes) => {
+      setGivenName(attributes.given_name || '')
+    })
+  }, [])
+
+  return (
+    <main>
+      <h1>Hello {givenName || 'there'}!</h1>
+      <p>Welcome to Names Out of a Hat!</p>
+      <button onClick={signOut}>Sign out</button>
+    </main>
+  )
+}
 
 function App() {
   return (
@@ -24,13 +44,7 @@ function App() {
         },
       }}
     >
-      {({ signOut, user }) => (
-        <main>
-          <h1>Hello {user?.signInDetails?.loginId}</h1>
-          <p>Welcome to Names Out of a Hat!</p>
-          <button onClick={signOut}>Sign out</button>
-        </main>
-      )}
+      {({ signOut }) => <AuthenticatedContent signOut={signOut} />}
     </Authenticator>
   )
 }
