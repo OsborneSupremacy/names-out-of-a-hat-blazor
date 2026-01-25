@@ -38,10 +38,22 @@
   border-left: 4px solid #dc2626;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
 .gift-exchanges-section h3 {
   color: #1f2937;
   font-size: 1.25rem;
-  margin-bottom: 1rem;
 }
 
 .gift-exchanges-list {
