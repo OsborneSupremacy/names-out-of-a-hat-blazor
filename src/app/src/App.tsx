@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import '@aws-amplify/ui-react/styles.css'
 import './App.css'
 import { getHats, HatMetadata } from './api'
+import { Header } from './components/Header'
+import { Footer } from './components/Footer'
 
 function AuthenticatedContent({ signOut }: { signOut: () => void }) {
   const [givenName, setGivenName] = useState<string>('')
@@ -40,34 +42,46 @@ function AuthenticatedContent({ signOut }: { signOut: () => void }) {
   }
 
   return (
-    <main>
-      <h1>Hello {givenName || 'there'}!</h1>
-      <p>Welcome to Names Out of a Hat!</p>
+    <div className="app-container">
+      <Header
+        userEmail={userEmail}
+        givenName={givenName}
+        onSignOut={signOut}
+      />
 
-      {loading ? (
-        <p>Loading your gift exchanges...</p>
-      ) : error ? (
-        <p style={{ color: 'red' }}>{error}</p>
-      ) : hats.length > 0 ? (
-        <div>
-          <h2>Your Gift Exchanges</h2>
-          <ul>
-            {hats.map((hat) => (
-              <li key={hat.hatId}>
-                <strong>{hat.hatName}</strong>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div>
-          <p>You don't have any Gift Exchanges</p>
-          <button onClick={handleCreateNew}>Create a new Gift Exchange</button>
-        </div>
-      )}
+      <main className="main-content">
+        <div className="content-wrapper">
+          <h2>Hello {givenName || 'there'}!</h2>
+          <p>Welcome to Names Out of a Hat!</p>
 
-      <button onClick={signOut}>Sign out</button>
-    </main>
+          {loading ? (
+            <p>Loading your gift exchanges...</p>
+          ) : error ? (
+            <p className="error-message">{error}</p>
+          ) : hats.length > 0 ? (
+            <div className="gift-exchanges-section">
+              <h3>Your Gift Exchanges</h3>
+              <ul className="gift-exchanges-list">
+                {hats.map((hat) => (
+                  <li key={hat.hatId} className="gift-exchange-item">
+                    <strong>{hat.hatName}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>You don't have any Gift Exchanges</p>
+              <button className="primary-button" onClick={handleCreateNew}>
+                Create a new Gift Exchange
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   )
 }
 
