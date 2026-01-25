@@ -113,7 +113,8 @@ resource "aws_cognito_user_pool_client" "spa_client" {
   # Callback URLs (update these with your actual URLs)
   callback_urls = [
     "http://localhost:3000/callback",
-    "https://namesoutofahat.com/callback"
+    "https://namesoutofahat.com/callback",
+    "https://oauth.pstmn.io/v1/callback"
   ]
 
   logout_urls = [
@@ -139,7 +140,7 @@ resource "aws_cognito_user_pool_domain" "namesoutofahat" {
 resource "aws_iam_role" "cognito_ses" {
   name = "namesoutofahat-cognito-ses-role"
 
-  assume_role_policy = jsonencode({ 
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
