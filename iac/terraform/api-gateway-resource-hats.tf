@@ -15,3 +15,9 @@ module "gateway-options-response-hats" {
   gateway_rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
   gateway_resource_id = aws_api_gateway_resource.hats-resource.id
 }
+
+module "gateway-options-response-hats-email" {
+  source = "./modules/gateway-options-response"
+  gateway_rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
+  gateway_resource_id = aws_api_gateway_resource.hats-email-resource.id
+}
