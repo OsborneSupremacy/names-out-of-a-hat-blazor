@@ -7,7 +7,7 @@ export interface HatMetadata {
 }
 
 export interface GetHatsResponse {
-  Hats: HatMetadata[]
+  hats: HatMetadata[]
 }
 
 async function getAuthHeaders() {

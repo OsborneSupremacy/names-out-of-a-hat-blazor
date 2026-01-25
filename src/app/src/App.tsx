@@ -21,7 +21,7 @@ function AuthenticatedContent({ signOut }: { signOut: () => void }) {
 
         if (attributes.email) {
           const response = await getHats(attributes.email)
-          setHats(response.Hats)
+          setHats(response.hats)
         }
       } catch (err) {
         console.error('Error loading data:', err)
