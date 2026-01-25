@@ -24,7 +24,16 @@ zip -r ../giftexchange_function.zip .
 cd -
 ```
 
-## Deploy the React Application
+## React Application
+
+### Run React Application Locally
+
+```bash
+cd src/app
+npm run dev
+```
+
+### Deploy the React Application
 
 Build and deploy the React application to AWS S3:
 

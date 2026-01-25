@@ -7,6 +7,22 @@ function App() {
     <Authenticator
       loginMechanisms={['email']}
       signUpAttributes={['given_name']}
+      formFields={{
+        signUp: {
+          given_name: {
+            order: 1,
+          },
+          email: {
+            order: 2,
+          },
+          password: {
+            order: 3,
+          },
+          confirm_password: {
+            order: 4,
+          },
+        },
+      }}
     >
       {({ signOut, user }) => (
         <main>

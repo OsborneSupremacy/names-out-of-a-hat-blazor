@@ -19,5 +19,5 @@ export const amplifyConfig = {
 
 // API Gateway configuration
 export const apiConfig = {
-  endpoint: 'https://bz8vg16gqk.execute-api.us-east-1.amazonaws.com/live',
+  endpoint: 'https://api.namesoutofahat.com',
 };
