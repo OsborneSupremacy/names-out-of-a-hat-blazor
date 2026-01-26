@@ -336,7 +336,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                                 onClick={() => setExpandedParticipant(isExpanded ? null : participant.person.email)}
                                 title="Manage eligible recipients"
                               >
-                                {isExpanded ? '▼' : '▶'} Eligible Recipients
+                                {isExpanded ? '▼' : '▶'} Eligible Recipients ({participant.eligibleRecipients.length} / {otherParticipants.length})
                               </button>
                               {!isOrganizer && (
                                 <button
@@ -386,6 +386,8 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                                         <button
                                           className="primary-button"
                                           onClick={() => handleSaveEligibleRecipients(participant.person.email)}
+                                          disabled={tempEligibleRecipients.length === 0}
+                                          title={tempEligibleRecipients.length === 0 ? 'At least one recipient must be selected' : ''}
                                         >
                                           Save
                                         </button>

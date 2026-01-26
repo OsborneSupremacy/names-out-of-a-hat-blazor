@@ -17,6 +17,7 @@
             "items": {
                 "type": "string"
             },
+            "minItems": 1,
             "description": "The list of eligible recipient n ames"
         },
         "email": {

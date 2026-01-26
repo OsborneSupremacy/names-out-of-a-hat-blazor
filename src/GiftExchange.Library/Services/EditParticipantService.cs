@@ -49,6 +49,9 @@ internal class EditParticipantService : IApiGatewayHandler
         if(!participantExists)
             return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Participant with email `{request.Email}` not found"), HttpStatusCode.NotFound);
 
+        if(request.EligibleRecipients.Count == 0)
+            return new Result<StatusCodeOnlyResponse>(new ArgumentException("Participant must have at least one eligible recipient"), HttpStatusCode.BadRequest);
+
         if(request.EligibleRecipients.Contains(participant.Person.Name, StringComparer.OrdinalIgnoreCase))
             return new Result<StatusCodeOnlyResponse>(new ArgumentException("Participant cannot set themselves as an eligible recipient"), HttpStatusCode.BadRequest);
 
