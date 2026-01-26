@@ -28,6 +28,13 @@ export interface EditHatRequest {
   priceRange: string
 }
 
+export interface AddParticipantRequest {
+  organizerEmail: string
+  hatId: string
+  name: string
+  email: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -127,5 +134,19 @@ export async function editHat(request: EditHatRequest): Promise<void> {
 
   if (!response.ok) {
     throw new Error(`Failed to edit gift exchange: ${response.statusText}`)
+  }
+}
+
+export async function addParticipant(request: AddParticipantRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/participant`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to add participant: ${response.statusText}`)
   }
 }

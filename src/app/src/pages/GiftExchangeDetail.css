@@ -209,10 +209,22 @@
   margin-top: 2rem;
 }
 
+.participants-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.participants-section .section-header h3 {
+  margin: 0;
+}
+
 .participants-section h3 {
   color: #1f2937;
   font-size: 1.25rem;
-  margin-bottom: 1rem;
 }
 
 .participants-list {

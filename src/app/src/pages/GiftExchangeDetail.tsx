@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, Hat } from '../api'
+import { getHat, editHat, addParticipant, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
+import { AddParticipantModal } from '../components/AddParticipantModal'
 import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
@@ -22,6 +23,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [editedAdditionalInfo, setEditedAdditionalInfo] = useState('')
   const [editedPriceRange, setEditedPriceRange] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
 
   useEffect(() => {
     async function loadHat() {
@@ -84,6 +86,21 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleAddParticipant = async (name: string, email: string) => {
+    if (!hatId) return
+
+    await addParticipant({
+      organizerEmail: userEmail,
+      hatId,
+      name,
+      email,
+    })
+
+    // Reload the hat data
+    const updatedHat = await getHat(userEmail, hatId, false)
+    setHat(updatedHat)
   }
 
   return (
@@ -212,7 +229,15 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
               </div>
 
               <div className="participants-section">
-                <h3>Participants ({hat.participants.length})</h3>
+                <div className="section-header">
+                  <h3>Participants ({hat.participants.length})</h3>
+                  <button
+                    className="primary-button"
+                    onClick={() => setShowAddParticipantModal(true)}
+                  >
+                    Add Participant
+                  </button>
+                </div>
                 {hat.participants.length > 0 ? (
                   <ul className="participants-list">
                     {hat.participants.map((participant, index) => (
@@ -241,6 +266,13 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       </main>
 
       <Footer />
+
+      {showAddParticipantModal && (
+        <AddParticipantModal
+          onClose={() => setShowAddParticipantModal(false)}
+          onSubmit={handleAddParticipant}
+        />
+      )}
     </div>
   )
 }
