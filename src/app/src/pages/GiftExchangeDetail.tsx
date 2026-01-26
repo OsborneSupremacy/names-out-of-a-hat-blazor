@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, removeParticipant, Hat } from '../api'
+import { getHat, editHat, addParticipant, removeParticipant, editParticipant, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -25,6 +25,9 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [saving, setSaving] = useState(false)
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
   const [removingParticipant, setRemovingParticipant] = useState<string | null>(null)
+  const [expandedParticipant, setExpandedParticipant] = useState<string | null>(null)
+  const [editingEligibleFor, setEditingEligibleFor] = useState<string | null>(null)
+  const [tempEligibleRecipients, setTempEligibleRecipients] = useState<string[]>([])
 
   useEffect(() => {
     async function loadHat() {
@@ -130,6 +133,46 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     } finally {
       setRemovingParticipant(null)
     }
+  }
+
+  const handleEditEligibleRecipients = (participantEmail: string, currentEligible: string[]) => {
+    setEditingEligibleFor(participantEmail)
+    setTempEligibleRecipients(currentEligible)
+    setExpandedParticipant(participantEmail)
+  }
+
+  const handleToggleEligible = (recipientName: string) => {
+    setTempEligibleRecipients(prev =>
+      prev.includes(recipientName)
+        ? prev.filter(e => e !== recipientName)
+        : [...prev, recipientName]
+    )
+  }
+
+  const handleSaveEligibleRecipients = async (participantEmail: string) => {
+    if (!hatId) return
+
+    try {
+      await editParticipant({
+        organizerEmail: userEmail,
+        hatId,
+        email: participantEmail,
+        eligibleRecipients: tempEligibleRecipients,
+      })
+
+      // Reload the hat data
+      const updatedHat = await getHat(userEmail, hatId, false)
+      setHat(updatedHat)
+      setEditingEligibleFor(null)
+    } catch (err) {
+      console.error('Error updating eligible recipients:', err)
+      setError('Failed to update eligible recipients')
+    }
+  }
+
+  const handleCancelEditEligible = () => {
+    setEditingEligibleFor(null)
+    setTempEligibleRecipients([])
   }
 
   return (
@@ -271,29 +314,106 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                   <ul className="participants-list">
                     {hat.participants.map((participant, index) => {
                       const isOrganizer = participant.person.email === hat.organizer.email
+                      const isExpanded = expandedParticipant === participant.person.email
+                      const isEditingThis = editingEligibleFor === participant.person.email
+                      const otherParticipants = hat.participants.filter(p => p.person.email !== participant.person.email)
+
                       return (
-                        <li key={index} className="participant-item">
-                          <div className="participant-info">
-                            <strong>{participant.person.name}</strong>
-                            <span className="participant-email">{participant.person.email}</span>
-                          </div>
-                          <div className="participant-actions">
-                            {participant.pickedRecipient && (
-                              <div className="picked-recipient">
-                                → {participant.pickedRecipient}
-                              </div>
-                            )}
-                            {!isOrganizer && (
+                        <li key={index} className="participant-item-wrapper">
+                          <div className="participant-item">
+                            <div className="participant-info">
+                              <strong>{participant.person.name}</strong>
+                              <span className="participant-email">{participant.person.email}</span>
+                            </div>
+                            <div className="participant-actions">
+                              {participant.pickedRecipient && (
+                                <div className="picked-recipient">
+                                  → {participant.pickedRecipient}
+                                </div>
+                              )}
                               <button
-                                className="remove-button"
-                                onClick={() => handleRemoveParticipant(participant.person.email)}
-                                disabled={removingParticipant === participant.person.email}
-                                title="Remove participant"
+                                className="manage-button"
+                                onClick={() => setExpandedParticipant(isExpanded ? null : participant.person.email)}
+                                title="Manage eligible recipients"
                               >
-                                {removingParticipant === participant.person.email ? 'Removing...' : '×'}
+                                {isExpanded ? '▼' : '▶'} Eligible Recipients
                               </button>
-                            )}
+                              {!isOrganizer && (
+                                <button
+                                  className="remove-button"
+                                  onClick={() => handleRemoveParticipant(participant.person.email)}
+                                  disabled={removingParticipant === participant.person.email}
+                                  title="Remove participant"
+                                >
+                                  {removingParticipant === participant.person.email ? 'Removing...' : '×'}
+                                </button>
+                              )}
+                            </div>
                           </div>
+
+                          {isExpanded && (
+                            <div className="eligible-recipients-section">
+                              <p className="section-description">
+                                Select which participants {participant.person.name} can be assigned to give a gift to:
+                              </p>
+
+                              {otherParticipants.length > 0 ? (
+                                <>
+                                  <div className="recipients-list">
+                                    {otherParticipants.map((otherParticipant) => {
+                                      const eligible = isEditingThis
+                                        ? tempEligibleRecipients.includes(otherParticipant.person.name)
+                                        : participant.eligibleRecipients.includes(otherParticipant.person.name)
+
+                                      return (
+                                        <label key={otherParticipant.person.email} className="recipient-checkbox">
+                                          <input
+                                            type="checkbox"
+                                            checked={eligible}
+                                            onChange={() => handleToggleEligible(otherParticipant.person.name)}
+                                            disabled={!isEditingThis}
+                                          />
+                                          <span>{otherParticipant.person.name}</span>
+                                          <span className="recipient-email">{otherParticipant.person.email}</span>
+                                        </label>
+                                      )
+                                    })}
+                                  </div>
+
+                                  <div className="eligible-actions">
+                                    {isEditingThis ? (
+                                      <>
+                                        <button
+                                          className="primary-button"
+                                          onClick={() => handleSaveEligibleRecipients(participant.person.email)}
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          className="secondary-button"
+                                          onClick={handleCancelEditEligible}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        className="secondary-button"
+                                        onClick={() => handleEditEligibleRecipients(
+                                          participant.person.email,
+                                          participant.eligibleRecipients
+                                        )}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-muted">No other participants to assign</p>
+                              )}
+                            </div>
+                          )}
                         </li>
                       )
                     })}

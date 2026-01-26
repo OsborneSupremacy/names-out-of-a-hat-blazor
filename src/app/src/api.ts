@@ -41,6 +41,13 @@ export interface RemoveParticipantRequest {
   email: string
 }
 
+export interface EditParticipantRequest {
+  organizerEmail: string
+  hatId: string
+  email: string
+  eligibleRecipients: string[]
+}
+
 export interface Participant {
   person: {
     name: string
@@ -168,5 +175,19 @@ export async function removeParticipant(request: RemoveParticipantRequest): Prom
 
   if (!response.ok) {
     throw new Error(`Failed to remove participant: ${response.statusText}`)
+  }
+}
+
+export async function editParticipant(request: EditParticipantRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/participant`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to edit participant: ${response.statusText}`)
   }
 }
