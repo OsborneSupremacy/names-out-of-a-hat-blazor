@@ -14,7 +14,7 @@ internal class GetHatService : IApiGatewayHandler
 
     public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        var organizerEmail = request.PathParameters["email"] ?? string.Empty;
+        var organizerEmail = request.GetEmailPathParameter();
         var hatId = Guid.TryParse(request.PathParameters["id"], out var id) ? id : Guid.Empty;
         var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 

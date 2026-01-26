@@ -20,12 +20,9 @@ internal class GetHatsService : IApiGatewayHandler
         ILambdaContext context
     )
     {
-        var organizerEmail = request.PathParameters.TryGetValue("email", out var email)
-            ? System.Web.HttpUtility.UrlDecode(email)
-            : string.Empty;
         return _adapter.AdaptAsync(new GetHatsRequest
         {
-            OrganizerEmail = organizerEmail
+            OrganizerEmail = request.GetEmailPathParameter()
         }, ExecuteAsync);
     }
 

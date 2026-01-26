@@ -2,16 +2,26 @@
 
 public static class ApiGatewayProxyRequestExtensions
 {
-    public static Result<T> GetInnerRequest<T>(this APIGatewayProxyRequest request, JsonService jsonService)
+    extension(APIGatewayProxyRequest request)
     {
-        var innerRequest = jsonService.DeserializeDefault<T>(request.Body);
-        return innerRequest switch
+        public Result<T> GetInnerRequest<T>(JsonService jsonService)
         {
-            null => new Result<T>(
-                new AggregateException("Request body could not be deserialized to configured request class."),
-                HttpStatusCode.BadRequest
-            ),
-            _ => new Result<T>(innerRequest, HttpStatusCode.OK)
-        };
+            var innerRequest = jsonService.DeserializeDefault<T>(request.Body);
+            return innerRequest switch
+            {
+                null => new Result<T>(
+                    new AggregateException("Request body could not be deserialized to configured request class."),
+                    HttpStatusCode.BadRequest
+                ),
+                _ => new Result<T>(innerRequest, HttpStatusCode.OK)
+            };
+        }
+
+        public string GetEmailPathParameter()
+        {
+            return request.PathParameters.TryGetValue("email", out var email)
+                ? System.Web.HttpUtility.UrlDecode(email)
+                : string.Empty;
+        }
     }
 }
