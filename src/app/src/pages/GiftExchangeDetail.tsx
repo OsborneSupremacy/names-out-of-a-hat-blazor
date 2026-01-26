@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, Hat } from '../api'
+import { getHat, editHat, addParticipant, removeParticipant, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -24,6 +24,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [editedPriceRange, setEditedPriceRange] = useState('')
   const [saving, setSaving] = useState(false)
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
+  const [removingParticipant, setRemovingParticipant] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadHat() {
@@ -101,6 +102,34 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     // Reload the hat data
     const updatedHat = await getHat(userEmail, hatId, false)
     setHat(updatedHat)
+  }
+
+  const handleRemoveParticipant = async (participantEmail: string) => {
+    if (!hatId) return
+
+    const confirmed = window.confirm(
+      `Are you sure you want to remove this participant?\n\nEmail: ${participantEmail}`
+    )
+
+    if (!confirmed) return
+
+    setRemovingParticipant(participantEmail)
+    try {
+      await removeParticipant({
+        organizerEmail: userEmail,
+        hatId,
+        email: participantEmail,
+      })
+
+      // Reload the hat data
+      const updatedHat = await getHat(userEmail, hatId, false)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error removing participant:', err)
+      setError('Failed to remove participant')
+    } finally {
+      setRemovingParticipant(null)
+    }
   }
 
   return (
@@ -240,19 +269,34 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 </div>
                 {hat.participants.length > 0 ? (
                   <ul className="participants-list">
-                    {hat.participants.map((participant, index) => (
-                      <li key={index} className="participant-item">
-                        <div className="participant-info">
-                          <strong>{participant.person.name}</strong>
-                          <span className="participant-email">{participant.person.email}</span>
-                        </div>
-                        {participant.pickedRecipient && (
-                          <div className="picked-recipient">
-                            → {participant.pickedRecipient}
+                    {hat.participants.map((participant, index) => {
+                      const isOrganizer = participant.person.email === hat.organizer.email
+                      return (
+                        <li key={index} className="participant-item">
+                          <div className="participant-info">
+                            <strong>{participant.person.name}</strong>
+                            <span className="participant-email">{participant.person.email}</span>
                           </div>
-                        )}
-                      </li>
-                    ))}
+                          <div className="participant-actions">
+                            {participant.pickedRecipient && (
+                              <div className="picked-recipient">
+                                → {participant.pickedRecipient}
+                              </div>
+                            )}
+                            {!isOrganizer && (
+                              <button
+                                className="remove-button"
+                                onClick={() => handleRemoveParticipant(participant.person.email)}
+                                disabled={removingParticipant === participant.person.email}
+                                title="Remove participant"
+                              >
+                                {removingParticipant === participant.person.email ? 'Removing...' : '×'}
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      )
+                    })}
                   </ul>
                 ) : (
                   <p className="text-muted">No participants yet</p>

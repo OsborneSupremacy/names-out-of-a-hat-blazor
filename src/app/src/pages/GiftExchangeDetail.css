@@ -264,11 +264,39 @@
   font-size: 0.875rem;
 }
 
+.participant-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .picked-recipient {
   color: #667eea;
   font-weight: 600;
   font-size: 0.875rem;
 }
+
+.remove-button {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.15s, opacity 0.15s;
+  font-weight: 400;
+}
+
+.remove-button:hover:not(:disabled) {
+  color: #b91c1c;
+}
+
+.remove-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 
 @media (prefers-color-scheme: dark) {
   .back-button {
