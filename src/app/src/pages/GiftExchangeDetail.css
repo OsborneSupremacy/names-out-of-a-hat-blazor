@@ -261,6 +261,20 @@
 .participant-info strong {
   color: #1f2937;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.organizer-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .participant-email {
@@ -475,6 +489,10 @@
 
   .participant-info strong {
     color: #f9fafb;
+  }
+
+  .organizer-badge {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
   }
 
   .participant-email {

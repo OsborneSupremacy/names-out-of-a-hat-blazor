@@ -260,12 +260,6 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 </div>
 
                 <div className="info-card">
-                  <h3>Organizer</h3>
-                  <p><strong>{hat.organizer.name}</strong></p>
-                  <p className="text-muted">{hat.organizer.email}</p>
-                </div>
-
-                <div className="info-card">
                   <h3>Price Range</h3>
                   {isEditing ? (
                     <input
@@ -322,7 +316,10 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                         <li key={index} className="participant-item-wrapper">
                           <div className="participant-item">
                             <div className="participant-info">
-                              <strong>{participant.person.name}</strong>
+                              <strong>
+                                {participant.person.name}
+                                {isOrganizer && <span className="organizer-badge">Organizer</span>}
+                              </strong>
                               <span className="participant-email">{participant.person.email}</span>
                             </div>
                             <div className="participant-actions">

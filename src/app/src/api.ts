@@ -87,6 +87,21 @@ async function getAuthHeaders() {
   }
 }
 
+async function handleApiError(response: Response, defaultMessage: string): Promise<never> {
+  try {
+    const errorData = await response.json()
+    if (errorData.message) {
+      throw new Error(errorData.message)
+    }
+  } catch (e) {
+    // If parsing fails or no message field, fall through to default
+    if (e instanceof Error && e.message !== defaultMessage) {
+      throw e
+    }
+  }
+  throw new Error(`${defaultMessage}: ${response.statusText}`)
+}
+
 export async function getHats(email: string): Promise<GetHatsResponse> {
   const headers = await getAuthHeaders()
 
@@ -96,7 +111,7 @@ export async function getHats(email: string): Promise<GetHatsResponse> {
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch hats: ${response.statusText}`)
+    await handleApiError(response, 'Failed to fetch hats')
   }
 
   return response.json()
@@ -112,7 +127,7 @@ export async function createHat(request: CreateHatRequest): Promise<CreateHatRes
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to create gift exchange: ${response.statusText}`)
+    await handleApiError(response, 'Failed to create gift exchange')
   }
 
   return response.json()
@@ -130,7 +145,7 @@ export async function getHat(email: string, hatId: string, showPickedRecipients:
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch gift exchange: ${response.statusText}`)
+    await handleApiError(response, 'Failed to fetch gift exchange')
   }
 
   return response.json()
@@ -146,7 +161,7 @@ export async function editHat(request: EditHatRequest): Promise<void> {
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to edit gift exchange: ${response.statusText}`)
+    await handleApiError(response, 'Failed to edit gift exchange')
   }
 }
 
@@ -160,7 +175,7 @@ export async function addParticipant(request: AddParticipantRequest): Promise<vo
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to add participant: ${response.statusText}`)
+    await handleApiError(response, 'Failed to add participant')
   }
 }
 
@@ -174,7 +189,7 @@ export async function removeParticipant(request: RemoveParticipantRequest): Prom
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to remove participant: ${response.statusText}`)
+    await handleApiError(response, 'Failed to remove participant')
   }
 }
 
@@ -188,6 +203,6 @@ export async function editParticipant(request: EditParticipantRequest): Promise<
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to edit participant: ${response.statusText}`)
+    await handleApiError(response, 'Failed to edit participant')
   }
 }
