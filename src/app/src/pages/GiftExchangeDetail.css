@@ -66,6 +66,16 @@
   color: #9f1239;
 }
 
+.status-badge.not-assigned {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-badge.not-invited {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
 .hat-info-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -192,6 +202,16 @@
   .status-badge.invited {
     background-color: #831843;
     color: #fce7f3;
+  }
+
+  .status-badge.not-assigned {
+    background-color: #374151;
+    color: #9ca3af;
+  }
+
+  .status-badge.not-invited {
+    background-color: #374151;
+    color: #9ca3af;
   }
 
   .info-card {

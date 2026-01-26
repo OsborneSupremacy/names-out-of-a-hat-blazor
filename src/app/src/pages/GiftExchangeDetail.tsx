@@ -64,31 +64,49 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 <h2>{hat.name}</h2>
                 <div className="hat-status">
                   {hat.organizerVerified && <span className="status-badge verified">Verified</span>}
-                  {hat.recipientsAssigned && <span className="status-badge assigned">Recipients Assigned</span>}
-                  {hat.invitationsQueued && <span className="status-badge invited">Invitations Sent</span>}
+                  <span className={`status-badge ${hat.recipientsAssigned ? 'assigned' : 'not-assigned'}`}>
+                    {hat.recipientsAssigned ? 'Recipients Assigned' : 'Recipients Not Assigned'}
+                  </span>
+                  <span className={`status-badge ${hat.invitationsQueued ? 'invited' : 'not-invited'}`}>
+                    {hat.invitationsQueued ? 'Invitations Sent' : 'Invitations Not Sent'}
+                  </span>
                 </div>
               </div>
 
               <div className="hat-info-grid">
+                <div className="info-card full-width">
+                  <h3>Additional Information</h3>
+                  <p>{hat.additionalInformation || <span className="text-muted">None</span>}</p>
+                </div>
+
                 <div className="info-card">
                   <h3>Organizer</h3>
                   <p><strong>{hat.organizer.name}</strong></p>
                   <p className="text-muted">{hat.organizer.email}</p>
                 </div>
 
-                {hat.priceRange && (
-                  <div className="info-card">
-                    <h3>Price Range</h3>
-                    <p>{hat.priceRange}</p>
-                  </div>
-                )}
+                <div className="info-card">
+                  <h3>Price Range</h3>
+                  <p>{hat.priceRange || <span className="text-muted">Not set</span>}</p>
+                </div>
 
-                {hat.additionalInformation && (
-                  <div className="info-card full-width">
-                    <h3>Additional Information</h3>
-                    <p>{hat.additionalInformation}</p>
-                  </div>
-                )}
+                <div className="info-card">
+                  <h3>Invitations Sent</h3>
+                  <p>
+                    {hat.invitationsQueued && hat.invitationsQueuedDate &&
+                     new Date(hat.invitationsQueuedDate).getFullYear() > 1 ? (
+                      new Date(hat.invitationsQueuedDate).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    ) : (
+                      <span className="text-muted">Not sent yet</span>
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div className="participants-section">
