@@ -20,6 +20,14 @@ export interface CreateHatResponse {
   hatId: string
 }
 
+export interface EditHatRequest {
+  hatId: string
+  organizerEmail: string
+  name: string
+  additionalInformation: string
+  priceRange: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -106,4 +114,18 @@ export async function getHat(email: string, hatId: string, showPickedRecipients:
   }
 
   return response.json()
+}
+
+export async function editHat(request: EditHatRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to edit gift exchange: ${response.statusText}`)
+  }
 }
