@@ -90,7 +90,12 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
                         className="gift-exchange-item"
                         onClick={() => handleHatClick(hat.hatId)}
                       >
-                        <strong>{hat.hatName}</strong>
+                        <div className="gift-exchange-info">
+                          <strong>{hat.hatName}</strong>
+                        </div>
+                        <span className={`status-pill ${hat.invitationsQueued ? 'sent' : 'incomplete'}`}>
+                          {hat.invitationsQueued ? 'Invites Sent' : 'Incomplete'}
+                        </span>
                       </li>
                     ))}
                   </ul>

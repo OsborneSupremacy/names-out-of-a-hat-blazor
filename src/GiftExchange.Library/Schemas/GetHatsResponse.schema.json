@@ -28,11 +28,16 @@
                     "type": "string",
                     "minLength": 1,
                     "description": "The display name of the hat."
+                },
+                "invitationsQueued": {
+                    "type": "boolean",
+                    "description": "Whether invitations have been queued for sending."
                 }
             },
             "required": [
                 "hatId",
-                "hatName"
+                "hatName",
+                "invitationsQueued"
             ]
         }
     }

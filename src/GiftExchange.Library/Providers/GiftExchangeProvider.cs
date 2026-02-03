@@ -40,7 +40,8 @@ public class GiftExchangeProvider
             .Select(i => new HatMetaData
             {
                 HatId = Guid.Parse(i["HatId"].S),
-                HatName = i["HatName"].S
+                HatName = i["HatName"].S,
+                InvitationsQueued = i["InvitationsQueued"].BOOL ?? false
             })
             .ToImmutableList();
     }

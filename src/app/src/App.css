@@ -69,6 +69,10 @@
   margin-bottom: 0.75rem;
   transition: all 0.2s;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
 .gift-exchange-item:hover {
@@ -77,9 +81,33 @@
   transform: translateY(-2px);
 }
 
+.gift-exchange-info {
+  flex: 1;
+}
+
 .gift-exchange-item strong {
   color: #1f2937;
   font-size: 1.125rem;
+}
+
+.status-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.status-pill.sent {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-pill.incomplete {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .empty-state {
@@ -141,6 +169,16 @@
   .gift-exchange-item:hover {
     border-color: #667eea;
     background-color: #374151;
+  }
+
+  .status-pill.sent {
+    background-color: #064e3b;
+    color: #d1fae5;
+  }
+
+  .status-pill.incomplete {
+    background-color: #78350f;
+    color: #fef3c7;
   }
 }
 
