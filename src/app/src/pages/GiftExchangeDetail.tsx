@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, removeParticipant, editParticipant, Hat } from '../api'
+import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -173,6 +173,29 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const handleCancelEditEligible = () => {
     setEditingEligibleFor(null)
     setTempEligibleRecipients([])
+  }
+
+  const handleDeleteHat = async () => {
+    if (!hatId || !hat) return
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${hat.name}"?\n\nThis action cannot be undone.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      await deleteHat({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      // Navigate back to home after successful deletion
+      navigate('/')
+    } catch (err) {
+      console.error('Error deleting gift exchange:', err)
+      setError('Failed to delete gift exchange')
+    }
   }
 
   return (
@@ -421,6 +444,17 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                   <p className="text-muted">No participants yet</p>
                 )}
               </div>
+
+              {!hat.invitationsQueued && (
+                <div className="delete-section">
+                  <button
+                    className="danger-button"
+                    onClick={handleDeleteHat}
+                  >
+                    Delete Gift Exchange
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <p className="error-message">Gift exchange not found</p>

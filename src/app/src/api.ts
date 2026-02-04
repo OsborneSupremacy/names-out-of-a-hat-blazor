@@ -49,6 +49,11 @@ export interface EditParticipantRequest {
   eligibleRecipients: string[]
 }
 
+export interface DeleteHatRequest {
+  organizerEmail: string
+  hatId: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -205,5 +210,19 @@ export async function editParticipant(request: EditParticipantRequest): Promise<
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to edit participant')
+  }
+}
+
+export async function deleteHat(request: DeleteHatRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat`, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to delete gift exchange')
   }
 }
