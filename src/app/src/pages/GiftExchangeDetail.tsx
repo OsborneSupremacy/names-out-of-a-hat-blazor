@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, Hat } from '../api'
+import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, validateHat, assignRecipients, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -28,6 +28,8 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [expandedParticipant, setExpandedParticipant] = useState<string | null>(null)
   const [editingEligibleFor, setEditingEligibleFor] = useState<string | null>(null)
   const [tempEligibleRecipients, setTempEligibleRecipients] = useState<string[]>([])
+  const [isAssigning, setIsAssigning] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   useEffect(() => {
     async function loadHat() {
@@ -198,6 +200,51 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     }
   }
 
+  const handleShakeHat = async () => {
+    if (!hatId || !hat) return
+
+    // If recipients are already assigned, confirm before re-shaking
+    if (hat.recipientsAssigned) {
+      const confirmed = window.confirm(
+        'The hat has already been shaken and all participants have a name picked. Are you sure you want to shake the hat again?'
+      )
+      if (!confirmed) return
+    }
+
+    setIsAssigning(true)
+    setValidationErrors([])
+    setError('')
+
+    try {
+      // Step 1: Validate the hat
+      const validationResult = await validateHat({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      if (!validationResult.success) {
+        setValidationErrors(validationResult.errors)
+        setIsAssigning(false)
+        return
+      }
+
+      // Step 2: Assign recipients
+      await assignRecipients({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      // Reload the hat data
+      const updatedHat = await getHat(userEmail, hatId, false)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error shaking hat:', err)
+      setError(err instanceof Error ? err.message : 'Failed to shake the hat')
+    } finally {
+      setIsAssigning(false)
+    }
+  }
+
   return (
     <div className="app-container">
       <Header
@@ -317,6 +364,28 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 </div>
               </div>
 
+              {!hat.invitationsQueued && hat.participants.length >= 3 && (
+                <div className="shake-hat-section">
+                  <button
+                    className="shake-button"
+                    onClick={handleShakeHat}
+                    disabled={isAssigning}
+                  >
+                    {isAssigning ? 'Shaking...' : hat.recipientsAssigned ? 'Shake the Hat Again!' : 'Shake the Hat!'}
+                  </button>
+                  {validationErrors.length > 0 && (
+                    <div className="validation-errors">
+                      <h4>Cannot shake the hat:</h4>
+                      <ul>
+                        {validationErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="participants-section">
                 <div className="section-header">
                   <h3>Participants ({hat.participants.length})</h3>
@@ -341,16 +410,14 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                             <div className="participant-info">
                               <strong>
                                 {participant.person.name}
+                                {hat.recipientsAssigned && participant.pickedRecipient && (
+                                  <span className="assigned-tag" title={`${participant.person.name} has picked a name.`}>🏷️</span>
+                                )}
                                 {isOrganizer && <span className="organizer-badge">Organizer</span>}
                               </strong>
                               <span className="participant-email">{participant.person.email}</span>
                             </div>
                             <div className="participant-actions">
-                              {participant.pickedRecipient && (
-                                <div className="picked-recipient">
-                                  → {participant.pickedRecipient}
-                                </div>
-                              )}
                               <button
                                 className="manage-button"
                                 onClick={() => setExpandedParticipant(isExpanded ? null : participant.person.email)}

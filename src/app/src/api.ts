@@ -54,6 +54,21 @@ export interface DeleteHatRequest {
   hatId: string
 }
 
+export interface ValidateHatRequest {
+  organizerEmail: string
+  hatId: string
+}
+
+export interface ValidateHatResponse {
+  success: boolean
+  errors: string[]
+}
+
+export interface AssignRecipientsRequest {
+  organizerEmail: string
+  hatId: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -224,5 +239,35 @@ export async function deleteHat(request: DeleteHatRequest): Promise<void> {
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to delete gift exchange')
+  }
+}
+
+export async function validateHat(request: ValidateHatRequest): Promise<ValidateHatResponse> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat/validate`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to validate gift exchange')
+  }
+
+  return response.json()
+}
+
+export async function assignRecipients(request: AssignRecipientsRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/recipients`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to assign recipients')
   }
 }
