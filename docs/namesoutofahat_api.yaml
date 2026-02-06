@@ -2,7 +2,7 @@ openapi: "3.0.1"
 info:
   title: "giftexchange-gateway"
   description: "API Gateway for the Gift Exchange App"
-  version: "2026-01-17T15:06:37Z"
+  version: "2026-02-06T03:12:21Z"
 servers:
 - url: "https://api.namesoutofahat.com"
 paths:
@@ -38,7 +38,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -51,7 +51,7 @@ paths:
         "409":
           description: "409 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -84,31 +84,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Empty"
-  /organizer/verification:
-    post:
-      operationId: "OrganizerVerification"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/StartOrganizerVerificationRequest"
-        required: true
-      responses:
-        "404":
-          description: "404 response"
-          headers:
-            Access-Control-Allow-Origins:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - cognito-authorizer: []
   /participant/{organizerEmail}/{hatId}/{participantEmail}:
     get:
       operationId: "GetParticipant"
@@ -137,7 +112,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -150,7 +125,7 @@ paths:
         "200":
           description: "200 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -165,8 +140,23 @@ paths:
                 $ref: "#/components/schemas/Participant"
       security:
       - cognito-authorizer: []
-  /organizer:
     options:
+      parameters:
+      - name: "organizerEmail"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "hatId"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "participantEmail"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
       responses:
         "200":
           description: "200 response"
@@ -197,7 +187,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -210,7 +200,7 @@ paths:
         "200":
           description: "200 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -225,6 +215,30 @@ paths:
                 $ref: "#/components/schemas/GetHatsResponse"
       security:
       - cognito-authorizer: []
+    options:
+      parameters:
+      - name: "email"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
   /hat/sendinvitations:
     post:
       operationId: "SendInvitations"
@@ -238,7 +252,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -251,7 +265,7 @@ paths:
         "409":
           description: "409 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -297,7 +311,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -310,7 +324,7 @@ paths:
         "200":
           description: "200 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -366,7 +380,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -379,7 +393,7 @@ paths:
         "200":
           description: "200 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -394,6 +408,35 @@ paths:
                 $ref: "#/components/schemas/Hat"
       security:
       - cognito-authorizer: []
+    options:
+      parameters:
+      - name: "email"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
   /hat:
     put:
       operationId: "Edit"
@@ -407,7 +450,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -420,7 +463,7 @@ paths:
         "409":
           description: "409 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -447,7 +490,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -460,7 +503,7 @@ paths:
         "200":
           description: "200 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -487,7 +530,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -517,31 +560,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Empty"
-  /organizer/verification/verify:
-    post:
-      operationId: "VerifyOrganizer"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/VerifyOrganizerRequest"
-        required: true
-      responses:
-        "404":
-          description: "404 response"
-          headers:
-            Access-Control-Allow-Origins:
-              schema:
-                type: "string"
-            Access-Control-Allow-Methods:
-              schema:
-                type: "string"
-            Access-Control-Allow-Headers:
-              schema:
-                type: "string"
-          content: {}
-      security:
-      - cognito-authorizer: []
   /participant:
     put:
       operationId: "EditParticipant"
@@ -555,7 +573,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -568,7 +586,7 @@ paths:
         "409":
           description: "409 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -595,7 +613,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -608,7 +626,7 @@ paths:
         "409":
           description: "409 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -635,7 +653,7 @@ paths:
         "404":
           description: "404 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -648,7 +666,7 @@ paths:
         "409":
           description: "409 response"
           headers:
-            Access-Control-Allow-Origins:
+            Access-Control-Allow-Origin:
               schema:
                 type: "string"
             Access-Control-Allow-Methods:
@@ -795,6 +813,7 @@ components:
       required:
       - "hatId"
       - "hatName"
+      - "invitationsQueued"
       type: "object"
       properties:
         hatId:
@@ -805,6 +824,9 @@ components:
           minLength: 1
           type: "string"
           description: "The display name of the hat."
+        invitationsQueued:
+          type: "boolean"
+          description: "Whether invitations have been queued for sending."
       additionalProperties: false
     EditParticipantRequest:
       required:
@@ -823,6 +845,7 @@ components:
           description: "The unique identifier of the hat"
           format: "uuid"
         eligibleRecipients:
+          minItems: 1
           type: "array"
           description: "The list of eligible recipient n ames"
           items:
@@ -920,21 +943,6 @@ components:
           description: "The email of the participant to remove"
           format: "email"
       additionalProperties: false
-    StartOrganizerVerificationRequest:
-      required:
-      - "hatId"
-      - "organizerEmail"
-      type: "object"
-      properties:
-        organizerEmail:
-          type: "string"
-          description: "The email address of the organizer"
-          format: "email"
-        hatId:
-          type: "string"
-          description: "The unique identifier of the hat"
-          format: "uuid"
-      additionalProperties: false
     Participant:
       title: "Participant"
       required:
@@ -954,25 +962,6 @@ components:
           type: "array"
           items:
             type: "string"
-      additionalProperties: false
-    VerifyOrganizerRequest:
-      required:
-      - "hatId"
-      - "organizerEmail"
-      - "verificationCode"
-      type: "object"
-      properties:
-        organizerEmail:
-          type: "string"
-          description: "The email address of the organizer"
-          format: "email"
-        hatId:
-          type: "string"
-          description: "The unique identifier of the hat to verify"
-          format: "uuid"
-        verificationCode:
-          type: "string"
-          description: "The verification code sent to the organizer"
       additionalProperties: false
     AddParticipantRequest:
       required:
@@ -1081,4 +1070,4 @@ x-amazon-apigateway-policy:
     Resource: "arn:aws:execute-api:us-east-1:182571449491:*/*/*"
     Condition:
       IpAddress:
-        aws:SourceIp: "24.240.63.190"
+        aws:SourceIp: "172.13.48.231"
