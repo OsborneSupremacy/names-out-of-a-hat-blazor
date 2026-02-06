@@ -26,7 +26,8 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
 
-        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/participant/{organizeremail}/{hatid}/{participantemail}");
+        _sut = serviceProvider
+            .GetRequiredKeyedService<IApiGatewayHandler>("get/participant/{organizeremail}/{hatid}/{participantemail}");
     }
 
     [Fact]
@@ -53,7 +54,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         {
             PathParameters = new Dictionary<string, string>
             {
-                { "organizerEmail", hat.Organizer.Email },
+                { "email", hat.Organizer.Email },
                 { "hatId", hat.Id.ToString() },
                 { "participantEmail", person.Email }
             },
