@@ -69,6 +69,11 @@ export interface AssignRecipientsRequest {
   hatId: string
 }
 
+export interface SendInvitationsRequest {
+  organizerEmail: string
+  hatId: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -269,5 +274,19 @@ export async function assignRecipients(request: AssignRecipientsRequest): Promis
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to assign recipients')
+  }
+}
+
+export async function sendInvitations(request: SendInvitationsRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat/sendinvitations`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to send invitations')
   }
 }

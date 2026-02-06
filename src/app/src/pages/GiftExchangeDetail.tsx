@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, validateHat, assignRecipients, Hat } from '../api'
+import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, validateHat, assignRecipients, sendInvitations, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -30,6 +30,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [tempEligibleRecipients, setTempEligibleRecipients] = useState<string[]>([])
   const [isAssigning, setIsAssigning] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [isSendingInvitations, setIsSendingInvitations] = useState(false)
 
   useEffect(() => {
     async function loadHat() {
@@ -200,6 +201,35 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     }
   }
 
+  const handleSendInvitations = async () => {
+    if (!hatId || !hat) return
+
+    const confirmed = window.confirm(
+      'This will send invitations to the gift exchange participants. Once you\'ve done this, this gift exchange will no longer be editable. Are you sure you want to proceed?'
+    )
+
+    if (!confirmed) return
+
+    setIsSendingInvitations(true)
+    setError('')
+
+    try {
+      await sendInvitations({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      // Reload the hat data to reflect the updated invitationsQueued status
+      const updatedHat = await getHat(userEmail, hatId, false)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error sending invitations:', err)
+      setError(err instanceof Error ? err.message : 'Failed to send invitations')
+    } finally {
+      setIsSendingInvitations(false)
+    }
+  }
+
   const handleShakeHat = async () => {
     if (!hatId || !hat) return
 
@@ -277,30 +307,32 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 ) : (
                   <h2>{hat.name}</h2>
                 )}
-                <div className="hat-actions">
-                  {isEditing ? (
-                    <>
-                      <button
-                        className="secondary-button"
-                        onClick={handleCancel}
-                        disabled={saving}
-                      >
-                        Cancel
+                {!hat.invitationsQueued && (
+                  <div className="hat-actions">
+                    {isEditing ? (
+                      <>
+                        <button
+                          className="secondary-button"
+                          onClick={handleCancel}
+                          disabled={saving}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="primary-button"
+                          onClick={handleSave}
+                          disabled={saving}
+                        >
+                          {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                      </>
+                    ) : (
+                      <button className="primary-button" onClick={handleEdit}>
+                        Edit
                       </button>
-                      <button
-                        className="primary-button"
-                        onClick={handleSave}
-                        disabled={saving}
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </>
-                  ) : (
-                    <button className="primary-button" onClick={handleEdit}>
-                      Edit
-                    </button>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="hat-status-badges">
@@ -386,15 +418,29 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 </div>
               )}
 
+              {hat.recipientsAssigned && !hat.invitationsQueued && (
+                <div className="send-invitations-section">
+                  <button
+                    className="send-invitations-button"
+                    onClick={handleSendInvitations}
+                    disabled={isSendingInvitations}
+                  >
+                    {isSendingInvitations ? 'Sending Invitations...' : 'Send Invitations'}
+                  </button>
+                </div>
+              )}
+
               <div className="participants-section">
                 <div className="section-header">
                   <h3>Participants ({hat.participants.length})</h3>
-                  <button
-                    className="primary-button"
-                    onClick={() => setShowAddParticipantModal(true)}
-                  >
-                    Add Participant
-                  </button>
+                  {!hat.invitationsQueued && (
+                    <button
+                      className="primary-button"
+                      onClick={() => setShowAddParticipantModal(true)}
+                    >
+                      Add Participant
+                    </button>
+                  )}
                 </div>
                 {hat.participants.length > 0 ? (
                   <ul className="participants-list">
@@ -417,25 +463,27 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                               </strong>
                               <span className="participant-email">{participant.person.email}</span>
                             </div>
-                            <div className="participant-actions">
-                              <button
-                                className="manage-button"
-                                onClick={() => setExpandedParticipant(isExpanded ? null : participant.person.email)}
-                                title="Manage eligible recipients"
-                              >
-                                {isExpanded ? '▼' : '▶'} Eligible Recipients ({participant.eligibleRecipients.length} / {otherParticipants.length})
-                              </button>
-                              {!isOrganizer && (
+                            {!hat.invitationsQueued && (
+                              <div className="participant-actions">
                                 <button
-                                  className="remove-button"
-                                  onClick={() => handleRemoveParticipant(participant.person.email)}
-                                  disabled={removingParticipant === participant.person.email}
-                                  title="Remove participant"
+                                  className="manage-button"
+                                  onClick={() => setExpandedParticipant(isExpanded ? null : participant.person.email)}
+                                  title="Manage eligible recipients"
                                 >
-                                  {removingParticipant === participant.person.email ? 'Removing...' : '×'}
+                                  {isExpanded ? '▼' : '▶'} Eligible Recipients ({participant.eligibleRecipients.length} / {otherParticipants.length})
                                 </button>
-                              )}
-                            </div>
+                                {!isOrganizer && (
+                                  <button
+                                    className="remove-button"
+                                    onClick={() => handleRemoveParticipant(participant.person.email)}
+                                    disabled={removingParticipant === participant.person.email}
+                                    title="Remove participant"
+                                  >
+                                    {removingParticipant === participant.person.email ? 'Removing...' : '×'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {isExpanded && (

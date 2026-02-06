@@ -222,6 +222,41 @@
   margin-bottom: 0.25rem;
 }
 
+.send-invitations-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+}
+
+.send-invitations-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.send-invitations-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -3px rgba(102, 126, 234, 0.4);
+}
+
+.send-invitations-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.send-invitations-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .hat-info-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -645,5 +680,13 @@
 
   .delete-section {
     border-top-color: #374151;
+  }
+
+  .send-invitations-button {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  }
+
+  .send-invitations-button:hover:not(:disabled) {
+    box-shadow: 0 10px 20px -3px rgba(129, 140, 248, 0.4);
   }
 }
