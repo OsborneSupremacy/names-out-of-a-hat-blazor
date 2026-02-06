@@ -30,7 +30,6 @@ internal class TestDataService
             Name = newHat.HatName,
             AdditionalInformation = newHat.AdditionalInformation,
             PriceRange = newHat.PriceRange,
-            OrganizerVerified = newHat.OrganizerVerified,
             RecipientsAssigned = newHat.RecipientsAssigned,
             Organizer = new Person {
                 Email = newHat.OrganizerEmail,

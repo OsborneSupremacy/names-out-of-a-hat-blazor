@@ -40,8 +40,7 @@ public class GiftExchangeProvider
             .Select(i => new HatMetaData
             {
                 HatId = Guid.Parse(i["HatId"].S),
-                HatName = i["HatName"].S,
-                InvitationsQueued = i["InvitationsQueued"].BOOL ?? false
+                HatName = i["HatName"].S
             })
             .ToImmutableList();
     }
@@ -132,7 +131,6 @@ public class GiftExchangeProvider
             Id = Guid.Parse(response.Item["HatId"].S), Name = response.Item["HatName"].S,
             AdditionalInformation = response.Item["AdditionalInformation"].S,
             PriceRange = response.Item["PriceRange"].S,
-            OrganizerVerified = response.Item["OrganizerVerified"].BOOL ?? false,
             RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
             Organizer = new Person {
                 Name = response.Item["OrganizerName"].S,
@@ -188,6 +186,8 @@ public class GiftExchangeProvider
         var participants = await GetParticipantsAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
+        // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+        // No. It's more readable this way.
         foreach (var participant in participants)
         {
             var deleteParticipantRequest = new DeleteItemRequest
@@ -509,79 +509,6 @@ public class GiftExchangeProvider
             {
                 [":invitationsQueued"] = new() { BOOL = true },
                 [":invitationsQueuedDate"] = new() { S = DateTimeOffset.UtcNow.ToString("o") }
-            }
-        };
-
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
-            .ConfigureAwait(false);
-    }
-
-    public async Task CreateVerificationCodeAsync(
-        string organizerEmail,
-        Guid hatId,
-        string verificationCode
-        )
-    {
-        var ttl = DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds();
-        var item = new Dictionary<string, AttributeValue>
-        {
-            ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" },
-            ["SK"] = new() { S = "VERIFICATION" },
-            ["ttl"] = new() { N = ttl.ToString() }
-        };
-
-        var putItemRequest = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item
-        };
-
-        await _dynamoDbClient
-            .PutItemAsync(putItemRequest)
-            .ConfigureAwait(false);
-    }
-
-    public async Task<bool> VerifyVerificationCodeAsync(
-        string organizerEmail,
-        Guid hatId,
-        string verificationCode
-        )
-    {
-        var request = new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#VERIFICATION#{verificationCode}" },
-                ["SK"] = new() { S = "VERIFICATION" }
-            }
-        };
-
-        var response = await _dynamoDbClient
-            .GetItemAsync(request)
-            .ConfigureAwait(false);
-
-        return response.Item is { Count: > 0 };
-    }
-
-    public async Task MarkOrganizerVerifiedAsync(
-        string organizerEmail,
-        Guid hatId
-        )
-    {
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{hatId}" }
-            },
-            UpdateExpression = "SET OrganizerVerified = :organizerVerified",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":organizerVerified"] = new() { BOOL = true }
             }
         };
 

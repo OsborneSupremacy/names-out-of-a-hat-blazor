@@ -14,8 +14,6 @@ public record Hat
 
     public required ImmutableList<Participant> Participants { get; init; }
 
-    public required bool OrganizerVerified { get; init; }
-
     public required bool RecipientsAssigned { get; init; }
 
     public required bool InvitationsQueued { get; init; }
@@ -33,7 +31,6 @@ internal static class Hats
         PriceRange = string.Empty,
         Organizer = Persons.Empty,
         Participants = [],
-        OrganizerVerified = false,
         RecipientsAssigned = false,
         InvitationsQueued = false,
         InvitationsQueuedDate = DateTimeOffset.MinValue
