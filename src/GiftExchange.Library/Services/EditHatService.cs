@@ -4,14 +4,18 @@ internal class EditHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly IContentModerationService _contentModerationService;
+
     private readonly ApiGatewayAdapter _adapter;
 
     public EditHatService(
         GiftExchangeProvider giftExchangeProvider,
+        IContentModerationService contentModerationService,
         ApiGatewayAdapter adapter
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -23,6 +27,23 @@ internal class EditHatService : IApiGatewayHandler
 
     internal async Task<Result<StatusCodeOnlyResponse>> EditHatAsync(EditHatRequest request)
     {
+        // Validate content before processing
+        var (isValid, errorMessages) = await _contentModerationService.ValidateMultipleFieldsAsync(
+            new Dictionary<string, string>
+            {
+                ["gift exchange name"] = request.Name,
+                ["additional information"] = request.AdditionalInformation,
+                ["price range"] = request.PriceRange
+            });
+
+        if (!isValid)
+        {
+            return new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException(string.Join(" ", errorMessages)),
+                HttpStatusCode.BadRequest
+            );
+        }
+
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);

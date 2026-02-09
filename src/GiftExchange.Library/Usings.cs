@@ -1,3 +1,5 @@
+global using Amazon.Comprehend;
+global using Amazon.Comprehend.Model;
 global using Amazon.DynamoDBv2;
 
 global using Amazon.Lambda.APIGatewayEvents;

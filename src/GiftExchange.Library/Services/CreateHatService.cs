@@ -4,14 +4,18 @@ internal class CreateHatService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly IContentModerationService _contentModerationService;
+
     private readonly ApiGatewayAdapter _adapter;
 
     public CreateHatService(
         GiftExchangeProvider giftExchangeProvider,
+        IContentModerationService contentModerationService,
         ApiGatewayAdapter adapter
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -23,6 +27,22 @@ internal class CreateHatService : IApiGatewayHandler
 
     internal async Task<Result<CreateHatResponse>> CreateHatAsync(CreateHatRequest request)
     {
+        // Validate content before processing
+        var (isValid, errorMessages) = await _contentModerationService.ValidateMultipleFieldsAsync(
+            new Dictionary<string, string>
+            {
+                ["gift exchange name"] = request.HatName,
+                ["organizer name"] = request.OrganizerName
+            });
+
+        if (!isValid)
+        {
+            return new Result<CreateHatResponse>(
+                new InvalidOperationException(string.Join(" ", errorMessages)),
+                HttpStatusCode.BadRequest
+            );
+        }
+
         var (hatExists, existingHatId) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)
             .ConfigureAwait(false);

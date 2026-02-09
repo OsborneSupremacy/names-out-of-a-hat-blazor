@@ -23,6 +23,7 @@ public class AddParticipantTests : IClassFixture<DynamoDbFixture>
             .AddUtilities()
             .AddBusinessServices()
             .AddSingleton(dynamoDbClient)
+            .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();

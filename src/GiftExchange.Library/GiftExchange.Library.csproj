@@ -8,20 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.2"/>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.8.0"/>
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.3" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.8.1" />
     <PackageReference Include="Amazon.Lambda.Logging.AspNetCore" Version="4.1.1"/>
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4"/>
-    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0"/>
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.9.4"/>
-    <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2"/>
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.2"/>
-    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.17" />
-    <PackageReference Include="Bogus" Version="35.6.3"/>
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.5" />
+    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.1" />
+    <PackageReference Include="AWSSDK.Comprehend" Version="4.0.2.13" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.14" />
+    <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.13" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.14" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.22" />
+    <PackageReference Include="Bogus" Version="35.6.5" />
     <PackageReference Include="dotenv.net" Version="4.0.0"/>
-    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2"/>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7"/>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7"/>
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>

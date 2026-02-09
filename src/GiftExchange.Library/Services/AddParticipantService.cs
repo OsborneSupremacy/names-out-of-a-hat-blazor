@@ -8,14 +8,18 @@ internal class AddParticipantService : IApiGatewayHandler
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly IContentModerationService _contentModerationService;
+
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
         ApiGatewayAdapter adapter,
-        GiftExchangeProvider giftExchangeProvider
+        GiftExchangeProvider giftExchangeProvider,
+        IContentModerationService contentModerationService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -28,6 +32,19 @@ internal class AddParticipantService : IApiGatewayHandler
 
     private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request)
     {
+        // Validate content before processing
+        var (isValid, errorMessage) = await _contentModerationService.ValidateContentAsync(
+            request.Name,
+            "participant name");
+
+        if (!isValid)
+        {
+            return new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException(errorMessage),
+                HttpStatusCode.BadRequest
+            );
+        }
+
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);

@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.Comprehend;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmail;
 using Amazon.SQS;
@@ -23,6 +24,7 @@ internal static class ServiceProviderBuilder
                 .AddDefaultAWSOptions(new AWSOptions { Region = region })
                 .AddAWSService<IAmazonDynamoDB>()
                 .AddAWSService<IAmazonSQS>()
+                .AddAWSService<IAmazonComprehend>()
                 .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(); // AddAWSService fails for SES
         }
 
@@ -35,6 +37,7 @@ internal static class ServiceProviderBuilder
         internal IServiceCollection AddBusinessServices() =>
             services
                 .AddSingleton<GiftExchangeProvider>()
+                .AddSingleton<IContentModerationService, ContentModerationService>()
 
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")

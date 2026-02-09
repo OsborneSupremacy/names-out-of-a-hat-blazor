@@ -90,3 +90,21 @@ resource "aws_iam_role_policy" "giftexchange_app_sqs_policy" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "giftexchange_app_comprehend_policy" {
+  name = "giftexchange-app-comprehend-policy"
+  role = aws_iam_role.giftexchange_app_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "comprehend:DetectToxicContent"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
