@@ -12,7 +12,7 @@ internal class ContentModerationService : IContentModerationService
 
     // Threshold for toxicity detection (0.0 to 1.0)
     // 0.5 is recommended by AWS for balanced detection
-    private const float ToxicityThreshold = 0.5f;
+    private readonly float _toxicityThreshold;
 
     public ContentModerationService(
         IAmazonComprehend comprehendClient,
@@ -20,6 +20,7 @@ internal class ContentModerationService : IContentModerationService
     {
         _comprehendClient = comprehendClient ?? throw new ArgumentNullException(nameof(comprehendClient));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _toxicityThreshold = (float)EnvReader.GetDoubleValue("CONTENT_MODERATION_THRESHOLD");
     }
 
     /// <summary>
@@ -48,7 +49,7 @@ internal class ContentModerationService : IContentModerationService
 
             var result = response.ResultList[0];
             var toxicLabels = result.Labels
-                .Where(label => label.Score >= ToxicityThreshold)
+                .Where(label => label.Score >= _toxicityThreshold)
                 .ToList();
 
             if (toxicLabels.Count <= 0)
