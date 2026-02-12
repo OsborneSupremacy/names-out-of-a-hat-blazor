@@ -28,6 +28,7 @@ internal class TestDataService
         {
             Id = newHat.HatId,
             Name = newHat.HatName,
+            Status = HatStatus.InProgress,
             AdditionalInformation = newHat.AdditionalInformation,
             PriceRange = newHat.PriceRange,
             RecipientsAssigned = newHat.RecipientsAssigned,

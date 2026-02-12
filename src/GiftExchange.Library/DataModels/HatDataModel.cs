@@ -10,6 +10,8 @@ public record HatDataModel
 
     public required string HatName { get; init; }
 
+    public required string Status { get; init; }
+
     public required string AdditionalInformation { get; init; }
 
     public required string PriceRange { get; init; }

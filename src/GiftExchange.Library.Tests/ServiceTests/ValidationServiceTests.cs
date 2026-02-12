@@ -34,6 +34,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
         {
             Id = Guid.NewGuid(),
             Name = string.Empty,
+            Status = HatStatus.InProgress,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             Organizer = Persons.Empty,
@@ -74,6 +75,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
         {
             Id = Guid.NewGuid(),
             Name = string.Empty,
+            Status = HatStatus.InProgress,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             Organizer = Persons.Empty,
@@ -120,6 +122,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
         {
             Id = Guid.NewGuid(),
             Name = string.Empty,
+            Status = HatStatus.InProgress,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             Organizer = Persons.Empty,
@@ -172,6 +175,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
         {
             Id = Guid.NewGuid(),
             Name = string.Empty,
+            Status = HatStatus.InProgress,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             Organizer = Persons.Empty,

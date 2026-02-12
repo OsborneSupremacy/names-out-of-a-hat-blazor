@@ -6,6 +6,8 @@ public record Hat
 
     public required string Name { get; init; }
 
+    public required string Status { get; init; }
+
     public required string AdditionalInformation { get; init; }
 
     public required string PriceRange { get; init; }
@@ -27,6 +29,7 @@ internal static class Hats
     {
         Id = Guid.Empty,
         Name = string.Empty,
+        Status = HatStatus.InProgress,
         AdditionalInformation = string.Empty,
         PriceRange = string.Empty,
         Organizer = Persons.Empty,

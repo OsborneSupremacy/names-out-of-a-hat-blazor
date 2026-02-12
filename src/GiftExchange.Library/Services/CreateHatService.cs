@@ -54,6 +54,7 @@ internal class CreateHatService : IApiGatewayHandler
         {
             HatId = Guid.NewGuid(),
             HatName = request.HatName,
+            Status = HatStatus.InProgress,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             OrganizerEmail = request.OrganizerEmail,

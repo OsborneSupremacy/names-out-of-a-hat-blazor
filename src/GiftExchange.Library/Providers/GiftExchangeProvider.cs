@@ -129,7 +129,9 @@ public class GiftExchangeProvider
 
         var hat = new Hat
         {
-            Id = Guid.Parse(response.Item["HatId"].S), Name = response.Item["HatName"].S,
+            Id = Guid.Parse(response.Item["HatId"].S),
+            Name = response.Item["HatName"].S,
+            Status = response.Item.TryGetValue("Status", out var status) ? status.S : HatStatus.InProgress,
             AdditionalInformation = response.Item["AdditionalInformation"].S,
             PriceRange = response.Item["PriceRange"].S,
             RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
