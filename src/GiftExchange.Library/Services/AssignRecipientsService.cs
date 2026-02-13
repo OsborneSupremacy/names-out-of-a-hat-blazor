@@ -44,18 +44,13 @@ internal class AssignRecipientsService : IApiGatewayHandler
         if(hat.InvitationsQueued)
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Cannot assign recipients after invitations have been sent."), HttpStatusCode.Conflict);
 
-        // the validation method should have been called first, but we'll re-validate.
-        // Will not return details since the client should get those from the validation endpoint.
-        var validResult = await _validationService
-            .ValidateAsync(new ValidateHatRequest
-            {
-                HatId = request.HatId,
-                OrganizerEmail = request.OrganizerEmail
-            })
-            .ConfigureAwait(false);
-
-        if (validResult.IsFaulted || !validResult.Value.Success)
-            return new Result<StatusCodeOnlyResponse>(new AggregateException("Validation failed."), HttpStatusCode.BadRequest);
+        if(!new[]
+           {
+               HatStatus.ReadyForAssignment,
+               HatStatus.NamesAssigned
+           }.Contains(hat.Status))
+            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException($"Hat with id {request.HatId} is not in a valid state to have names assigned."),
+                HttpStatusCode.BadRequest);
 
         var (shakeSuccess, participantsOut) = HatShakerService
             .ShakeMultiple(hat.Participants, ShakeAttempts);
