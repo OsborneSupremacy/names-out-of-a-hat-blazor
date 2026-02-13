@@ -18,6 +18,14 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
   const [error, setError] = useState<string>('')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
+  const formatStatus = (status: string): string => {
+    // Convert "IN_PROGRESS" to "In Progress"
+    return status
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+  }
+
   useEffect(() => {
     async function loadHats() {
       try {
@@ -93,8 +101,8 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
                         <div className="gift-exchange-info">
                           <strong>{hat.hatName}</strong>
                         </div>
-                        <span className={`status-pill ${hat.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                          {hat.status}
+                        <span className={`status-pill ${hat.status.toLowerCase().replace(/_/g, '-')}`}>
+                          {formatStatus(hat.status)}
                         </span>
                       </li>
                     ))}

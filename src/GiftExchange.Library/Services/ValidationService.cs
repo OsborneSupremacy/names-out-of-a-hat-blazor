@@ -27,7 +27,7 @@ internal class ValidationService : IApiGatewayHandler
             return new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"),
                 HttpStatusCode.NotFound);
 
-        if(hat.Status != HatStatus.InProgress)
+        if(!new[] { HatStatus.InProgress, HatStatus.ReadyForAssignment }.Contains(hat.Status))
             return new Result<ValidateHatResponse>(new InvalidOperationException($"Hat with id {request.HatId} is not in a valid state for validation."),
                 HttpStatusCode.BadRequest);
 

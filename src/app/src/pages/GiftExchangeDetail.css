@@ -115,87 +115,222 @@
   cursor: not-allowed;
 }
 
-.hat-status-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #e5e7eb;
-}
-
 .hat-status {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.status-badge {
-  padding: 0.375rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.status-badge.verified {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.status-badge.assigned {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.status-badge.invited {
-  background-color: #fce7f3;
-  color: #9f1239;
-}
-
-.status-badge.not-assigned {
-  background-color: #f3f4f6;
-  color: #6b7280;
-}
-
-.status-badge.not-invited {
-  background-color: #f3f4f6;
-  color: #6b7280;
-}
-
-.shake-hat-section {
+  justify-content: center;
   margin: 1.5rem 0;
+}
+
+.status-progression {
+  margin: 2rem 0;
+  padding: 2rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.status-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.status-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.status-step-indicator {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  border: 3px solid #d1d5db;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.status-step.active .status-step-indicator {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: scale(1.2);
+}
+
+.status-step-label {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  max-width: 100px;
+  line-height: 1.2;
+  transition: color 0.3s ease;
+}
+
+.status-step.active .status-step-label {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.status-step-connector {
+  flex: 1;
+  height: 3px;
+  background-color: #e5e7eb;
+  min-width: 20px;
+  max-width: 60px;
+  margin: 0 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .status-progression {
+    padding: 1.5rem 0.5rem;
+  }
+
+  .status-step-indicator {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .status-step.active .status-step-indicator {
+    transform: scale(1.15);
+  }
+
+  .status-step-label {
+    font-size: 0.625rem;
+    max-width: 70px;
+  }
+
+  .status-step-connector {
+    min-width: 10px;
+    max-width: 30px;
+    margin: 0 0.25rem;
+  }
+}
+
+.status-action-section {
+  margin: 2rem 0;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  border: 2px solid #e5e7eb;
+}
+
+.action-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
 }
 
-.shake-button {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
+.action-button {
+  padding: 1rem 2.5rem;
   font-size: 1.125rem;
   font-weight: 700;
+  border: none;
   border-radius: 0.5rem;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: white;
 }
 
-.shake-button:hover:not(:disabled) {
+.action-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -3px rgba(16, 185, 129, 0.4);
 }
 
-.shake-button:active:not(:disabled) {
+.action-button:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.shake-button:disabled {
+.action-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.validate-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.validate-button:hover:not(:disabled) {
+  box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.4);
+}
+
+.shake-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.shake-button:hover:not(:disabled) {
+  box-shadow: 0 10px 20px -3px rgba(16, 185, 129, 0.4);
+}
+
+.send-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.send-button:hover:not(:disabled) {
+  box-shadow: 0 10px 20px -3px rgba(102, 126, 234, 0.4);
+}
+
+.close-button {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.close-button:hover:not(:disabled) {
+  box-shadow: 0 10px 20px -3px rgba(245, 158, 11, 0.4);
+}
+
+.action-button-secondary {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.action-button-secondary:hover:not(:disabled) {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.action-button-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shake-again-button {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+}
+
+.shake-again-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.action-hint {
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+  margin: 0;
+}
+
+.action-complete {
+  color: #059669;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
 }
 
 .validation-errors {
@@ -220,41 +355,6 @@
 
 .validation-errors li {
   margin-bottom: 0.25rem;
-}
-
-.send-invitations-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 2rem 0;
-}
-
-.send-invitations-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.send-invitations-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -3px rgba(102, 126, 234, 0.4);
-}
-
-.send-invitations-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.send-invitations-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .hat-info-grid {
@@ -542,6 +642,58 @@
     border-color: #818cf8;
   }
 
+  .status-progression {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .status-step-indicator {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .status-step.active .status-step-indicator {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+    border-color: #818cf8;
+    box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4);
+  }
+
+  .status-step-label {
+    color: #9ca3af;
+  }
+
+  .status-step.active .status-step-label {
+    color: #818cf8;
+  }
+
+  .status-step-connector {
+    background-color: #374151;
+  }
+
+  .status-action-section {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .action-button-secondary {
+    background-color: #374151;
+    color: #d1d5db;
+    border-color: #4b5563;
+  }
+
+  .action-button-secondary:hover:not(:disabled) {
+    background-color: #4b5563;
+    border-color: #6b7280;
+  }
+
+  .action-hint {
+    color: #9ca3af;
+  }
+
+  .action-complete {
+    color: #34d399;
+  }
+
   .edit-input,
   .edit-textarea {
     background-color: #374151;
@@ -558,35 +710,6 @@
   .secondary-button:hover:not(:disabled) {
     background-color: #4b5563;
     border-color: #6b7280;
-  }
-
-  .hat-status-badges {
-    border-bottom-color: #374151;
-  }
-
-  .status-badge.verified {
-    background-color: #064e3b;
-    color: #d1fae5;
-  }
-
-  .status-badge.assigned {
-    background-color: #1e3a8a;
-    color: #dbeafe;
-  }
-
-  .status-badge.invited {
-    background-color: #831843;
-    color: #fce7f3;
-  }
-
-  .status-badge.not-assigned {
-    background-color: #374151;
-    color: #9ca3af;
-  }
-
-  .status-badge.not-invited {
-    background-color: #374151;
-    color: #9ca3af;
   }
 
   .validation-errors {
@@ -680,13 +803,5 @@
 
   .delete-section {
     border-top-color: #374151;
-  }
-
-  .send-invitations-button {
-    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
-  }
-
-  .send-invitations-button:hover:not(:disabled) {
-    box-shadow: 0 10px 20px -3px rgba(129, 140, 248, 0.4);
   }
 }

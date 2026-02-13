@@ -335,14 +335,111 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 )}
               </div>
 
-              <div className="hat-status-badges">
-                {hat.organizerVerified && <span className="status-badge verified">Verified</span>}
-                <span className={`status-badge ${hat.recipientsAssigned ? 'assigned' : 'not-assigned'}`}>
-                  {hat.recipientsAssigned ? 'Recipients Assigned' : 'Recipients Not Assigned'}
-                </span>
-                <span className={`status-badge ${hat.invitationsQueued ? 'invited' : 'not-invited'}`}>
-                  {hat.invitationsQueued ? 'Invitations Sent' : 'Invitations Not Sent'}
-                </span>
+              <div className="status-progression">
+                <div className="status-steps">
+                  <div className={`status-step ${hat.status === 'IN_PROGRESS' ? 'active' : ''}`}>
+                    <div className="status-step-indicator"></div>
+                    <div className="status-step-label">In Progress</div>
+                  </div>
+                  <div className="status-step-connector"></div>
+                  <div className={`status-step ${hat.status === 'READY_FOR_ASSIGNMENT' ? 'active' : ''}`}>
+                    <div className="status-step-indicator"></div>
+                    <div className="status-step-label">Ready For Assignment</div>
+                  </div>
+                  <div className="status-step-connector"></div>
+                  <div className={`status-step ${hat.status === 'NAMES_ASSIGNED' ? 'active' : ''}`}>
+                    <div className="status-step-indicator"></div>
+                    <div className="status-step-label">Names Assigned</div>
+                  </div>
+                  <div className="status-step-connector"></div>
+                  <div className={`status-step ${hat.status === 'INVITATIONS_SENT' ? 'active' : ''}`}>
+                    <div className="status-step-indicator"></div>
+                    <div className="status-step-label">Invitations Sent</div>
+                  </div>
+                  <div className="status-step-connector"></div>
+                  <div className={`status-step ${hat.status === 'CLOSED' ? 'active' : ''}`}>
+                    <div className="status-step-indicator"></div>
+                    <div className="status-step-label">Closed</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="status-action-section">
+                {hat.status === 'IN_PROGRESS' && (
+                  <div className="action-container">
+                    <button
+                      className="action-button validate-button"
+                      onClick={() => alert('Validate functionality coming soon!')}
+                      disabled={hat.participants.length < 3}
+                    >
+                      Validate Gift Exchange
+                    </button>
+                    {hat.participants.length < 3 && (
+                      <p className="action-hint">Add at least 3 participants to validate</p>
+                    )}
+                  </div>
+                )}
+
+                {hat.status === 'READY_FOR_ASSIGNMENT' && (
+                  <div className="action-container">
+                    <button
+                      className="action-button shake-button"
+                      onClick={handleShakeHat}
+                      disabled={isAssigning}
+                    >
+                      {isAssigning ? 'Shaking...' : 'Shake the Hat!'}
+                    </button>
+                    <p className="action-hint">Assign gift recipients to participants</p>
+                    {validationErrors.length > 0 && (
+                      <div className="validation-errors">
+                        <h4>Cannot shake the hat:</h4>
+                        <ul>
+                          {validationErrors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {hat.status === 'NAMES_ASSIGNED' && (
+                  <div className="action-container">
+                    <button
+                      className="action-button send-button"
+                      onClick={handleSendInvitations}
+                      disabled={isSendingInvitations}
+                    >
+                      {isSendingInvitations ? 'Sending Invitations...' : 'Send Invitations'}
+                    </button>
+                    <button
+                      className="action-button-secondary shake-again-button"
+                      onClick={handleShakeHat}
+                      disabled={isAssigning}
+                    >
+                      {isAssigning ? 'Shaking...' : 'Shake the Hat Again'}
+                    </button>
+                    <p className="action-hint">Send invitations to all participants, or re-shuffle assignments</p>
+                  </div>
+                )}
+
+                {hat.status === 'INVITATIONS_SENT' && (
+                  <div className="action-container">
+                    <button
+                      className="action-button close-button"
+                      onClick={() => alert('Close functionality coming soon!')}
+                    >
+                      Close Gift Exchange
+                    </button>
+                    <p className="action-hint">Mark this gift exchange as completed</p>
+                  </div>
+                )}
+
+                {hat.status === 'CLOSED' && (
+                  <div className="action-container">
+                    <p className="action-complete">This gift exchange is closed</p>
+                  </div>
+                )}
               </div>
 
               <div className="hat-info-grid">
@@ -395,40 +492,6 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                   </p>
                 </div>
               </div>
-
-              {!hat.invitationsQueued && hat.participants.length >= 3 && (
-                <div className="shake-hat-section">
-                  <button
-                    className="shake-button"
-                    onClick={handleShakeHat}
-                    disabled={isAssigning}
-                  >
-                    {isAssigning ? 'Shaking...' : hat.recipientsAssigned ? 'Shake the Hat Again!' : 'Shake the Hat!'}
-                  </button>
-                  {validationErrors.length > 0 && (
-                    <div className="validation-errors">
-                      <h4>Cannot shake the hat:</h4>
-                      <ul>
-                        {validationErrors.map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {hat.recipientsAssigned && !hat.invitationsQueued && (
-                <div className="send-invitations-section">
-                  <button
-                    className="send-invitations-button"
-                    onClick={handleSendInvitations}
-                    disabled={isSendingInvitations}
-                  >
-                    {isSendingInvitations ? 'Sending Invitations...' : 'Send Invitations'}
-                  </button>
-                </div>
-              )}
 
               <div className="participants-section">
                 <div className="section-header">

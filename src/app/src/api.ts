@@ -94,6 +94,7 @@ export interface Hat {
     email: string
   }
   participants: Participant[]
+  status: string
   organizerVerified: boolean
   recipientsAssigned: boolean
   invitationsQueued: boolean
