@@ -6,11 +6,17 @@ internal class ValidationService : IApiGatewayHandler
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly HatPreconditionValidator _hatPreconditionValidator;
+
     private readonly ApiGatewayAdapter _adapter;
 
-    public ValidationService(GiftExchangeProvider giftExchangeProvider, ApiGatewayAdapter adapter)
+    public ValidationService(
+        GiftExchangeProvider giftExchangeProvider,
+        HatPreconditionValidator hatPreconditionValidator,
+        ApiGatewayAdapter adapter)
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -19,21 +25,22 @@ internal class ValidationService : IApiGatewayHandler
 
     public async Task<Result<ValidateHatResponse>> ValidateAsync(ValidateHatRequest request)
     {
-        var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId)
+        var hatPreconditionResult = await _hatPreconditionValidator
+            .ValidateAsync(new HatPreconditionRequest
+            {
+                HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                FieldsToModerate = [],
+                ValidHatStatuses = [ HatStatus.InProgress, HatStatus.ReadyForAssignment ]
+            })
             .ConfigureAwait(false);
 
-        if (!hatExists)
-            return new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"),
-                HttpStatusCode.NotFound);
+        if (!hatPreconditionResult.PreconditionsMet)
+            return new Result<ValidateHatResponse>(
+                new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
+                hatPreconditionResult.PreconditionFailureMessage.StatusCode);
 
-        if(!new[]
-           {
-               HatStatus.InProgress,
-               HatStatus.ReadyForAssignment
-           }.Contains(hat.Status))
-            return new Result<ValidateHatResponse>(new InvalidOperationException($"Hat with id {request.HatId} is not in a valid state for validation."),
-                HttpStatusCode.BadRequest);
+        var hat = hatPreconditionResult.Hat;
 
         var result = await ValidateAsync(hat);
 

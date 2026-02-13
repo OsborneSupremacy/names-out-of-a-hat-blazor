@@ -6,16 +6,20 @@ internal class RemoveParticipantService : IApiGatewayHandler
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly HatPreconditionValidator _hatPreconditionValidator;
+
     private readonly ApiGatewayAdapter _adapter;
 
     public RemoveParticipantService(
         ILogger<RemoveParticipantService> logger,
         GiftExchangeProvider giftExchangeProvider,
+        HatPreconditionValidator hatPreconditionValidator,
         ApiGatewayAdapter adapter
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -24,15 +28,22 @@ internal class RemoveParticipantService : IApiGatewayHandler
 
     internal async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(RemoveParticipantRequest request)
     {
-        var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId)
+        var hatPreconditionResult = await _hatPreconditionValidator
+            .ValidateAsync(new HatPreconditionRequest
+            {
+                HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                FieldsToModerate = [],
+                ValidHatStatuses = [HatStatus.InProgress, HatStatus.ReadyForAssignment, HatStatus.NamesAssigned]
+            })
             .ConfigureAwait(false);
 
-        if(!hatExists)
-            return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+        if (!hatPreconditionResult.PreconditionsMet)
+            return new Result<StatusCodeOnlyResponse>(
+                new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
+                hatPreconditionResult.PreconditionFailureMessage.StatusCode);
 
-        if(hat.InvitationsQueued)
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participants cannot be removed after invitations have been queued."), HttpStatusCode.BadRequest);
+        var hat = hatPreconditionResult.Hat;
 
         if(request.Email.ContentEquals(hat.Organizer.Email))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("The organizer cannot be removed."), HttpStatusCode.BadRequest);

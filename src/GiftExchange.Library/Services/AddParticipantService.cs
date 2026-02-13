@@ -6,20 +6,21 @@ internal class AddParticipantService : IApiGatewayHandler
 
     private readonly ApiGatewayAdapter _adapter;
 
+    private readonly HatPreconditionValidator _hatPreconditionValidator;
+
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
-    private readonly IContentModerationService _contentModerationService;
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
         ApiGatewayAdapter adapter,
-        GiftExchangeProvider giftExchangeProvider,
-        IContentModerationService contentModerationService
+        HatPreconditionValidator hatPreconditionValidator,
+        GiftExchangeProvider giftExchangeProvider
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
-        _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -32,34 +33,26 @@ internal class AddParticipantService : IApiGatewayHandler
 
     private async Task<Result<StatusCodeOnlyResponse>> AddParticipantAsync(AddParticipantRequest request)
     {
-        // Validate content before processing
-        var (isValid, errorMessage) = await _contentModerationService.ValidateContentAsync(
-            request.Name,
-            "participant name");
-
-        if (!isValid)
-        {
-            return new Result<StatusCodeOnlyResponse>(
-                new InvalidOperationException(errorMessage),
-                HttpStatusCode.BadRequest
-            );
-        }
-
-        var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId)
+        var hatPreconditionResult = await _hatPreconditionValidator
+            .ValidateAsync(new HatPreconditionRequest
+            {
+                HatId =  request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                FieldsToModerate = new Dictionary<string, string>
+                {
+                    { "participant name", request.Name }
+                },
+                ValidHatStatuses = [ HatStatus.InProgress, HatStatus.ReadyForAssignment, HatStatus.NamesAssigned]
+            })
             .ConfigureAwait(false);
 
-        if(!hatExists)
+        if (!hatPreconditionResult.PreconditionsMet)
             return new Result<StatusCodeOnlyResponse>(
-                new KeyNotFoundException($"Hat with id {request.HatId} not found"),
-                HttpStatusCode.NotFound
+                new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
+                hatPreconditionResult.PreconditionFailureMessage.StatusCode
             );
 
-        if(hat.InvitationsQueued)
-            return new Result<StatusCodeOnlyResponse>(
-                new InvalidOperationException("Cannot add participants after invitations have been sent."),
-                HttpStatusCode.Conflict
-            );
+        var hat = hatPreconditionResult.Hat;
 
         var existingParticipants = await _giftExchangeProvider
             .GetParticipantsAsync(request.OrganizerEmail, request.HatId)

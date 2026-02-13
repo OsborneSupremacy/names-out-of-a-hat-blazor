@@ -18,9 +18,12 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
     private readonly string _queueUrl;
 
+    private readonly HatPreconditionValidator _hatPreconditionValidator;
+
     public EnqueueInvitationsService(
         GiftExchangeProvider giftExchangeProvider,
         ApiGatewayAdapter adapter,
+        HatPreconditionValidator hatPreconditionValidator,
         JsonService jsonService,
         EmailCompositionService emailCompositionService,
         IAmazonSQS sqsClient
@@ -28,6 +31,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+        _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
         _emailCompositionService =
             emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
@@ -40,12 +44,22 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
     internal async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(SendInvitationsRequest request)
     {
-        var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+        var hatPreconditionResult = await _hatPreconditionValidator
+            .ValidateAsync(new HatPreconditionRequest
+            {
+                HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                FieldsToModerate = [],
+                ValidHatStatuses = [ HatStatus.NamesAssigned ]
+            })
+            .ConfigureAwait(false);
 
-        if(!hatExists)
-            return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"),
-                HttpStatusCode.NotFound);
+        if (!hatPreconditionResult.PreconditionsMet)
+            return new Result<StatusCodeOnlyResponse>(
+                new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
+                hatPreconditionResult.PreconditionFailureMessage.StatusCode);
+
+        var hat = hatPreconditionResult.Hat;
 
         if (!hat.RecipientsAssigned)
             return new Result<StatusCodeOnlyResponse>(new AggregateException("Recipients have not yet been assigned."),

@@ -36,12 +36,10 @@ internal class CreateHatService : IApiGatewayHandler
             });
 
         if (!isValid)
-        {
             return new Result<CreateHatResponse>(
                 new InvalidOperationException(string.Join(" ", errorMessages)),
                 HttpStatusCode.BadRequest
             );
-        }
 
         var (hatExists, existingHatId) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)

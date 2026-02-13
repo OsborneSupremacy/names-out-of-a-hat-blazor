@@ -8,6 +8,8 @@ internal class AssignRecipientsService : IApiGatewayHandler
 
     private readonly ValidationService _validationService;
 
+    private readonly HatPreconditionValidator _hatPreconditionValidator;
+
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
     private const int ShakeAttempts = 25;
@@ -16,12 +18,14 @@ internal class AssignRecipientsService : IApiGatewayHandler
         ILogger<AssignRecipientsService> logger,
         ApiGatewayAdapter adapter,
         GiftExchangeProvider giftExchangeProvider,
+        HatPreconditionValidator hatPreconditionValidator,
         ValidationService validationService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
     }
 
@@ -35,22 +39,22 @@ internal class AssignRecipientsService : IApiGatewayHandler
         AssignRecipientsRequest request
         )
     {
-        var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId).ConfigureAwait(false);
+        var hatPreconditionResult = await _hatPreconditionValidator
+            .ValidateAsync(new HatPreconditionRequest
+            {
+                HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                FieldsToModerate = new Dictionary<string, string>(),
+                ValidHatStatuses = [HatStatus.ReadyForAssignment, HatStatus.NamesAssigned]
+            })
+            .ConfigureAwait(false);
 
-        if(!hatExists)
-            return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+        if (!hatPreconditionResult.PreconditionsMet)
+            return new Result<StatusCodeOnlyResponse>(
+                new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
+                hatPreconditionResult.PreconditionFailureMessage.StatusCode);
 
-        if(hat.InvitationsQueued)
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Cannot assign recipients after invitations have been sent."), HttpStatusCode.Conflict);
-
-        if(!new[]
-           {
-               HatStatus.ReadyForAssignment,
-               HatStatus.NamesAssigned
-           }.Contains(hat.Status))
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException($"Hat with id {request.HatId} is not in a valid state to have names assigned."),
-                HttpStatusCode.BadRequest);
+        var hat = hatPreconditionResult.Hat;
 
         var (shakeSuccess, participantsOut) = HatShakerService
             .ShakeMultiple(hat.Participants, ShakeAttempts);

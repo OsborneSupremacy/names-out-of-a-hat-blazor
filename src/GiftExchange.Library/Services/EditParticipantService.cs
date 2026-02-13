@@ -5,15 +5,19 @@ internal class EditParticipantService : IApiGatewayHandler
 {
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly HatPreconditionValidator _hatPreconditionValidator;
+
     private readonly ApiGatewayAdapter _adapter;
 
 
     public EditParticipantService(
         GiftExchangeProvider giftExchangeProvider,
+        HatPreconditionValidator hatPreconditionValidator,
         ApiGatewayAdapter adapter
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
+        _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
 
     }
@@ -28,15 +32,22 @@ internal class EditParticipantService : IApiGatewayHandler
         EditParticipantRequest request
         )
     {
-        var (hatExists, hat) = await _giftExchangeProvider
-            .GetHatAsync(request.OrganizerEmail, request.HatId)
+        var hatPreconditionResult = await _hatPreconditionValidator
+            .ValidateAsync(new HatPreconditionRequest
+            {
+                HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
+                FieldsToModerate = [],
+                ValidHatStatuses = [HatStatus.InProgress, HatStatus.ReadyForAssignment, HatStatus.NamesAssigned]
+            })
             .ConfigureAwait(false);
 
-        if(!hatExists)
-            return new Result<StatusCodeOnlyResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound);
+        if (!hatPreconditionResult.PreconditionsMet)
+            return new Result<StatusCodeOnlyResponse>(
+                new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
+                hatPreconditionResult.PreconditionFailureMessage.StatusCode);
 
-        if(hat.InvitationsQueued)
-            return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Cannot edit participants after invitations have been sent."), HttpStatusCode.Conflict);
+        var hat = hatPreconditionResult.Hat;
 
         var (participantExists, participant) = await _giftExchangeProvider
             .GetParticipantAsync(
