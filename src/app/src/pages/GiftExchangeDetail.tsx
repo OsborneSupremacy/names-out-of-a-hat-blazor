@@ -230,6 +230,35 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     }
   }
 
+  const handleValidate = async () => {
+    if (!hatId || !hat) return
+
+    setIsAssigning(true)
+    setValidationErrors([])
+    setError('')
+
+    try {
+      const validationResult = await validateHat({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      if (!validationResult.success) {
+        setValidationErrors(validationResult.errors)
+      } else {
+        // Validation successful - reload to get updated status
+        const updatedHat = await getHat(userEmail, hatId, false)
+        setHat(updatedHat)
+        setValidationErrors([])
+      }
+    } catch (err) {
+      console.error('Error validating gift exchange:', err)
+      setError(err instanceof Error ? err.message : 'Failed to validate gift exchange')
+    } finally {
+      setIsAssigning(false)
+    }
+  }
+
   const handleShakeHat = async () => {
     if (!hatId || !hat) return
 
@@ -369,13 +398,23 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                   <div className="action-container">
                     <button
                       className="action-button validate-button"
-                      onClick={() => alert('Validate functionality coming soon!')}
-                      disabled={hat.participants.length < 3}
+                      onClick={handleValidate}
+                      disabled={hat.participants.length < 3 || isAssigning}
                     >
-                      Validate Gift Exchange
+                      {isAssigning ? 'Validating...' : 'Validate Gift Exchange'}
                     </button>
                     {hat.participants.length < 3 && (
                       <p className="action-hint">Add at least 3 participants to validate</p>
+                    )}
+                    {validationErrors.length > 0 && (
+                      <div className="validation-errors">
+                        <h4>Validation failed:</h4>
+                        <ul>
+                          {validationErrors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
                 )}
