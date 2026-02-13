@@ -58,7 +58,7 @@ internal class RemoveParticipantService : IApiGatewayHandler
             .ConfigureAwait(false);
 
         // set recipients assigned to false since the hat composition has changed
-        if(hat.RecipientsAssigned)
+        if(hat.RecipientsAssigned || hat.Status == HatStatus.NamesAssigned)
             await _giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false)
                 .ConfigureAwait(false);
 
