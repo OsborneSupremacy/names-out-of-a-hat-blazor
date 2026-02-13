@@ -41,6 +41,7 @@ public class GiftExchangeProvider
             {
                 HatId = Guid.Parse(i["HatId"].S),
                 HatName = i["HatName"].S,
+                Status = i.TryGetValue("Status", out var status) ? status.S : HatStatus.InProgress,
                 InvitationsQueued = i.TryGetValue("InvitationsQueued", out var iq) && (iq.BOOL ?? false)
             })
             .ToImmutableList();
@@ -60,6 +61,7 @@ public class GiftExchangeProvider
             ["HatId"] = new() { S = hatDataModel.HatId.ToString() },
             ["OrganizerName"] = new() { S = hatDataModel.OrganizerName },
             ["HatName"] = new() { S = hatDataModel.HatName },
+            ["Status"] = new() { S = hatDataModel.Status },
             ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
             ["PriceRange"] = new() { S = hatDataModel.PriceRange },
             ["OrganizerVerified"] = new() { BOOL = hatDataModel.OrganizerVerified },
@@ -80,7 +82,8 @@ public class GiftExchangeProvider
             await _dynamoDbClient.PutItemAsync(request)
                 .ConfigureAwait(false);
             return true;
-        } catch (ConditionalCheckFailedException)
+        }
+        catch (ConditionalCheckFailedException)
         {
             return false;
         }
@@ -344,9 +347,10 @@ public class GiftExchangeProvider
                 ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT" },
                 ["SK"] = new() { S = $"HAT#{requestHatId}" },
             },
-            UpdateExpression = "SET RecipientsAssigned = :recipientsAssigned",
+            UpdateExpression = "SET Status = :status, RecipientsAssigned = :recipientsAssigned",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
+                [":status"] = new() { S = HatStatus.NamesAssigned },
                 [":recipientsAssigned"] = new() { BOOL = recipientsAssigned }
             }
         };
@@ -507,9 +511,10 @@ public class GiftExchangeProvider
                 ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
                 ["SK"] = new() { S = $"HAT#{hatId}" }
             },
-            UpdateExpression = "SET InvitationsQueued = :invitationsQueued, InvitationsQueuedDate = :invitationsQueuedDate",
+            UpdateExpression = "SET Status = :status, InvitationsQueued = :invitationsQueued, InvitationsQueuedDate = :invitationsQueuedDate",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
+                [":status"] = new() { S = HatStatus.InvitationsSent },
                 [":invitationsQueued"] = new() { BOOL = true },
                 [":invitationsQueuedDate"] = new() { S = DateTimeOffset.UtcNow.ToString("o") }
             }

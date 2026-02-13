@@ -96,7 +96,8 @@ internal class AddParticipantService : IApiGatewayHandler
         if (hat.RecipientsAssigned) // unassign recipients if they were already assigned
             tasks.Add(_giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false));
 
-        await Task.WhenAll(tasks)
+        await Task
+            .WhenAll(tasks)
             .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(
