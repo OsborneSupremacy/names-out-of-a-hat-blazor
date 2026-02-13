@@ -93,8 +93,8 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
                         <div className="gift-exchange-info">
                           <strong>{hat.hatName}</strong>
                         </div>
-                        <span className={`status-pill ${hat.invitationsQueued ? 'sent' : 'incomplete'}`}>
-                          {hat.invitationsQueued ? 'Invites Sent' : 'Incomplete'}
+                        <span className={`status-pill ${hat.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                          {hat.status}
                         </span>
                       </li>
                     ))}

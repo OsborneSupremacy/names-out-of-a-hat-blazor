@@ -23,9 +23,22 @@ internal class ValidationService : IApiGatewayHandler
             .GetHatAsync(request.OrganizerEmail, request.HatId)
             .ConfigureAwait(false);
 
-        return !hatExists ?
-            new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"), HttpStatusCode.NotFound) :
-            await ValidateAsync(hat);
+        if (!hatExists)
+            return new Result<ValidateHatResponse>(new KeyNotFoundException($"Hat with id {request.HatId} not found"),
+                HttpStatusCode.NotFound);
+
+        if(hat.Status != HatStatus.InProgress)
+            return new Result<ValidateHatResponse>(new InvalidOperationException($"Hat with id {request.HatId} is not in a valid state for validation."),
+                HttpStatusCode.BadRequest);
+
+        var result = await ValidateAsync(hat);
+
+        var newStatus = (result.IsFaulted || !result.Value.Success) ? HatStatus.InProgress : HatStatus.ReadyForAssignment;
+
+        await _giftExchangeProvider
+            .UpdateHatStatusAsync(request.OrganizerEmail, request.HatId, newStatus);
+
+        return result;
     }
 
     internal async Task<Result<ValidateHatResponse>> ValidateAsync(Hat hat)

@@ -4,6 +4,7 @@ import { apiConfig } from './aws-config'
 export interface HatMetadata {
   hatId: string
   hatName: string
+  status: string
   invitationsQueued: boolean
 }
 

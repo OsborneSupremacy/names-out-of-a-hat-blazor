@@ -41,7 +41,7 @@ public class GiftExchangeProvider
             {
                 HatId = Guid.Parse(i["HatId"].S),
                 HatName = i["HatName"].S,
-                Status = i.TryGetValue("Status", out var status) ? status.S : HatStatus.InProgress,
+                Status = i.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress,
                 InvitationsQueued = i.TryGetValue("InvitationsQueued", out var iq) && (iq.BOOL ?? false)
             })
             .ToImmutableList();
@@ -61,7 +61,7 @@ public class GiftExchangeProvider
             ["HatId"] = new() { S = hatDataModel.HatId.ToString() },
             ["OrganizerName"] = new() { S = hatDataModel.OrganizerName },
             ["HatName"] = new() { S = hatDataModel.HatName },
-            ["Status"] = new() { S = hatDataModel.Status },
+            ["HatStatus"] = new() { S = hatDataModel.Status },
             ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
             ["PriceRange"] = new() { S = hatDataModel.PriceRange },
             ["OrganizerVerified"] = new() { BOOL = hatDataModel.OrganizerVerified },
@@ -134,7 +134,7 @@ public class GiftExchangeProvider
         {
             Id = Guid.Parse(response.Item["HatId"].S),
             Name = response.Item["HatName"].S,
-            Status = response.Item.TryGetValue("Status", out var status) ? status.S : HatStatus.InProgress,
+            Status = response.Item.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress,
             AdditionalInformation = response.Item["AdditionalInformation"].S,
             PriceRange = response.Item["PriceRange"].S,
             RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
@@ -210,6 +210,28 @@ public class GiftExchangeProvider
         }
 
         await Task.WhenAll(deleteTasks).ConfigureAwait(false);
+    }
+
+    public async Task UpdateHatStatusAsync(string organizerEmail, Guid hatId, string newStatus)
+    {
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
+                ["SK"] = new() { S = $"HAT#{hatId}" }
+            },
+            UpdateExpression = "SET HatStatus = :status",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":status"] = new() { S = newStatus }
+            }
+        };
+
+        await _dynamoDbClient
+            .UpdateItemAsync(updateRequest)
+            .ConfigureAwait(false);
     }
 
     public async Task<Participant> CreateParticipantAsync(
@@ -339,6 +361,8 @@ public class GiftExchangeProvider
         bool recipientsAssigned
         )
     {
+        var newStatus = recipientsAssigned ? HatStatus.NamesAssigned : HatStatus.InProgress;
+
         var updateRequest = new UpdateItemRequest
         {
             TableName = _tableName,
@@ -347,10 +371,10 @@ public class GiftExchangeProvider
                 ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT" },
                 ["SK"] = new() { S = $"HAT#{requestHatId}" },
             },
-            UpdateExpression = "SET Status = :status, RecipientsAssigned = :recipientsAssigned",
+            UpdateExpression = "SET HatStatus = :status, RecipientsAssigned = :recipientsAssigned",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                [":status"] = new() { S = HatStatus.NamesAssigned },
+                [":status"] = new() { S = newStatus },
                 [":recipientsAssigned"] = new() { BOOL = recipientsAssigned }
             }
         };
@@ -511,7 +535,7 @@ public class GiftExchangeProvider
                 ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
                 ["SK"] = new() { S = $"HAT#{hatId}" }
             },
-            UpdateExpression = "SET Status = :status, InvitationsQueued = :invitationsQueued, InvitationsQueuedDate = :invitationsQueuedDate",
+            UpdateExpression = "SET HatStatus = :status, InvitationsQueued = :invitationsQueued, InvitationsQueuedDate = :invitationsQueuedDate",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":status"] = new() { S = HatStatus.InvitationsSent },
