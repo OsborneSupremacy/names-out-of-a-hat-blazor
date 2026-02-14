@@ -12,33 +12,21 @@ internal class HatPreconditionValidator
         ILogger<HatPreconditionValidator> logger,
         GiftExchangeProvider giftExchangeProvider,
         IContentModerationService contentModerationService
-        )
+    )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
-        _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
+        _contentModerationService = contentModerationService ??
+                                    throw new ArgumentNullException(nameof(contentModerationService));
     }
 
     public async Task<HatPreconditionResponse> ValidateAsync(HatPreconditionRequest request)
     {
-        if (request.FieldsToModerate.Any())
-        {
-            var (isAcceptable, errorMessage) = await _contentModerationService
-                .ValidateMultipleFieldsAsync(request.FieldsToModerate)
-                .ConfigureAwait(false);
+        var moderationResponse = await ModerateAsync(request)
+            .ConfigureAwait(false);
 
-            if (!isAcceptable)
-                return new HatPreconditionResponse
-                {
-                    PreconditionsMet = false,
-                    PreconditionFailureMessage = new PreconditionFailureMessage
-                    {
-                        StatusCode = HttpStatusCode.BadRequest,
-                        FailureMessage = string.Join(';', errorMessage)
-                    },
-                    Hat = Hats.Empty
-                };
-        }
+        if(!moderationResponse.PreconditionsMet)
+            return moderationResponse;
 
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
@@ -75,4 +63,40 @@ internal class HatPreconditionValidator
             Hat = hat
         };
     }
+
+    private async Task<HatPreconditionResponse> ModerateAsync(HatPreconditionRequest request)
+    {
+        if (!request.FieldsToModerate.Any())
+            return new HatPreconditionResponse
+            {
+                PreconditionsMet = true,
+                PreconditionFailureMessage = PreconditionFailureMessages.Empty,
+                Hat = Hats.Empty
+            };
+
+        var (isAcceptable, errorMessage) = await _contentModerationService
+            .ValidateMultipleFieldsAsync(request.FieldsToModerate)
+            .ConfigureAwait(false);
+
+        if (!isAcceptable)
+            return (new HatPreconditionResponse
+            {
+                PreconditionsMet = false,
+                PreconditionFailureMessage = new PreconditionFailureMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest, FailureMessage = string.Join(';', errorMessage)
+                },
+                Hat = Hats.Empty
+            });
+
+        return new HatPreconditionResponse
+        {
+            PreconditionsMet = true,
+            PreconditionFailureMessage = PreconditionFailureMessages.Empty,
+            Hat = Hats.Empty
+        };
+    }
 }
+
+
+

@@ -470,7 +470,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                     >
                       Close Gift Exchange
                     </button>
-                    <p className="action-hint">Mark this gift exchange as completed</p>
+                    <p className="action-hint">Mark this gift exchange as completed. Once you do this, you will be able to view the picked recipients of all participants.</p>
                   </div>
                 )}
 

@@ -20,6 +20,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
             .AddUtilities()
             .AddBusinessServices()
             .AddSingleton(dynamoDbClient)
+            .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 
         _sut = (serviceProvider

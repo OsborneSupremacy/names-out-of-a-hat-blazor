@@ -38,6 +38,7 @@ internal static class ServiceProviderBuilder
             services
                 .AddSingleton<GiftExchangeProvider>()
                 .AddSingleton<IContentModerationService, ContentModerationService>()
+                .AddSingleton<HatPreconditionValidator>()
 
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")
