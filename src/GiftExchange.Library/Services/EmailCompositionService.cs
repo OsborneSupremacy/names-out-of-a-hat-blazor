@@ -25,7 +25,7 @@ public class EmailCompositionService
         var body = $"""
                     If you have any questions, contact <a href="mailto:{hat.Organizer.Email}">{hat.Organizer.Name}</a>.
                     <i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>
-                    <b>Names Out Of A Hat</b>
+                    <br /><br /><a href="https://namesoutofahat.com"><b>Names Out Of A Hat</b></a>
                     """;
 
         e.Add(body);
@@ -44,7 +44,7 @@ public class EmailCompositionService
         string.IsNullOrWhiteSpace(hat.Name) switch
         {
             true => $"{hat.Organizer.Name} has added you to a gift exchange!",
-            _ => $"Thank you for participating in {GetQualifiedName(hat.Name)}!"
+            _ => $"{hat.Organizer.Name} has added you to the {GetQualifiedName(hat.Name)}!"
         };
 
     private static string GetQualifiedName(string name) =>

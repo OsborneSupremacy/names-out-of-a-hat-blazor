@@ -275,19 +275,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     setError('')
 
     try {
-      // Step 1: Validate the hat
-      const validationResult = await validateHat({
-        organizerEmail: userEmail,
-        hatId,
-      })
-
-      if (!validationResult.success) {
-        setValidationErrors(validationResult.errors)
-        setIsAssigning(false)
-        return
-      }
-
-      // Step 2: Assign recipients
+      // Assign recipients (validation not needed - hat is already validated if status is NAMES_ASSIGNED)
       await assignRecipients({
         organizerEmail: userEmail,
         hatId,
