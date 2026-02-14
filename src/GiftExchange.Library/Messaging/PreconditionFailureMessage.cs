@@ -1,4 +1,4 @@
-﻿namespace GiftExchange.Library.Models;
+﻿namespace GiftExchange.Library.Messaging;
 
 internal record PreconditionFailureMessage
 {
@@ -9,7 +9,7 @@ internal record PreconditionFailureMessage
 
 internal static class PreconditionFailureMessages
 {
-    public static PreconditionFailureMessage Empty = new PreconditionFailureMessage
+    public static readonly PreconditionFailureMessage Empty = new PreconditionFailureMessage
     {
         StatusCode = HttpStatusCode.BadRequest,
         FailureMessage = string.Empty
