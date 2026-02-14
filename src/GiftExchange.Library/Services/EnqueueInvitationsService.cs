@@ -61,13 +61,6 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
         var hat = hatPreconditionResult.Hat;
 
-        if (!hat.RecipientsAssigned)
-            return new Result<StatusCodeOnlyResponse>(new AggregateException("Recipients have not yet been assigned."),
-                HttpStatusCode.Conflict);
-
-        if(hat.InvitationsQueued)
-            return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
-
         var messageGroupId = $"group-hat-{hat.Id}-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}";
 
         var sqsTasks = new List<Task>();

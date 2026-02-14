@@ -44,24 +44,27 @@ internal class HatPreconditionValidator
                 Hat = Hats.Empty
             };
 
-        if (!request.ValidHatStatuses.Contains(hat.Status))
+        if (request.ValidHatStatuses.Contains(hat.Status))
             return new HatPreconditionResponse
             {
-                PreconditionsMet = false,
-                PreconditionFailureMessage = new PreconditionFailureMessage
-                {
-                    StatusCode = HttpStatusCode.Conflict,
-                    FailureMessage = $"Hat status {hat.Status} is not valid for this operation"
-                },
-                Hat = Hats.Empty
+                PreconditionsMet = true,
+                PreconditionFailureMessage = PreconditionFailureMessages.Empty,
+                Hat = hat
             };
 
+
+        _logger.LogError("Hat status {HatStatus} is not valid for this operation. Valid statuses are {ValidStatuses}", hat.Status, string.Join(',', request.ValidHatStatuses));
         return new HatPreconditionResponse
         {
-            PreconditionsMet = true,
-            PreconditionFailureMessage = PreconditionFailureMessages.Empty,
-            Hat = hat
+            PreconditionsMet = false,
+            PreconditionFailureMessage = new PreconditionFailureMessage
+            {
+                StatusCode = HttpStatusCode.Conflict,
+                FailureMessage = $"Hat status {hat.Status} is not valid for this operation"
+            },
+            Hat = Hats.Empty
         };
+
     }
 
     private async Task<HatPreconditionResponse> ModerateAsync(HatPreconditionRequest request)

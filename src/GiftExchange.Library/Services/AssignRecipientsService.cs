@@ -44,8 +44,11 @@ internal class AssignRecipientsService : IApiGatewayHandler
             {
                 HatId = request.HatId,
                 OrganizerEmail = request.OrganizerEmail,
-                FieldsToModerate = new Dictionary<string, string>(),
-                ValidHatStatuses = [HatStatus.ReadyForAssignment, HatStatus.NamesAssigned]
+                FieldsToModerate = [],
+                ValidHatStatuses = [
+                    HatStatus.ReadyForAssignment,
+                    HatStatus.NamesAssigned
+                ]
             })
             .ConfigureAwait(false);
 

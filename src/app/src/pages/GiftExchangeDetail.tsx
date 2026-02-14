@@ -465,7 +465,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 {hat.status === 'INVITATIONS_SENT' && (
                   <div className="action-container">
                     <button
-                      className="action-button close-button"
+                      className="action-button action-close-button"
                       onClick={() => alert('Close functionality coming soon!')}
                     >
                       Close Gift Exchange

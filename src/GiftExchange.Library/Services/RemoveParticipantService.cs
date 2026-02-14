@@ -34,7 +34,11 @@ internal class RemoveParticipantService : IApiGatewayHandler
                 HatId = request.HatId,
                 OrganizerEmail = request.OrganizerEmail,
                 FieldsToModerate = [],
-                ValidHatStatuses = [HatStatus.InProgress, HatStatus.ReadyForAssignment, HatStatus.NamesAssigned]
+                ValidHatStatuses = [
+                    HatStatus.InProgress,
+                    HatStatus.ReadyForAssignment,
+                    HatStatus.NamesAssigned
+                ]
             })
             .ConfigureAwait(false);
 
@@ -70,7 +74,8 @@ internal class RemoveParticipantService : IApiGatewayHandler
 
         // set recipients assigned to false since the hat composition has changed
         if(hat.RecipientsAssigned || hat.Status == HatStatus.NamesAssigned)
-            await _giftExchangeProvider.UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false)
+            await _giftExchangeProvider
+                .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false)
                 .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.NoContent}, HttpStatusCode.NoContent);
