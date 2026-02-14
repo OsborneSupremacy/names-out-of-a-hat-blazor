@@ -53,7 +53,6 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                     EligibleRecipients = []
                 }
             ],
-            InvitationsQueued = false,
             InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
@@ -99,7 +98,6 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                     EligibleRecipients = []
                 }
             ],
-            InvitationsQueued = false,
             InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
@@ -151,7 +149,6 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                     EligibleRecipients = [ people[1].Name, people[2].Name ]
                 }
             ],
-            InvitationsQueued = false,
             InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
@@ -203,7 +200,6 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                     EligibleRecipients = [ people[1].Name, people[2].Name ]
                 }
             ],
-            InvitationsQueued = false,
             InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 

@@ -64,7 +64,6 @@ public class GiftExchangeProvider
             ["HatStatus"] = new() { S = hatDataModel.Status },
             ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
             ["PriceRange"] = new() { S = hatDataModel.PriceRange },
-            ["InvitationsQueued"] = new() { BOOL = false },
             ["InvitationsQueuedDate"] = new() { S = DateTimeOffset.MinValue.ToString("o") }
         };
 
@@ -140,7 +139,6 @@ public class GiftExchangeProvider
                 Email = organizerEmail
             },
             Participants = participants,
-            InvitationsQueued = response.Item.TryGetValue("InvitationsQueued", out var iq) && (iq.BOOL ?? false),
             InvitationsQueuedDate = response.Item.TryGetValue("InvitationsQueuedDate", out var iqd)
                 ? DateTimeOffset.Parse(iqd.S)
                 : DateTimeOffset.MinValue
@@ -511,7 +509,6 @@ public class GiftExchangeProvider
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":status"] = new() { S = HatStatus.InvitationsSent },
-                [":invitationsQueued"] = new() { BOOL = true },
                 [":invitationsQueuedDate"] = new() { S = DateTimeOffset.UtcNow.ToString("o") }
             }
         };
