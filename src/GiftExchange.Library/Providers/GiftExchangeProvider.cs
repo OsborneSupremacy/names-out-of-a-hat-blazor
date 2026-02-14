@@ -64,7 +64,6 @@ public class GiftExchangeProvider
             ["HatStatus"] = new() { S = hatDataModel.Status },
             ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
             ["PriceRange"] = new() { S = hatDataModel.PriceRange },
-            ["RecipientsAssigned"] = new() { BOOL = hatDataModel.RecipientsAssigned },
             ["InvitationsQueued"] = new() { BOOL = false },
             ["InvitationsQueuedDate"] = new() { S = DateTimeOffset.MinValue.ToString("o") }
         };
@@ -136,7 +135,6 @@ public class GiftExchangeProvider
             Status = response.Item.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress,
             AdditionalInformation = response.Item["AdditionalInformation"].S,
             PriceRange = response.Item["PriceRange"].S,
-            RecipientsAssigned = response.Item["RecipientsAssigned"].BOOL ?? false,
             Organizer = new Person {
                 Name = response.Item["OrganizerName"].S,
                 Email = organizerEmail
@@ -211,7 +209,11 @@ public class GiftExchangeProvider
         await Task.WhenAll(deleteTasks).ConfigureAwait(false);
     }
 
-    public async Task UpdateHatStatusAsync(string organizerEmail, Guid hatId, string newStatus)
+    public async Task UpdateHatStatusAsync(
+        string organizerEmail,
+        Guid hatId,
+        string newStatus
+        )
     {
         var updateRequest = new UpdateItemRequest
         {
@@ -352,35 +354,6 @@ public class GiftExchangeProvider
         };
 
         return (true, participant);
-    }
-
-    public async Task UpdateRecipientsAssignedAsync(
-        string requestOrganizerEmail,
-        Guid requestHatId,
-        bool recipientsAssigned
-        )
-    {
-        var newStatus = recipientsAssigned ? HatStatus.NamesAssigned : HatStatus.InProgress;
-
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{requestHatId}" },
-            },
-            UpdateExpression = "SET HatStatus = :status, RecipientsAssigned = :recipientsAssigned",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":status"] = new() { S = newStatus },
-                [":recipientsAssigned"] = new() { BOOL = recipientsAssigned }
-            }
-        };
-
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
-            .ConfigureAwait(false);
     }
 
     public async Task AddParticipantEligibleRecipientAsync(

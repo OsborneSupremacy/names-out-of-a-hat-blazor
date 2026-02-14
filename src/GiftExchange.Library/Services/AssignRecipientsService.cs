@@ -80,7 +80,7 @@ internal class AssignRecipientsService : IApiGatewayHandler
             .ConfigureAwait(false);
 
         await _giftExchangeProvider
-            .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, true)
+            .UpdateHatStatusAsync(request.OrganizerEmail, request.HatId, HatStatus.NamesAssigned)
             .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);

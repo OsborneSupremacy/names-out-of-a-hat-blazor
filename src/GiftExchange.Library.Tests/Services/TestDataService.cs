@@ -31,7 +31,6 @@ internal class TestDataService
             Status = HatStatus.InProgress,
             AdditionalInformation = newHat.AdditionalInformation,
             PriceRange = newHat.PriceRange,
-            RecipientsAssigned = newHat.RecipientsAssigned,
             Organizer = new Person {
                 Email = newHat.OrganizerEmail,
                 Name = newHat.OrganizerName

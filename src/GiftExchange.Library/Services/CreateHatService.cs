@@ -56,8 +56,7 @@ internal class CreateHatService : IApiGatewayHandler
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             OrganizerEmail = request.OrganizerEmail,
-            OrganizerName = request.OrganizerName,
-            RecipientsAssigned = false
+            OrganizerName = request.OrganizerName
         };
 
         var created = await _giftExchangeProvider

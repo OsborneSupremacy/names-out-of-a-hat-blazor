@@ -72,10 +72,9 @@ internal class RemoveParticipantService : IApiGatewayHandler
             .DeleteParticipantAsync(request.OrganizerEmail, request.HatId, request.Email)
             .ConfigureAwait(false);
 
-        // set recipients assigned to false since the hat composition has changed
-        if(hat.RecipientsAssigned || hat.Status == HatStatus.NamesAssigned)
+        if(hat.Status != HatStatus.InProgress) // any edits to participants should set hat status back to InProgress
             await _giftExchangeProvider
-                .UpdateRecipientsAssignedAsync(request.OrganizerEmail, request.HatId, false)
+                .UpdateHatStatusAsync(request.OrganizerEmail, request.HatId, HatStatus.InProgress)
                 .ConfigureAwait(false);
 
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.NoContent}, HttpStatusCode.NoContent);

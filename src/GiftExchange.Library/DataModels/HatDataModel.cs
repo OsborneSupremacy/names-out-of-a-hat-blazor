@@ -15,6 +15,4 @@ public record HatDataModel
     public required string AdditionalInformation { get; init; }
 
     public required string PriceRange { get; init; }
-
-    public required bool RecipientsAssigned { get; init; }
 }
