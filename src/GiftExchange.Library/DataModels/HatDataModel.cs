@@ -16,7 +16,5 @@ public record HatDataModel
 
     public required string PriceRange { get; init; }
 
-    public required bool OrganizerVerified { get; init; }
-
     public required bool RecipientsAssigned { get; init; }
 }

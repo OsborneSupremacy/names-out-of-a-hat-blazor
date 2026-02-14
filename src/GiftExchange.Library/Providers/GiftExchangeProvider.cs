@@ -64,7 +64,6 @@ public class GiftExchangeProvider
             ["HatStatus"] = new() { S = hatDataModel.Status },
             ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
             ["PriceRange"] = new() { S = hatDataModel.PriceRange },
-            ["OrganizerVerified"] = new() { BOOL = hatDataModel.OrganizerVerified },
             ["RecipientsAssigned"] = new() { BOOL = hatDataModel.RecipientsAssigned },
             ["InvitationsQueued"] = new() { BOOL = false },
             ["InvitationsQueuedDate"] = new() { S = DateTimeOffset.MinValue.ToString("o") }

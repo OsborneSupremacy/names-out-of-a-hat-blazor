@@ -13,7 +13,6 @@ public sealed class HatDataModelFaker : Faker<HatDataModel>
         RuleFor(f => f.Status, HatStatus.InProgress);
         RuleFor(f => f.AdditionalInformation, f => f.Random.Words(5));
         RuleFor(f => f.PriceRange, f => f.Random.Words(5));
-        RuleFor(f => f.OrganizerVerified, false);
         RuleFor(f => f.RecipientsAssigned, false);
     }
 }

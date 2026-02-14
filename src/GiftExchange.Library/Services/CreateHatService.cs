@@ -57,7 +57,6 @@ internal class CreateHatService : IApiGatewayHandler
             PriceRange = string.Empty,
             OrganizerEmail = request.OrganizerEmail,
             OrganizerName = request.OrganizerName,
-            OrganizerVerified = false,
             RecipientsAssigned = false
         };
 
