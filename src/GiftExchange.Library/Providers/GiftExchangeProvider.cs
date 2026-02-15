@@ -504,7 +504,7 @@ public class GiftExchangeProvider
                 ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
                 ["SK"] = new() { S = $"HAT#{hatId}" }
             },
-            UpdateExpression = "SET HatStatus = :status, InvitationsQueued = :invitationsQueued, InvitationsQueuedDate = :invitationsQueuedDate",
+            UpdateExpression = "SET HatStatus = :status, InvitationsQueuedDate = :invitationsQueuedDate",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 [":status"] = new() { S = HatStatus.InvitationsSent },

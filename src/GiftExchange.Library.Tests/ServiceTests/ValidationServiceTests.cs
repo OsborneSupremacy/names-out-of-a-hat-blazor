@@ -106,7 +106,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
 
         // assert
         result.Value.Success.Should().BeFalse();
-        result.Value.Errors.First().Should().Be($"{people[2].Name} has no eligible recipients");
+        result.Value.Errors.First().Should().Be($"{people[2].Name} must have at least two eligible recipients.");
     }
 
     [Fact]

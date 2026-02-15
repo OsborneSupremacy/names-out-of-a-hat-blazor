@@ -8,8 +8,8 @@ internal static class EligibilityValidationService
 
         errors.AddRange(
             participants
-                .Where(p => !p.EligibleRecipients.Any())
-                .Select(p => $"{p.Person.Name} has no eligible recipients")
+                .Where(p => p.EligibleRecipients.Count < 2)
+                .Select(p => $"{p.Person.Name} must have at least two eligible recipients.")
         );
 
         if (errors.Any())

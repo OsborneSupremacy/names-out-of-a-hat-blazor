@@ -6,27 +6,25 @@ internal class AssignRecipientsService : IApiGatewayHandler
 
     private readonly ApiGatewayAdapter _adapter;
 
-    private readonly ValidationService _validationService;
-
     private readonly HatPreconditionValidator _hatPreconditionValidator;
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
     private const int ShakeAttempts = 25;
 
+    private const string NonViableConfigurationMessage = "We've tried shaking the hat multiple times but we could not find a valid distribution (i.e. everyone is assigned to exactly one other participant). This can sometimes happen with certain configurations of participants and their eligible recipients. You can try shaking the hat again, but if the issue persists please review the list of participants and their eligible recipients to ensure that a valid distribution is possible.";
+
     public AssignRecipientsService(
         ILogger<AssignRecipientsService> logger,
         ApiGatewayAdapter adapter,
         GiftExchangeProvider giftExchangeProvider,
-        HatPreconditionValidator hatPreconditionValidator,
-        ValidationService validationService
+        HatPreconditionValidator hatPreconditionValidator
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
-        _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(
@@ -63,7 +61,10 @@ internal class AssignRecipientsService : IApiGatewayHandler
             .ShakeMultiple(hat.Participants, ShakeAttempts);
 
         if (!shakeSuccess)
-            return new Result<StatusCodeOnlyResponse>(new OperationCanceledException($"Valid recipient distribution not found after {ShakeAttempts} attempts"), HttpStatusCode.ServiceUnavailable);
+        {
+            _logger.LogWarning("Hat Id {HatId} for organizer {OrganizerEmail} could not be shaken successfully after {ShakeAttempts} attempts. This likely indicates a non-viable configuration of participants and eligible recipients.", request.HatId, request.OrganizerEmail, ShakeAttempts);
+            return new Result<StatusCodeOnlyResponse>(new OperationCanceledException(NonViableConfigurationMessage), HttpStatusCode.ServiceUnavailable);
+        }
 
         var updateParticipantsTasks = new List<Task>();
 
