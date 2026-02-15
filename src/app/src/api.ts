@@ -75,6 +75,11 @@ export interface SendInvitationsRequest {
   hatId: string
 }
 
+export interface CloseHatRequest {
+  organizerEmail: string
+  hatId: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -290,5 +295,19 @@ export async function sendInvitations(request: SendInvitationsRequest): Promise<
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to send invitations')
+  }
+}
+
+export async function closeHat(request: CloseHatRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat/close`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to close gift exchange')
   }
 }

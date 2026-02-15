@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, validateHat, assignRecipients, sendInvitations, Hat } from '../api'
+import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, validateHat, assignRecipients, sendInvitations, closeHat, Hat } from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -31,6 +31,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [isAssigning, setIsAssigning] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [isSendingInvitations, setIsSendingInvitations] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
 
   useEffect(() => {
     async function loadHat() {
@@ -259,6 +260,34 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     }
   }
 
+  const handleCloseHat = async () => {
+    if (!hatId || !hat) return
+
+    const confirmed = window.confirm(
+      'Are you sure you want to close the gift exchange? The picked names for all recipients will be revealed. You should only do this once the exchange has actually happened.'
+    )
+    if (!confirmed) return
+
+    setIsClosing(true)
+    setError('')
+
+    try {
+      await closeHat({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      // Reload the hat data
+      const updatedHat = await getHat(userEmail, hatId, false)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error closing gift exchange:', err)
+      setError(err instanceof Error ? err.message : 'Failed to close gift exchange')
+    } finally {
+      setIsClosing(false)
+    }
+  }
+
   const handleShakeHat = async () => {
     if (!hatId || !hat) return
 
@@ -454,9 +483,10 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                   <div className="action-container">
                     <button
                       className="action-button action-close-button"
-                      onClick={() => alert('Close functionality coming soon!')}
+                      onClick={handleCloseHat}
+                      disabled={isClosing}
                     >
-                      Close Gift Exchange
+                      {isClosing ? 'Closing...' : 'Close Gift Exchange'}
                     </button>
                     <p className="action-hint">Mark this gift exchange as completed. Once you do this, you will be able to view the picked recipients of all participants.</p>
                   </div>
