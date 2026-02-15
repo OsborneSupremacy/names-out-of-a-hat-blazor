@@ -498,6 +498,58 @@
   font-size: 0.875rem;
 }
 
+.closed-participants-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.closed-participant-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.closed-participant-giver,
+.closed-participant-receiver {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.closed-participant-giver strong,
+.closed-participant-receiver strong {
+  color: #1f2937;
+  font-size: 1.125rem;
+}
+
+.assignment-arrow {
+  color: #667eea;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .closed-participant-item {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .assignment-arrow {
+    transform: rotate(90deg);
+  }
+}
+
 .manage-button {
   background: none;
   border: none;
@@ -767,6 +819,20 @@
   }
 
   .picked-recipient {
+    color: #818cf8;
+  }
+
+  .closed-participant-item {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .closed-participant-giver strong,
+  .closed-participant-receiver strong {
+    color: #f9fafb;
+  }
+
+  .assignment-arrow {
     color: #818cf8;
   }
 
