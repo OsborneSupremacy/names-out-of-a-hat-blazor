@@ -27,19 +27,26 @@ internal class GetParticipantService : IApiGatewayHandler
         var organizerEmail = request.GetEmailPathParameter();
         var hatId = Guid.TryParse(request.PathParameters["hatId"], out var id) ? id : Guid.Empty;
         var participantEmail = request.PathParameters["participantEmail"] ?? string.Empty;
-        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 
         return new Result<GetParticipantRequest>(new GetParticipantRequest
         {
             OrganizerEmail = organizerEmail,
             HatId = hatId,
-            ParticipantEmail = participantEmail,
-            ShowPickedRecipients = showPickedRecipients
+            ParticipantEmail = participantEmail
         }, HttpStatusCode.OK);
     }
 
     internal async Task<Result<Participant>> GetParticipantAsync(GetParticipantRequest request)
     {
+        var (hatExists, hat) = await _giftExchangeProvider
+            .GetHatAsync(request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
+
+        if (!hatExists)
+            return new Result<Participant>(
+                new KeyNotFoundException($"Hat with id {request.HatId} not found"),
+                HttpStatusCode.NotFound);
+
         var (participantExists, participant) = await _giftExchangeProvider
             .GetParticipantAsync(request.OrganizerEmail, request.HatId, request.ParticipantEmail)
             .ConfigureAwait(false);
@@ -49,7 +56,7 @@ internal class GetParticipantService : IApiGatewayHandler
                 new KeyNotFoundException($"Participant with email {request.ParticipantEmail} not found"),
                 HttpStatusCode.NotFound);
 
-        if(!request.ShowPickedRecipients)
+        if(hat.Status != HatStatus.Closed)
             participant = RedactPickedRecipient(participant);
 
         return new Result<Participant>(participant, HttpStatusCode.OK);

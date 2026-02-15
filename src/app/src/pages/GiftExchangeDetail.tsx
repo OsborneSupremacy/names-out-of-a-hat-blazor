@@ -42,7 +42,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       }
 
       try {
-        const hatData = await getHat(userEmail, hatId, false)
+        const hatData = await getHat(userEmail, hatId)
         setHat(hatData)
         setEditedName(hatData.name)
         setEditedAdditionalInfo(hatData.additionalInformation)
@@ -85,7 +85,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       })
 
       // Reload the hat data
-      const updatedHat = await getHat(userEmail, hatId, false)
+      const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
       setIsEditing(false)
     } catch (err) {
@@ -107,7 +107,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     })
 
     // Reload the hat data
-    const updatedHat = await getHat(userEmail, hatId, false)
+    const updatedHat = await getHat(userEmail, hatId)
     setHat(updatedHat)
   }
 
@@ -129,7 +129,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       })
 
       // Reload the hat data
-      const updatedHat = await getHat(userEmail, hatId, false)
+      const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
     } catch (err) {
       console.error('Error removing participant:', err)
@@ -165,7 +165,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       })
 
       // Reload the hat data
-      const updatedHat = await getHat(userEmail, hatId, false)
+      const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
       setEditingEligibleFor(null)
     } catch (err) {
@@ -221,7 +221,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       })
 
       // Reload the hat data to reflect the updated invitationsQueued status
-      const updatedHat = await getHat(userEmail, hatId, false)
+      const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
     } catch (err) {
       console.error('Error sending invitations:', err)
@@ -248,7 +248,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
         setValidationErrors(validationResult.errors)
       } else {
         // Validation successful - reload to get updated status
-        const updatedHat = await getHat(userEmail, hatId, false)
+        const updatedHat = await getHat(userEmail, hatId)
         setHat(updatedHat)
         setValidationErrors([])
       }
@@ -278,7 +278,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       })
 
       // Reload the hat data
-      const updatedHat = await getHat(userEmail, hatId, false)
+      const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
     } catch (err) {
       console.error('Error closing gift exchange:', err)
@@ -311,7 +311,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       })
 
       // Reload the hat data
-      const updatedHat = await getHat(userEmail, hatId, false)
+      const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
     } catch (err) {
       console.error('Error shaking hat:', err)

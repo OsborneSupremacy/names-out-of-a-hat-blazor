@@ -51,8 +51,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         var getHatRequest = new GetHatRequest
         {
             OrganizerEmail = hat.OrganizerEmail,
-            HatId = hat.HatId,
-            ShowPickedRecipients = false
+            HatId = hat.HatId
         };
 
         var request = new APIGatewayProxyRequest
@@ -62,10 +61,7 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
                 { "email", getHatRequest.OrganizerEmail },
                 { "id", getHatRequest.HatId.ToString() }
             },
-            QueryStringParameters = new Dictionary<string, string>
-            {
-                { "showpickedrecipients", getHatRequest.ShowPickedRecipients.ToString() }
-            }
+            QueryStringParameters = new Dictionary<string, string>()
         };
 
         // act

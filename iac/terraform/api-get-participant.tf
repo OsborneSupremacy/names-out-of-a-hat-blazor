@@ -5,10 +5,9 @@ module "lambda-get-participant" {
   gateway_http_method         = "GET"
   gateway_http_operation_name = "GetParticipant"
   gateway_method_request_parameters = {
-    "method.request.path.organizerEmail"              = true,
-    "method.request.path.hatId"                       = true,
-    "method.request.path.participantEmail"            = true,
-    "method.request.querystring.showpickedrecipients" = true,
+    "method.request.path.organizerEmail"   = true,
+    "method.request.path.hatId"            = true,
+    "method.request.path.participantEmail" = true,
   }
   gateway_method_request_model_name                 = ""
   gateway_method_request_model_description          = ""

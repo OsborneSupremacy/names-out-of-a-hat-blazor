@@ -166,13 +166,10 @@ export async function createHat(request: CreateHatRequest): Promise<CreateHatRes
   return response.json()
 }
 
-export async function getHat(email: string, hatId: string, showPickedRecipients: boolean = false): Promise<Hat> {
+export async function getHat(email: string, hatId: string): Promise<Hat> {
   const headers = await getAuthHeaders()
 
-  const url = new URL(`${apiConfig.endpoint}/hat/${encodeURIComponent(email)}/${hatId}`)
-  url.searchParams.set('showpickedrecipients', showPickedRecipients.toString())
-
-  const response = await fetch(url.toString(), {
+  const response = await fetch(`${apiConfig.endpoint}/hat/${encodeURIComponent(email)}/${hatId}`, {
     method: 'GET',
     headers,
   })

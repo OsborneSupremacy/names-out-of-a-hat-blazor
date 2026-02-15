@@ -58,10 +58,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
                 { "hatId", hat.Id.ToString() },
                 { "participantEmail", person.Email }
             },
-            QueryStringParameters = new Dictionary<string, string>
-            {
-                { "showpickedrecipients", "true" }
-            }
+            QueryStringParameters = new Dictionary<string, string>()
         }, _context);
 
         // assert

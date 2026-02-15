@@ -7,6 +7,4 @@ public record GetParticipantRequest
     public required string OrganizerEmail { get; init; }
 
     public required string ParticipantEmail { get; init; }
-
-    public required bool ShowPickedRecipients { get; init; }
 }

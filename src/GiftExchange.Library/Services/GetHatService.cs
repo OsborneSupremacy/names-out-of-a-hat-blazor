@@ -16,15 +16,13 @@ internal class GetHatService : IApiGatewayHandler
     {
         var organizerEmail = request.GetEmailPathParameter();
         var hatId = Guid.TryParse(request.PathParameters["id"], out var id) ? id : Guid.Empty;
-        var showPickedRecipients = bool.TryParse(request.QueryStringParameters["showpickedrecipients"], out var boolOut) && boolOut;
 
         return await _adapter
             .AdaptAsync(
                 new GetHatRequest
                 {
                     OrganizerEmail = organizerEmail,
-                    HatId = hatId,
-                    ShowPickedRecipients = showPickedRecipients
+                    HatId = hatId
                 },
                 GetHasAsync)
             .ConfigureAwait(false);
@@ -39,7 +37,7 @@ internal class GetHatService : IApiGatewayHandler
         if(!hatExists)
             return new Result<Hat>(new KeyNotFoundException($"HatId {hat.Id} not found"), HttpStatusCode.NotFound);
 
-        if(!request.ShowPickedRecipients)
+        if(hat.Status != HatStatus.Closed)
             hat = RedactPickedRecipients(hat);
 
         return new Result<Hat>(hat, HttpStatusCode.OK);
