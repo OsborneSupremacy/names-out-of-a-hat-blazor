@@ -2,7 +2,7 @@ openapi: "3.0.1"
 info:
   title: "giftexchange-gateway"
   description: "API Gateway for the Gift Exchange App"
-  version: "2026-02-06T03:12:21Z"
+  version: "2026-02-15T18:39:20Z"
 servers:
 - url: "https://api.namesoutofahat.com"
 paths:
@@ -33,6 +33,65 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AssignRecipientsRequest"
+        required: true
+      responses:
+        "404":
+          description: "404 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+        "409":
+          description: "409 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestOrConflictResponse"
+      security:
+      - cognito-authorizer: []
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
+  /hat/close:
+    post:
+      operationId: "CloseHat"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseHatRequest"
         required: true
       responses:
         "404":
@@ -813,7 +872,7 @@ components:
       required:
       - "hatId"
       - "hatName"
-      - "invitationsQueued"
+      - "status"
       type: "object"
       properties:
         hatId:
@@ -824,9 +883,9 @@ components:
           minLength: 1
           type: "string"
           description: "The display name of the hat."
-        invitationsQueued:
-          type: "boolean"
-          description: "Whether invitations have been queued for sending."
+        status:
+          type: "string"
+          description: "The current status of the gift exchange."
       additionalProperties: false
     EditParticipantRequest:
       required:
@@ -987,6 +1046,21 @@ components:
           description: "The email address of the participant"
           format: "email"
       additionalProperties: false
+    CloseHatRequest:
+      required:
+      - "hatId"
+      - "organizerEmail"
+      type: "object"
+      properties:
+        organizerEmail:
+          type: "string"
+          description: "The email address of the organizer"
+          format: "email"
+        hatId:
+          type: "string"
+          description: "The unique identifier of the hat to close"
+          format: "uuid"
+      additionalProperties: false
     CreateHatRequest:
       required:
       - "hatName"
@@ -1009,14 +1083,11 @@ components:
       required:
       - "additionalInformation"
       - "id"
-      - "invitationsQueued"
-      - "invitationsQueuedDate"
       - "name"
       - "organizer"
-      - "organizerVerified"
       - "participants"
       - "priceRange"
-      - "recipientsAssigned"
+      - "status"
       type: "object"
       properties:
         id:
@@ -1026,6 +1097,9 @@ components:
         name:
           type: "string"
           description: "The name of the gift exchange"
+        status:
+          type: "string"
+          description: "The current status of the gift exchange"
         additionalInformation:
           type: "string"
           description: "Additional details about the gift exchange"
@@ -1039,19 +1113,6 @@ components:
           description: "The list of participants in the gift exchange"
           items:
             $ref: "#/components/schemas/HatParticipantsItem"
-        organizerVerified:
-          type: "boolean"
-          description: "Whether the organizer has been verified"
-        recipientsAssigned:
-          type: "boolean"
-          description: "Whether recipients have been assigned to participants"
-        invitationsQueued:
-          type: "boolean"
-          description: "Whether invitations have been queued for sending"
-        invitationsQueuedDate:
-          type: "string"
-          description: "The date and time when invitations were queued"
-          format: "date-time"
       additionalProperties: false
   securitySchemes:
     cognito-authorizer:
