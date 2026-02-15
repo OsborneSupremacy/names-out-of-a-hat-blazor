@@ -29,15 +29,15 @@
                     "minLength": 1,
                     "description": "The display name of the hat."
                 },
-                "invitationsQueued": {
-                    "type": "boolean",
-                    "description": "Whether invitations have been queued for sending."
+                "status": {
+                    "type": "string",
+                    "description": "The current status of the gift exchange."
                 }
             },
             "required": [
                 "hatId",
                 "hatName",
-                "invitationsQueued"
+                "status"
             ]
         }
     }

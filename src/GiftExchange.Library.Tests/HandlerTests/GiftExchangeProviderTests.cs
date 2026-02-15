@@ -61,8 +61,8 @@ public class GiftExchangeProviderTests : IClassFixture<DynamoDbFixture>
 
         // assert
         result.Should().BeEquivalentTo([
-            new HatMetaData { HatId = hatOne.HatId, HatName = hatOne.HatName, Status = HatStatus.InProgress, InvitationsQueued = false },
-            new HatMetaData { HatId = hatTwo.HatId, HatName = hatTwo.HatName, Status = HatStatus.InProgress, InvitationsQueued = false }
+            new HatMetaData { HatId = hatOne.HatId, HatName = hatOne.HatName, Status = HatStatus.InProgress },
+            new HatMetaData { HatId = hatTwo.HatId, HatName = hatTwo.HatName, Status = HatStatus.InProgress }
         ]);
     }
 

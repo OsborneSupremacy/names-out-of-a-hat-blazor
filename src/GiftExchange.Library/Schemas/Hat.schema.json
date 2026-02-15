@@ -11,6 +11,10 @@
             "type": "string",
             "description": "The name of the gift exchange"
         },
+        "status": {
+            "type": "string",
+            "description": "The current status of the gift exchange"
+        },
         "additionalInformation": {
             "type": "string",
             "description": "Additional details about the gift exchange"
@@ -29,31 +33,16 @@
                 "$ref": "#/definitions/participant"
             },
             "description": "The list of participants in the gift exchange"
-        },
-        "recipientsAssigned": {
-            "type": "boolean",
-            "description": "Whether recipients have been assigned to participants"
-        },
-        "invitationsQueued": {
-            "type": "boolean",
-            "description": "Whether invitations have been queued for sending"
-        },
-        "invitationsQueuedDate": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The date and time when invitations were queued"
         }
     },
     "required": [
         "id",
         "name",
+        "status",
         "additionalInformation",
         "priceRange",
         "organizer",
-        "participants",
-        "recipientsAssigned",
-        "invitationsQueued",
-        "invitationsQueuedDate"
+        "participants"
     ],
     "additionalProperties": false,
     "definitions": {

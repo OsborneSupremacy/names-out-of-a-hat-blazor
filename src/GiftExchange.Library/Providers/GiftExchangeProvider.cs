@@ -41,8 +41,7 @@ public class GiftExchangeProvider
             {
                 HatId = Guid.Parse(i["HatId"].S),
                 HatName = i["HatName"].S,
-                Status = i.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress,
-                InvitationsQueued = i.TryGetValue("InvitationsQueued", out var iq) && (iq.BOOL ?? false)
+                Status = i.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress
             })
             .ToImmutableList();
     }

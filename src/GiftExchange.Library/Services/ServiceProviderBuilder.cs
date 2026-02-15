@@ -58,6 +58,7 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
                 .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
+                .AddKeyedSingleton<IApiGatewayHandler, CloseHatService>("post/hat/close")
 
                 .AddSingleton<ValidationService>() // registered separately for direct use
                 .AddSingleton<EmailCompositionService>()
