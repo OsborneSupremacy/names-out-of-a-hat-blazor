@@ -46,7 +46,7 @@ internal class CreateHatService : IApiGatewayHandler
             .ConfigureAwait(false);
 
         if (hatExists)
-            return new Result<CreateHatResponse>(new CreateHatResponse { HatId = existingHatId }, HttpStatusCode.OK);
+            return new Result<CreateHatResponse>(new InvalidOperationException("A gift exchange with this name already exists. If this is the same gift exchange for a different year, try adding the year in the name to differentiate it from previous exchanges."), HttpStatusCode.Conflict);
 
         var newHat = new HatDataModel
         {

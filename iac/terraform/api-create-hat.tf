@@ -9,6 +9,7 @@ module "lambda-create-hat" {
   gateway_method_request_model_description          = "A request to create a hat."
   gateway_method_request_model_schema_file_location = "../../src/GiftExchange.Library/Schemas/CreateHatRequest.schema.json"
   include_404_response                              = true
+  include_409_response                              = true
   good_response_model_name                          = "CreateHatResponse"
   good_response_model_description                   = "A response to a request to create a hat."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/CreateHatResponse.schema.json"
