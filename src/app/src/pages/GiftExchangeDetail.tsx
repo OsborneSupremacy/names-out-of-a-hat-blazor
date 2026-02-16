@@ -495,6 +495,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 {hat.status === 'CLOSED' && (
                   <div className="action-container">
                     <p className="action-complete">This gift exchange is closed</p>
+                    <p className="action-hint">See below for the names everyone was assigned. See you next time!</p>
                   </div>
                 )}
               </div>
@@ -553,7 +554,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
               <div className="participants-section">
                 <div className="section-header">
                   <h3>Participants ({hat.participants.length})</h3>
-                  {!hat.invitationsQueued && hat.status !== 'CLOSED' && (
+                  {!hat.invitationsQueued && hat.status !== 'CLOSED' && hat.status !== 'INVITATIONS_SENT' && (
                     <button
                       className="primary-button"
                       onClick={() => setShowAddParticipantModal(true)}
@@ -563,7 +564,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                   )}
                 </div>
                 {hat.participants.length > 0 ? (
-                  hat.status === 'CLOSED' ? (
+                  (hat.status === 'CLOSED' || hat.status === 'INVITATIONS_SENT') ? (
                     <ul className="closed-participants-list">
                       {hat.participants.map((participant, index) => (
                         <li key={index} className="closed-participant-item">
