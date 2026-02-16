@@ -5,7 +5,6 @@ export interface HatMetadata {
   hatId: string
   hatName: string
   status: string
-  invitationsQueued: boolean
 }
 
 export interface GetHatsResponse {
@@ -100,10 +99,6 @@ export interface Hat {
   }
   participants: Participant[]
   status: string
-  organizerVerified: boolean
-  recipientsAssigned: boolean
-  invitationsQueued: boolean
-  invitationsQueuedDate: string
 }
 
 async function getAuthHeaders() {

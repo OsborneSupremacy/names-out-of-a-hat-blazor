@@ -220,7 +220,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
         hatId,
       })
 
-      // Reload the hat data to reflect the updated invitationsQueued status
+      // Reload the hat data to reflect the updated status
       const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
     } catch (err) {
@@ -292,7 +292,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     if (!hatId || !hat) return
 
     // If recipients are already assigned, confirm before re-shaking
-    if (hat.recipientsAssigned) {
+    if (hat.status === 'NAMES_ASSIGNED') {
       const confirmed = window.confirm(
         'The hat has already been shaken and all participants have a name picked. Are you sure you want to shake the hat again?'
       )
@@ -353,7 +353,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 ) : (
                   <h2>{hat.name}</h2>
                 )}
-                {!hat.invitationsQueued && (
+                {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'CLOSED' && (
                   <div className="hat-actions">
                     {isEditing ? (
                       <>
@@ -536,7 +536,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
               <div className="participants-section">
                 <div className="section-header">
                   <h3>Participants ({hat.participants.length})</h3>
-                  {!hat.invitationsQueued && hat.status !== 'CLOSED' && hat.status !== 'INVITATIONS_SENT' && (
+                  {hat.status !== 'CLOSED' && hat.status !== 'INVITATIONS_SENT' && (
                     <button
                       className="primary-button"
                       onClick={() => setShowAddParticipantModal(true)}
@@ -575,14 +575,14 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                               <div className="participant-info">
                                 <strong>
                                   {participant.person.name}
-                                  {hat.recipientsAssigned && participant.pickedRecipient && (
+                                  {hat.status === 'NAMES_ASSIGNED' && participant.pickedRecipient && (
                                     <span className="assigned-tag" title={`${participant.person.name} has picked a name.`}>🏷️</span>
                                   )}
                                   {isOrganizer && <span className="organizer-badge">Organizer</span>}
                                 </strong>
                                 <span className="participant-email">{participant.person.email}</span>
                               </div>
-                              {!hat.invitationsQueued && (
+                              {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'CLOSED' && (
                                 <div className="participant-actions">
                                   <button
                                     className="manage-button"
@@ -680,7 +680,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 )}
               </div>
 
-              {!hat.invitationsQueued && (
+              {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'CLOSED' && (
                 <div className="delete-section">
                   <button
                     className="danger-button"
