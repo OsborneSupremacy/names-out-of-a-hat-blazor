@@ -531,24 +531,6 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                     <p>{hat.priceRange || <span className="text-muted">Not set</span>}</p>
                   )}
                 </div>
-
-                <div className="info-card">
-                  <h3>Invitations Sent</h3>
-                  <p>
-                    {hat.invitationsQueued && hat.invitationsQueuedDate &&
-                     new Date(hat.invitationsQueuedDate).getFullYear() > 1 ? (
-                      new Date(hat.invitationsQueuedDate).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })
-                    ) : (
-                      <span className="text-muted">Not sent yet</span>
-                    )}
-                  </p>
-                </div>
               </div>
 
               <div className="participants-section">
