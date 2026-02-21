@@ -10,6 +10,8 @@
         "organizerEmail": {
             "type": "string",
             "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
             "description": "The email address of the organizer"
         }
     },

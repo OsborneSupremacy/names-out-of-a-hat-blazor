@@ -5,6 +5,8 @@
         "organizerEmail": {
             "type": "string",
             "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
             "description": "The email address of the organizer"
         },
         "hatId": {
@@ -14,11 +16,15 @@
         },
         "name": {
             "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
             "description": "The name of the participant"
         },
         "email": {
             "type": "string",
             "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
             "description": "The email address of the participant"
         }
     },

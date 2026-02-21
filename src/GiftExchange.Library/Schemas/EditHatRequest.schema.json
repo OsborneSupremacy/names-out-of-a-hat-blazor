@@ -10,18 +10,24 @@
         "organizerEmail": {
             "type": "string",
             "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
             "description": "The email address of the organizer"
         },
         "name": {
             "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
             "description": "The updated name of the hat"
         },
         "additionalInformation": {
             "type": "string",
+            "maxLength": 2000,
             "description": "Additional information about the hat"
         },
         "priceRange": {
             "type": "string",
+            "maxLength": 50,
             "description": "The price range for gifts"
         }
     },

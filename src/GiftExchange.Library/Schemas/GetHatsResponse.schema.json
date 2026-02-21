@@ -26,7 +26,8 @@
                 },
                 "hatName": {
                     "type": "string",
-                    "minLength": 1,
+                    "minLength": 3,
+                    "maxLength": 50,
                     "description": "The display name of the hat."
                 },
                 "status": {
