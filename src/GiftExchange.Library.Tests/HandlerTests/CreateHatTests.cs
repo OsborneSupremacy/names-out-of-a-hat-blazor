@@ -47,7 +47,7 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
     }
 
     [Fact]
-    public async Task CreateHat_HatAlreadyExists_OkResponse()
+    public async Task CreateHat_HatAlreadyExists_ConflictResponse()
     {
         // arrange
         var request = _jsonService
@@ -59,6 +59,6 @@ public class CreateHatTests : IClassFixture<DynamoDbFixture>
         var response = await _sut.FunctionHandler(request, _context);
 
         // assert
-        response.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
     }
 }

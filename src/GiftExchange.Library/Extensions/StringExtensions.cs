@@ -4,14 +4,23 @@ namespace GiftExchange.Library.Extensions;
 
 internal static class StringExtensions
 {
-    public static string TrimNullSafe(this string input)
+    extension(string input)
     {
-        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-        return input.Trim();
-    }
+        public string TrimNullSafe()
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            return input.Trim();
+        }
 
-    public static bool ContentEquals(this string input, string value) =>
-        input.TrimNullSafe().Equals(value.TrimNullSafe(), StringComparison.OrdinalIgnoreCase);
+        public bool ContentEquals(string value) =>
+            input.TrimNullSafe().Equals(value.TrimNullSafe(), StringComparison.OrdinalIgnoreCase);
+
+        public string GetPersonEmojiFor()
+        {
+            Randomizer.Seed = new Random(input.GetHashCode() + input[..1].GetHashCode());
+            return new Faker().PickRandom(PersonEmojis);
+        }
+    }
 
     private static readonly List<string> PersonEmojis =
     [
@@ -36,10 +45,4 @@ internal static class StringExtensions
         "🌞",
         "😎"
     ];
-
-    public static string GetPersonEmojiFor(this string input)
-    {
-        Randomizer.Seed = new Random(input.GetHashCode() + input[..1].GetHashCode());
-        return new Faker().PickRandom(PersonEmojis);
-    }
 }
