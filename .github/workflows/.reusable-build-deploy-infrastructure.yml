@@ -37,7 +37,7 @@ jobs:
         uses: hashicorp/setup-terraform@v4
 
       - name: Terraform Init
-        working-directory: iac
+        working-directory: iac/terraform
         run: |
           terraform init \
             -backend-config="bucket=bro-tfstate" \
@@ -45,13 +45,13 @@ jobs:
             -backend-config="region=us-east-1"
 
       - name: Terraform Validate
-        working-directory: iac
+        working-directory: iac/terraform
         run: terraform validate
 
       - name: Terraform Plan
-        working-directory: iac
+        working-directory: iac/terraform
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        working-directory: iac
+        working-directory: iac/terraform
         run: terraform apply -auto-approve tfplan
