@@ -26,18 +26,24 @@ resource "aws_api_gateway_rest_api" "giftexchange-gateway" {
 
 resource "aws_api_gateway_deployment" "default" {
   rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
-
-  triggers = {
-    redeployment = filebase64sha256(local.publish_zip_path)
-  }
-
+  description = "Deployment for the Gift Exchange API Gateway"
   lifecycle {
     create_before_destroy = true
   }
-
   depends_on = [
     module.lambda-add-participant,
-    module.lambda-create-hat
+    module.lambda-assign-recipients,
+    module.lambda-close-hat,
+    module.lambda-create-hat,
+    module.lambda-delete-hat,
+    module.lambda-edit-hat,
+    module.lambda-edit-participant,
+    module.lambda-get-hat,
+    module.lambda-get-hats,
+    module.lambda-get-participant,
+    module.lambda-remove-participant,
+    module.lambda-send-invitations-hat,
+    module.lambda-validate-hat
   ]
 }
 

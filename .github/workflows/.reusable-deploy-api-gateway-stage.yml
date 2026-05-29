@@ -1,0 +1,64 @@
+name: _ deploy api gateway stage
+
+on:
+  workflow_call:
+    inputs:
+      stage-name:
+        description: The API Gateway stage to deploy to
+        required: true
+        type: string
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-stage:
+    name: Deploy ${{ inputs.stage-name }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Deploy API Gateway to ${{ inputs.stage-name }} stage
+        shell: bash
+        run: |
+          gateway_id=$(aws apigateway get-rest-apis \
+            --query "items[?name=='ecommerce-gateway'].id | [0]" \
+            --output text)
+
+          if [[ -z "$gateway_id" || "$gateway_id" == "None" ]]; then
+            echo "ERROR: Could not find API Gateway with name 'ecommerce-gateway'" >&2
+            exit 1
+          fi
+          echo "Found gateway with id: $gateway_id"
+
+          deployment_id=$(aws apigateway create-deployment \
+            --rest-api-id "$gateway_id" \
+            --stage-name "${{ inputs.stage-name }}" \
+            --description "Deployment for ecommerce API Gateway from GitHub Actions run ${{ github.run_id }}" \
+            --query id \
+            --output text)
+          echo "Created deployment with id: $deployment_id"
+
+          echo "Updating ${{ inputs.stage-name }} stage to deployment $deployment_id..."
+          aws apigateway update-stage \
+            --rest-api-id "$gateway_id" \
+            --stage-name "${{ inputs.stage-name }}" \
+            --patch-operations op=replace,path=/deploymentId,value="$deployment_id"
+          echo "${{ inputs.stage-name }} stage updated successfully."
+
+      - name: Wait for deployment to propagate
+        shell: bash
+        run: |
+          echo "Waiting 120 seconds for API Gateway deployment to propagate..."
+          sleep 120
+          echo "Done."
+
