@@ -4,16 +4,16 @@ data "aws_route53_zone" "main" {
   private_zone = false
 }
 
-# Route53 record for the production API subdomain
+# Route53 record for the production API subdomain (via CloudFront)
 resource "aws_route53_record" "api_prod" {
   zone_id = data.aws_route53_zone.main.zone_id
   name    = "api.namesoutofahat.com"
   type    = "A"
 
   alias {
-    name                   = aws_api_gateway_domain_name.api_prod.regional_domain_name
-    zone_id                = aws_api_gateway_domain_name.api_prod.regional_zone_id
-    evaluate_target_health = true
+    name                   = aws_cloudfront_distribution.api.domain_name
+    zone_id                = aws_cloudfront_distribution.api.hosted_zone_id
+    evaluate_target_health = false
   }
 }
 

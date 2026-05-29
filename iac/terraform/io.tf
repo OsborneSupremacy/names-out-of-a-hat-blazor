@@ -78,3 +78,18 @@ output "frontend_web_acl_arn" {
   description = "The AWS-managed WAF Web ACL ARN for the frontend"
   value       = data.aws_wafv2_web_acl.cloudfront_managed.arn
 }
+
+output "api_cloudfront_domain" {
+  description = "The CloudFront domain name for the API"
+  value       = aws_cloudfront_distribution.api.domain_name
+}
+
+output "api_cloudfront_id" {
+  description = "The CloudFront distribution ID for the API (for cache invalidation)"
+  value       = aws_cloudfront_distribution.api.id
+}
+
+output "api_url" {
+  description = "The custom domain URL for the API"
+  value       = "https://api.namesoutofahat.com"
+}

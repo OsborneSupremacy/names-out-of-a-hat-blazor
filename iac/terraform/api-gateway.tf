@@ -4,24 +4,6 @@ resource "aws_api_gateway_rest_api" "giftexchange-gateway" {
   endpoint_configuration {
     types = ["REGIONAL"]
   }
-  policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
-      {
-        "Effect" : "Allow",
-        "Principal" : {
-          "AWS" : "*"
-        }
-        "Action" : "execute-api:Invoke",
-        "Resource" : "arn:aws:execute-api:us-east-1:${data.aws_caller_identity.current.account_id}:*/*/*"
-        "Condition" : {
-          "IpAddress" : {
-            "aws:SourceIp" : data.http.ipify.response_body
-          }
-        }
-      }
-    ]
-  })
 }
 
 resource "aws_api_gateway_deployment" "default" {
