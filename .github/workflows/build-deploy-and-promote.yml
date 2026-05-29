@@ -1,0 +1,19 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-infrastructure:
+    name: Build Infrastructure
+    uses: ./.github/workflows/.reusable-build-deploy-infrastructure.yml
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

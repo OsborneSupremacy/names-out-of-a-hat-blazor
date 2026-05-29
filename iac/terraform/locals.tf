@@ -4,6 +4,5 @@ locals {
     "INVITATIONS_QUEUE_URL" = aws_sqs_queue.invitations-queue.url,
     "CONTENT_MODERATION_THRESHOLD" = "0.5" // higher is _less_ sensitive
   }
-  project_directory = "../../src/GiftExchange.Library"
-  publish_zip_path  = "${local.project_directory}/bin/giftexchange_function.zip"
+  publish_zip_path  = "../../src/GiftExchange.Library/bin/GiftExchange.Library.zip"
 }

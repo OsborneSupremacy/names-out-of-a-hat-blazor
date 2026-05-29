@@ -1,0 +1,57 @@
+name: _ build lambda functions and apply terraform
+
+on:
+  workflow_call:
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build & package Lambdas
+        run: bash scripts/build-lambdas.sh
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Terraform Init
+        working-directory: iac
+        run: |
+          terraform init \
+            -backend-config="bucket=bro-tfstate" \
+            -backend-config="key=giftexchange/live" \
+            -backend-config="region=us-east-1"
+
+      - name: Terraform Validate
+        working-directory: iac
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: iac
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: iac
+        run: terraform apply -auto-approve tfplan
