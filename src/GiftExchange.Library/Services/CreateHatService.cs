@@ -41,7 +41,7 @@ internal class CreateHatService : IApiGatewayHandler
                 HttpStatusCode.BadRequest
             );
 
-        var (hatExists, existingHatId) = await _giftExchangeProvider
+        var (hatExists, _ ) = await _giftExchangeProvider
             .DoesHatAlreadyExistAsync(request.OrganizerEmail, request.HatName)
             .ConfigureAwait(false);
 

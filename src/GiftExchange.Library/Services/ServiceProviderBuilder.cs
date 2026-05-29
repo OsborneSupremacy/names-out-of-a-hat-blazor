@@ -1,5 +1,4 @@
 ﻿using Amazon;
-using Amazon.Comprehend;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmail;
 using Amazon.SQS;

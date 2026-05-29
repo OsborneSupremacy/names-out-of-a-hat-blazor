@@ -6,12 +6,12 @@
 /// </summary>
 internal class ApiGatewayAdapter
 {
-    private readonly ILogger<AddParticipantService> _logger;
+    private readonly ILogger<ApiGatewayAdapter> _logger;
 
     private readonly JsonService _jsonService;
 
     public ApiGatewayAdapter(
-        ILogger<AddParticipantService> logger,
+        ILogger<ApiGatewayAdapter> logger,
         JsonService jsonService
         )
     {
