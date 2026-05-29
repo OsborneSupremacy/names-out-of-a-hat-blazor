@@ -14,6 +14,5 @@ data "terraform_remote_state" "email" {
     bucket  = "bro-tfstate"
     key     = "giftexchange/email"
     region  = "us-east-1"
-    profile = "benosborne"
   }
 }
