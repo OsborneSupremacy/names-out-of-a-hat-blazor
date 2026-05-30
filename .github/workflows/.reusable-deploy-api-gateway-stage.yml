@@ -55,10 +55,10 @@ jobs:
             --patch-operations op=replace,path=/deploymentId,value="$deployment_id"
           echo "${{ inputs.stage-name }} stage updated successfully."
 
-      - name: Wait for deployment to propagate
-        shell: bash
-        run: |
-          echo "Waiting 120 seconds for API Gateway deployment to propagate..."
-          sleep 120
-          echo "Done."
+    #   - name: Wait for deployment to propagate
+    #     shell: bash
+    #     run: |
+    #       echo "Waiting 120 seconds for API Gateway deployment to propagate..."
+    #       sleep 120
+    #       echo "Done."
 

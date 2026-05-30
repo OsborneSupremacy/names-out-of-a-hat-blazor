@@ -20,14 +20,3 @@ aws apigateway get-export \
 cd src/app
 npm run dev
 ```
-
-### Deploy the React Application
-
-Build and deploy the React application to AWS S3:
-
-```bash
-cd src/app
-npm run build
-aws s3 sync dist/ s3://bro-namesoutofahat-frontend --delete
-aws cloudfront create-invalidation --distribution-id E1WP2SNZE07ZF0 --paths "/*"
-```
