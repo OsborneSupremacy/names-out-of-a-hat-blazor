@@ -533,7 +533,12 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
 
               <div className="participants-section">
                 <div className="section-header">
-                  <h3>Participants ({hat.participants.length})</h3>
+                  <div>
+                    <h3>Participants ({hat.participants.length})</h3>
+                    {hat.status === 'NAMES_ASSIGNED' && (
+                      <p className="participants-edit-hint">Click a participant row to edit eligible recipients.</p>
+                    )}
+                  </div>
                   {hat.status !== 'CLOSED' && hat.status !== 'INVITATIONS_SENT' && (
                     <button
                       className="primary-button"
@@ -585,7 +590,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                           return (
                             <tr
                               key={index}
-                              className={isEditingThis ? 'editing-row' : 'clickable-row'}
+                              className={`${isEditingThis ? 'editing-row' : 'clickable-row'} ${hat.status === 'NAMES_ASSIGNED' ? 'names-assigned-clickable' : ''}`.trim()}
                               onClick={() => !isEditingThis && handleEditEligibleRecipients(
                                 participant.person.email,
                                 participant.eligibleRecipients
@@ -598,6 +603,9 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                                     {isOrganizer && <span className="organizer-badge">Organizer</span>}
                                   </strong>
                                   <span className="participant-email">{participant.person.email}</span>
+                                  {hat.status === 'NAMES_ASSIGNED' && !isEditingThis && (
+                                    <span className="row-edit-indicator">Click row to edit</span>
+                                  )}
                                   {isEditingThis && !isOrganizer && (
                                     <button
                                       className="danger-button remove-participant-button"
