@@ -2,9 +2,11 @@
 resource "aws_cloudfront_distribution" "api" {
   enabled         = true
   is_ipv6_enabled = true
-  comment         = "CloudFront distribution for API Gateway"
-  price_class     = "PriceClass_100" # US, Canada, Europe
+  comment         = "CloudFront distribution for Gift Exchange API Gateway"
+  price_class     = "PriceClass_All"
   aliases         = ["api.namesoutofahat.com"]
+
+  web_acl_id = "arn:aws:wafv2:us-east-1:182571449491:global/webacl/CreatedByCloudFront-5775ad2d/2efbc868-19d6-4baa-a8f5-d99fb6bda060"
 
   origin {
     domain_name = aws_api_gateway_domain_name.api_prod.regional_domain_name
@@ -56,8 +58,6 @@ resource "aws_cloudfront_distribution" "api" {
   tags = {
     Name = "api-distribution"
   }
-
-  web_acl_id = data.aws_wafv2_web_acl.cloudfront_managed.arn
 
   depends_on = [
     aws_acm_certificate_validation.api_prod,
