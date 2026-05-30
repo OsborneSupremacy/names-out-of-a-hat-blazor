@@ -1,4 +1,5 @@
 .app-container {
+  --layout-max-width: 1600px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -7,11 +8,12 @@
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: 2rem clamp(1rem, 3vw, 3rem);
 }
 
 .content-wrapper {
-  max-width: 1280px;
+  width: 100%;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
   background: white;
   padding: 2rem;
