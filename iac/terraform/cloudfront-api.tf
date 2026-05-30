@@ -34,7 +34,7 @@ resource "aws_cloudfront_distribution" "api" {
     compress               = true
 
     # CachingDisabled - all requests pass through to API Gateway
-    cache_policy_id = "4cc15a8a-d715-48a4-ac15-33158f6c6df9"
+    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
 
     # AllViewerExceptHostHeader - forward all headers except Host, plus query strings and cookies
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
