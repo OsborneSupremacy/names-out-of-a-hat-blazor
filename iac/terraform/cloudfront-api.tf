@@ -7,8 +7,9 @@ resource "aws_cloudfront_distribution" "api" {
   aliases         = ["api.namesoutofahat.com"]
 
   origin {
-    domain_name = aws_api_gateway_domain_name.api_prod.regional_domain_name
+    domain_name = "${aws_api_gateway_rest_api.giftexchange-gateway.id}.execute-api.${data.aws_region.current.region}.amazonaws.com"
     origin_id   = "APIGateway-${aws_api_gateway_rest_api.giftexchange-gateway.id}"
+    origin_path = "/${aws_api_gateway_stage.live-stage.stage_name}"
 
     custom_origin_config {
       http_port                = 80
@@ -17,11 +18,6 @@ resource "aws_cloudfront_distribution" "api" {
       origin_ssl_protocols     = ["TLSv1.2"]
       origin_keepalive_timeout = 5
       origin_read_timeout      = 30
-    }
-
-    custom_header {
-      name  = "X-Forwarded-Host"
-      value = "api.namesoutofahat.com"
     }
   }
 
