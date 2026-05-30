@@ -644,11 +644,11 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.names-assigned-clickable {
+.editable-status-clickable {
   border-style: dashed;
 }
 
-.names-assigned-clickable td:first-child {
+.editable-status-clickable td:first-child {
   border-left: 3px solid #667eea;
 }
 
@@ -740,6 +740,24 @@
 .eligible-actions {
   display: flex;
   gap: 0.75rem;
+}
+
+.recipient-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.recipient-summary-item {
+  margin: 0;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.recipient-summary-label {
+  font-weight: 700;
+  color: #1f2937;
 }
 
 .delete-section {
@@ -962,7 +980,7 @@
     border-color: #818cf8;
   }
 
-  .names-assigned-clickable td:first-child {
+  .editable-status-clickable td:first-child {
     border-left-color: #818cf8;
   }
 
@@ -992,6 +1010,14 @@
 
   .recipient-email {
     color: #9ca3af;
+  }
+
+  .recipient-summary-item {
+    color: #d1d5db;
+  }
+
+  .recipient-summary-label {
+    color: #f9fafb;
   }
 
   .row-edit-indicator {

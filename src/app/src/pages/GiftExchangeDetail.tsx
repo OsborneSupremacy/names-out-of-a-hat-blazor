@@ -319,6 +319,10 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
     }
   }
 
+  const showRowEditAffordance = hat
+    ? ['IN_PROGRESS', 'READY_FOR_ASSIGNMENT', 'NAMES_ASSIGNED'].includes(hat.status)
+    : false
+
   return (
     <div className="app-container">
       <Header
@@ -535,7 +539,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                 <div className="section-header">
                   <div>
                     <h3>Participants ({hat.participants.length})</h3>
-                    {hat.status === 'NAMES_ASSIGNED' && (
+                    {showRowEditAffordance && (
                       <p className="participants-edit-hint">Click a participant row to edit eligible recipients.</p>
                     )}
                   </div>
@@ -586,11 +590,17 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                           const isOrganizer = participant.person.email === hat.organizer.email
                           const isEditingThis = editingEligibleFor === participant.person.email
                           const otherParticipants = hat.participants.filter(p => p.person.email !== participant.person.email)
+                          const eligibleRecipients = otherParticipants
+                            .filter(otherParticipant => participant.eligibleRecipients.includes(otherParticipant.person.name))
+                            .map(otherParticipant => otherParticipant.person.name)
+                          const ineligibleRecipients = otherParticipants
+                            .filter(otherParticipant => !participant.eligibleRecipients.includes(otherParticipant.person.name))
+                            .map(otherParticipant => otherParticipant.person.name)
 
                           return (
                             <tr
                               key={index}
-                              className={`${isEditingThis ? 'editing-row' : 'clickable-row'} ${hat.status === 'NAMES_ASSIGNED' ? 'names-assigned-clickable' : ''}`.trim()}
+                              className={`${isEditingThis ? 'editing-row' : 'clickable-row'} ${showRowEditAffordance ? 'editable-status-clickable' : ''}`.trim()}
                               onClick={() => !isEditingThis && handleEditEligibleRecipients(
                                 participant.person.email,
                                 participant.eligibleRecipients
@@ -603,7 +613,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                                     {isOrganizer && <span className="organizer-badge">Organizer</span>}
                                   </strong>
                                   <span className="participant-email">{participant.person.email}</span>
-                                  {hat.status === 'NAMES_ASSIGNED' && !isEditingThis && (
+                                  {showRowEditAffordance && !isEditingThis && (
                                     <span className="row-edit-indicator">Click row to edit</span>
                                   )}
                                   {isEditingThis && !isOrganizer && (
@@ -621,29 +631,26 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                                 <div className="eligible-recipients-section">
                                   {otherParticipants.length > 0 ? (
                                     <>
-                                      <div className="recipients-list">
-                                        {otherParticipants.map((otherParticipant) => {
-                                          const eligible = isEditingThis
-                                            ? tempEligibleRecipients.includes(otherParticipant.person.name)
-                                            : participant.eligibleRecipients.includes(otherParticipant.person.name)
+                                      {isEditingThis ? (
+                                        <>
+                                          <div className="recipients-list">
+                                            {otherParticipants.map((otherParticipant) => {
+                                              const eligible = tempEligibleRecipients.includes(otherParticipant.person.name)
 
-                                          return (
-                                            <label key={otherParticipant.person.email} className="recipient-checkbox">
-                                              <input
-                                                type="checkbox"
-                                                checked={eligible}
-                                                onChange={() => handleToggleEligible(otherParticipant.person.name)}
-                                                disabled={!isEditingThis}
-                                              />
-                                              <span>{otherParticipant.person.name}</span>
-                                            </label>
-                                          )
-                                        })}
-                                      </div>
+                                              return (
+                                                <label key={otherParticipant.person.email} className="recipient-checkbox">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={eligible}
+                                                    onChange={() => handleToggleEligible(otherParticipant.person.name)}
+                                                  />
+                                                  <span>{otherParticipant.person.name}</span>
+                                                </label>
+                                              )
+                                            })}
+                                          </div>
 
-                                      <div className="eligible-actions">
-                                        {isEditingThis && (
-                                          <>
+                                          <div className="eligible-actions">
                                             <button
                                               className="primary-button"
                                               onClick={() => handleSaveEligibleRecipients(participant.person.email)}
@@ -658,9 +665,22 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                                             >
                                               Cancel
                                             </button>
-                                          </>
-                                        )}
-                                      </div>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="recipient-summary-list">
+                                          <p className="recipient-summary-item">
+                                            <span className="recipient-summary-label">Eligible:</span>{' '}
+                                            {eligibleRecipients.length > 0 ? eligibleRecipients.join(', ') : 'None'}
+                                          </p>
+                                          {ineligibleRecipients.length > 0 && (
+                                            <p className="recipient-summary-item">
+                                              <span className="recipient-summary-label">Not Eligible:</span>{' '}
+                                              {ineligibleRecipients.join(', ')}
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
                                     </>
                                   ) : (
                                     <p className="text-muted">No other participants to assign</p>
