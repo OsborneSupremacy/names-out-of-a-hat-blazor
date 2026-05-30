@@ -19,9 +19,16 @@ internal static class EligibilityValidationService
 
         var people = participants.Select(x => x.Person).ToList();
 
+        var recipientEligibilityCounts = participants
+            .SelectMany(p => p.EligibleRecipients)
+            .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+
         foreach (var person in people)
-            if(!participants.SelectMany(p => p.EligibleRecipients).Contains(person.Name))
+            if(!recipientEligibilityCounts.TryGetValue(person.Name, out var eligibleForCount) || eligibleForCount == 0)
                 errors.Add($"{person.Name} is not an eligible recipient for any participant. Their name will not be picked.");
+            else if (eligibleForCount == 1)
+                errors.Add($"{person.Name} is only an eligible recipient for one participant. This makes their assignment deterministic.");
 
         if (errors.Any())
             return Task.FromResult(

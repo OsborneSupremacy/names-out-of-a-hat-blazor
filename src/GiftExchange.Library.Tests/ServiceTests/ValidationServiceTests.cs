@@ -185,7 +185,7 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
                 {
                     PickedRecipient = string.Empty,
                     Person = people[1],
-                    EligibleRecipients = [ people[0].Name, people[2].Name ]
+                    EligibleRecipients = [ people[0].Name, people[3].Name ]
                 },
                 new Participant
                 {
@@ -208,6 +208,57 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
 
         // assert
         result.Value.Success.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Validate_GivenParticipantEligibleForOnlyOneOtherParticipant_ReturnsInvalidResult()
+    {
+        var people = _personFaker.Generate(4);
+
+        // arrange
+        var hat = new Hat
+        {
+            Id = Guid.NewGuid(),
+            Name = string.Empty,
+            Status = HatStatus.InProgress,
+            AdditionalInformation = string.Empty,
+            PriceRange = string.Empty,
+            Organizer = Persons.Empty,
+            Participants = [
+                new Participant
+                {
+                    PickedRecipient = string.Empty,
+                    Person = people[0],
+                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                },
+                new Participant
+                {
+                    PickedRecipient = string.Empty,
+                    Person = people[1],
+                    EligibleRecipients = [ people[0].Name, people[3].Name ]
+                },
+                new Participant
+                {
+                    PickedRecipient = string.Empty,
+                    Person = people[2],
+                    EligibleRecipients = [ people[0].Name, people[1].Name ]
+                },
+                new Participant
+                {
+                    PickedRecipient = string.Empty,
+                    Person = people[3],
+                    EligibleRecipients = [ people[0].Name, people[2].Name ]
+                }
+            ],
+            InvitationsQueuedDate = DateTimeOffset.MinValue
+        };
+
+        // act
+        var result = await _sut.ValidateAsync(hat);
+
+        // assert
+        result.Value.Success.Should().BeFalse();
+        result.Value.Errors.First().Should().Be($"{people[3].Name} is only an eligible recipient for one participant. This makes their assignment deterministic.");
     }
 }
 
