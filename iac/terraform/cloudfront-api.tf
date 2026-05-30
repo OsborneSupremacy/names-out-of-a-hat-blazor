@@ -6,8 +6,6 @@ resource "aws_cloudfront_distribution" "api" {
   price_class     = "PriceClass_All"
   aliases         = ["api.namesoutofahat.com"]
 
-  web_acl_id = "arn:aws:wafv2:us-east-1:182571449491:global/webacl/CreatedByCloudFront-5775ad2d/2efbc868-19d6-4baa-a8f5-d99fb6bda060"
-
   origin {
     domain_name = aws_api_gateway_domain_name.api_prod.regional_domain_name
     origin_id   = "APIGateway-${aws_api_gateway_rest_api.giftexchange-gateway.id}"
@@ -55,6 +53,8 @@ resource "aws_cloudfront_distribution" "api" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
+  web_acl_id = data.aws_wafv2_web_acl.cloudfront_managed_pro.arn
+
   tags = {
     Name = "api-distribution"
   }
@@ -64,3 +64,10 @@ resource "aws_cloudfront_distribution" "api" {
     aws_api_gateway_domain_name.api_prod
   ]
 }
+
+# This Web ACL is created and managed by AWS CloudFront
+data "aws_wafv2_web_acl" "cloudfront_managed_pro" {
+  name  = "CreatedByCloudFront-5775ad2d"
+  scope = "CLOUDFRONT"
+}
+
