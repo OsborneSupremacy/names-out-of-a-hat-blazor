@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace GiftExchange.Library.Contexts;
 
@@ -29,4 +30,9 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(ValidateHatResponse))]
 internal partial class GiftExchangeJsonSerializerContext : JsonSerializerContext
 {
+}
+
+public static class GiftExchangeJsonTypeInfoResolver
+{
+    public static IJsonTypeInfoResolver Default => GiftExchangeJsonSerializerContext.Default;
 }

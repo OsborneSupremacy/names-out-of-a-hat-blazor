@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmail;
@@ -34,7 +35,7 @@ internal static class ServiceProviderBuilder
             {
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                TypeInfoResolver = GiftExchangeJsonSerializerContext.Default
+                TypeInfoResolver = GiftExchangeJsonTypeInfoResolver.Default
             };
             return services
                 .AddLogging(builder => builder.AddLambdaLogger())
