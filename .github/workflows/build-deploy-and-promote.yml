@@ -24,5 +24,6 @@ jobs:
     uses: ./.github/workflows/.reusable-deploy-api-gateway-stage.yml
     with:
       stage-name: live
+      api-gateway-name: giftexchange-gateway
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

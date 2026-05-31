@@ -7,6 +7,10 @@ on:
         description: The API Gateway stage to deploy to
         required: true
         type: string
+      api-gateway-name:
+        description: The API Gateway name to deploy
+        required: true
+        type: string
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -31,11 +35,11 @@ jobs:
         shell: bash
         run: |
           gateway_id=$(aws apigateway get-rest-apis \
-            --query "items[?name=='ecommerce-gateway'].id | [0]" \
+            --query "items[?name=='${{ inputs.api-gateway-name }}'].id | [0]" \
             --output text)
 
           if [[ -z "$gateway_id" || "$gateway_id" == "None" ]]; then
-            echo "ERROR: Could not find API Gateway with name 'ecommerce-gateway'" >&2
+            echo "ERROR: Could not find API Gateway with name '${{ inputs.api-gateway-name }}'" >&2
             exit 1
           fi
           echo "Found gateway with id: $gateway_id"
@@ -43,7 +47,7 @@ jobs:
           deployment_id=$(aws apigateway create-deployment \
             --rest-api-id "$gateway_id" \
             --stage-name "${{ inputs.stage-name }}" \
-            --description "Deployment for ecommerce API Gateway from GitHub Actions run ${{ github.run_id }}" \
+            --description "Deployment for ${{ inputs.api-gateway-name }} from GitHub Actions run ${{ github.run_id }}" \
             --query id \
             --output text)
           echo "Created deployment with id: $deployment_id"
