@@ -6,13 +6,9 @@ public class JsonService
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-    public JsonService()
+    public JsonService(JsonSerializerOptions jsonSerializerOptions)
     {
-        _jsonSerializerOptions = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
+        _jsonSerializerOptions = jsonSerializerOptions ?? throw new ArgumentNullException(nameof(jsonSerializerOptions));
     }
 
     public string SerializeDefault<T>(T value) =>

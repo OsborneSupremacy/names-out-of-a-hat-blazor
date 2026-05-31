@@ -1,4 +1,8 @@
-﻿namespace GiftExchange.Library.Handlers;
+﻿using Amazon.Lambda.Serialization.SystemTextJson;
+
+[assembly: LambdaSerializer(typeof(SourceGeneratorLambdaJsonSerializer<GiftExchangeJsonSerializerContext>))]
+
+namespace GiftExchange.Library.Handlers;
 
 [UsedImplicitly]
 public class Router

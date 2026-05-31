@@ -1,4 +1,5 @@
-﻿using Amazon;
+﻿using System.Text.Json;
+using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmail;
 using Amazon.SQS;
@@ -27,11 +28,20 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(); // AddAWSService fails for SES
         }
 
-        internal IServiceCollection AddUtilities() =>
-            services
+        internal IServiceCollection AddUtilities()
+        {
+            JsonSerializerOptions options = new()
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                TypeInfoResolver = GiftExchangeJsonSerializerContext.Default
+            };
+            return services
                 .AddLogging(builder => builder.AddLambdaLogger())
+                .AddSingleton(options)
                 .AddSingleton<JsonService>()
                 .AddSingleton<ApiGatewayAdapter>();
+        }
 
         internal IServiceCollection AddBusinessServices() =>
             services

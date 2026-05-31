@@ -52,7 +52,6 @@ internal class HatPreconditionValidator
                 Hat = hat
             };
 
-
         _logger.LogError("Hat status {HatStatus} is not valid for this operation. Valid statuses are {ValidStatuses}", hat.Status, string.Join(',', request.ValidHatStatuses));
         return new HatPreconditionResponse
         {
