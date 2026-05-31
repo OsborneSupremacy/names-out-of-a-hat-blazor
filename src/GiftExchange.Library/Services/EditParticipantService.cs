@@ -9,7 +9,6 @@ internal class EditParticipantService : IApiGatewayHandler
 
     private readonly ApiGatewayAdapter _adapter;
 
-
     public EditParticipantService(
         GiftExchangeProvider giftExchangeProvider,
         HatPreconditionValidator hatPreconditionValidator,

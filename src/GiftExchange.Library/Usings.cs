@@ -7,6 +7,8 @@ global using Amazon.Lambda.Core;
 
 global using dotenv.net.Utilities;
 
+global using FluentValidation;
+
 global using JetBrains.Annotations;
 
 global using Microsoft.Extensions.Logging;
@@ -25,3 +27,4 @@ global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Providers;
 global using GiftExchange.Library.Services;
 global using GiftExchange.Library.Utility;
+

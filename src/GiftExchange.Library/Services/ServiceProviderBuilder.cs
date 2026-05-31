@@ -4,6 +4,7 @@ using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SimpleEmail;
 using Amazon.SQS;
+using GiftExchange.Library.Validators;
 
 namespace GiftExchange.Library.Services;
 
@@ -43,6 +44,16 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<JsonService>()
                 .AddSingleton<ApiGatewayAdapter>();
         }
+
+        internal IServiceCollection AddValidators() =>
+            services
+                .AddSingleton<AddParticipantRequestValidator>()
+                .AddSingleton<CloseHatRequestValidator>()
+                .AddSingleton<CreateHatRequestValidator>()
+                .AddSingleton<EditHatRequestValidator>()
+                .AddSingleton<EditParticipantRequestValidator>()
+                .AddSingleton<SendInvitationsRequestValidator>()
+                .AddSingleton<ValidateHatRequestValidator>();
 
         internal IServiceCollection AddBusinessServices() =>
             services
