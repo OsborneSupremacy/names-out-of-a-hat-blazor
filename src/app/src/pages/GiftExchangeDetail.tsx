@@ -48,7 +48,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
         setEditedPriceRange(hatData.priceRange)
       } catch (err) {
         console.error('Error loading gift exchange:', err)
-        setError('Failed to load gift exchange details')
+        setError(err instanceof Error ? err.message : 'Failed to load gift exchange details')
       } finally {
         setLoading(false)
       }
@@ -89,7 +89,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       setIsEditing(false)
     } catch (err) {
       console.error('Error saving changes:', err)
-      setError('Failed to save changes')
+      setError(err instanceof Error ? err.message : 'Failed to save changes')
     } finally {
       setSaving(false)
     }
@@ -132,7 +132,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       setHat(updatedHat)
     } catch (err) {
       console.error('Error removing participant:', err)
-      setError('Failed to remove participant')
+      setError(err instanceof Error ? err.message : 'Failed to remove participant')
     } finally {
       setRemovingParticipant(null)
     }
@@ -168,7 +168,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       setEditingEligibleFor(null)
     } catch (err) {
       console.error('Error updating eligible recipients:', err)
-      setError('Failed to update eligible recipients')
+      setError(err instanceof Error ? err.message : 'Failed to update eligible recipients')
     }
   }
 
@@ -196,7 +196,7 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       navigate('/')
     } catch (err) {
       console.error('Error deleting gift exchange:', err)
-      setError('Failed to delete gift exchange')
+      setError(err instanceof Error ? err.message : 'Failed to delete gift exchange')
     }
   }
 

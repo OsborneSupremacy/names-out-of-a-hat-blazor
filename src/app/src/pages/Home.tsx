@@ -33,7 +33,7 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
         setHats(response.hats)
       } catch (err) {
         console.error('Error loading gift exchanges:', err)
-        setError('Failed to load your gift exchanges')
+        setError(err instanceof Error ? err.message : 'Failed to load your gift exchanges')
       } finally {
         setLoading(false)
       }
