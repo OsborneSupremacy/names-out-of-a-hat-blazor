@@ -15,6 +15,9 @@ jobs:
   build-infrastructure:
     name: Build & Deploy Infrastructure
     uses: ./.github/workflows/.reusable-build-deploy-infrastructure.yml
+    with:
+      tfstate_bucket: bro-tfstate
+      tfstate_key: giftexchange/live
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 

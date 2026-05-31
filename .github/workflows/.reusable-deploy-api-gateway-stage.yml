@@ -11,6 +11,11 @@ on:
         description: The API Gateway name to deploy
         required: true
         type: string
+      wait-for-propagation:
+        description: Whether to wait for 120 seconds after deployment to allow it to propagate before the workflow completes
+        required: false
+        type: boolean
+        default: false
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -59,10 +64,11 @@ jobs:
             --patch-operations op=replace,path=/deploymentId,value="$deployment_id"
           echo "${{ inputs.stage-name }} stage updated successfully."
 
-    #   - name: Wait for deployment to propagate
-    #     shell: bash
-    #     run: |
-    #       echo "Waiting 120 seconds for API Gateway deployment to propagate..."
-    #       sleep 120
-    #       echo "Done."
+      - name: Wait for deployment to propagate
+        if: ${{ inputs.wait-for-propagation }}
+        shell: bash
+        run: |
+          echo "Waiting 120 seconds for API Gateway deployment to propagate..."
+          sleep 120
+          echo "Done."
 

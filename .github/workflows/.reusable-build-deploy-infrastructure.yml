@@ -2,6 +2,15 @@ name: _ build lambda functions and apply terraform
 
 on:
   workflow_call:
+    inputs:
+      tfstate_bucket:
+        description: "Name of the S3 bucket to store Terraform state"
+        required: true
+        type: string
+      tfstate_key:
+        description: "Key prefix for Terraform state files in the S3 bucket"
+        required: true
+        type: string
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -40,8 +49,8 @@ jobs:
         working-directory: iac/terraform
         run: |
           terraform init \
-            -backend-config="bucket=bro-tfstate" \
-            -backend-config="key=giftexchange/live" \
+            -backend-config="bucket=${{ inputs.tfstate_bucket }}" \
+            -backend-config="key=${{ inputs.tfstate_key }}" \
             -backend-config="region=us-east-1"
 
       - name: Terraform Validate
