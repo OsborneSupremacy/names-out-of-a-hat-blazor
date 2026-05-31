@@ -15,6 +15,7 @@ internal static class ServiceProviderBuilder
             .AddUtilities()
             .AddVendorServices()
             .AddBusinessServices()
+            .AddValidators()
             .BuildServiceProvider();
 
     extension(IServiceCollection services)
@@ -47,13 +48,13 @@ internal static class ServiceProviderBuilder
 
         internal IServiceCollection AddValidators() =>
             services
-                .AddSingleton<AddParticipantRequestValidator>()
-                .AddSingleton<CloseHatRequestValidator>()
-                .AddSingleton<CreateHatRequestValidator>()
-                .AddSingleton<EditHatRequestValidator>()
-                .AddSingleton<EditParticipantRequestValidator>()
-                .AddSingleton<SendInvitationsRequestValidator>()
-                .AddSingleton<ValidateHatRequestValidator>();
+                .AddSingleton<IValidator<AddParticipantRequest>, AddParticipantRequestValidator>()
+                .AddSingleton<IValidator<CloseHatRequest>, CloseHatRequestValidator>()
+                .AddSingleton<IValidator<CreateHatRequest>, CreateHatRequestValidator>()
+                .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
+                .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
+                .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
+                .AddSingleton<IValidator<ValidateHatRequest>, ValidateHatRequestValidator>();
 
         internal IServiceCollection AddBusinessServices() =>
             services
