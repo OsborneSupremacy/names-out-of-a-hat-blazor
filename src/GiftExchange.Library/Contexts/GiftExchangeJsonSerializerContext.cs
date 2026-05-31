@@ -7,6 +7,8 @@ namespace GiftExchange.Library.Contexts;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     PropertyNameCaseInsensitive = true
 )]
+[JsonSerializable(typeof(APIGatewayProxyRequest))]
+[JsonSerializable(typeof(APIGatewayProxyResponse))]
 [JsonSerializable(typeof(AddParticipantRequest))]
 [JsonSerializable(typeof(AssignRecipientsRequest))]
 [JsonSerializable(typeof(CloseHatRequest))]
