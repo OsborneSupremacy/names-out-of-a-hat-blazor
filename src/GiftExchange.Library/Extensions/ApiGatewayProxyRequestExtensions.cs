@@ -17,11 +17,21 @@ public static class ApiGatewayProxyRequestExtensions
             };
         }
 
-        public string GetEmailPathParameter()
-        {
-            return request.PathParameters.TryGetValue("email", out var email)
+        public string GetEmailPathParameter() =>
+            request.PathParameters.TryGetValue("email", out var email)
                 ? System.Web.HttpUtility.UrlDecode(email)
                 : string.Empty;
+
+        public Guid GetIdPathParameter()
+        {
+            string id = request.PathParameters.TryGetValue("id", out var idOut) ? idOut! : string.Empty;
+            return string.ToGuidOrEmpty(id);
+        }
+
+        public Guid GetHatIdPathParameter()
+        {
+            string id = request.PathParameters.TryGetValue("hatId", out var idOut) ? idOut! : string.Empty;
+            return string.ToGuidOrEmpty(id);
         }
     }
 }

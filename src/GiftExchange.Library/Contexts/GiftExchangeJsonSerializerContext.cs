@@ -25,6 +25,8 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(GiftExchangeEmailRequest))]
 [JsonSerializable(typeof(HatPreconditionRequest))]
 [JsonSerializable(typeof(HatPreconditionResponse))]
+[JsonSerializable(typeof(PreviewInvitationsRequest))]
+[JsonSerializable(typeof(PreviewInvitationsResponse))]
 [JsonSerializable(typeof(RemoveParticipantRequest))]
 [JsonSerializable(typeof(SendInvitationsRequest))]
 [JsonSerializable(typeof(StatusCodeOnlyResponse))]

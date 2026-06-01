@@ -20,6 +20,9 @@ internal static class StringExtensions
             Randomizer.Seed = new Random(input.GetHashCode() + input[..1].GetHashCode());
             return new Faker().PickRandom(PersonEmojis);
         }
+
+        public static Guid ToGuidOrEmpty(string value) =>
+            Guid.TryParse(value, out var guid) ? guid : Guid.Empty;
     }
 
     private static readonly List<string> PersonEmojis =

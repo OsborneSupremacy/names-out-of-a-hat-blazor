@@ -24,3 +24,14 @@ public static class HatStatus
     /// </summary>
     public static string Closed => "CLOSED";
 }
+
+public static class HatStatuses
+{
+    public static readonly ImmutableList<string> All = [
+        HatStatus.InProgress,
+        HatStatus.ReadyForAssignment,
+        HatStatus.NamesAssigned,
+        HatStatus.InvitationsSent,
+        HatStatus.Closed
+    ];
+}

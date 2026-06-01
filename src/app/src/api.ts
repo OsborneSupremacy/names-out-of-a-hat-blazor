@@ -74,6 +74,16 @@ export interface SendInvitationsRequest {
   hatId: string
 }
 
+export interface PreviewInvitationsRequest {
+  organizerEmail: string
+  hatId: string
+}
+
+export interface PreviewInvitationsResponse {
+  subject: string
+  htmlBody: string
+}
+
 export interface CloseHatRequest {
   organizerEmail: string
   hatId: string
@@ -288,6 +298,26 @@ export async function sendInvitations(request: SendInvitationsRequest): Promise<
   if (!response.ok) {
     await handleApiError(response, 'Failed to send invitations')
   }
+}
+
+export async function previewInvitations(request: PreviewInvitationsRequest): Promise<PreviewInvitationsResponse> {
+  const headers = await getAuthHeaders()
+
+  const query = new URLSearchParams({
+    organizerEmail: request.organizerEmail,
+    hatId: request.hatId,
+  })
+
+  const response = await fetch(`${apiConfig.endpoint}/hat/previewinvitations?${query.toString()}`, {
+    method: 'GET',
+    headers,
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to preview invitations')
+  }
+
+  return response.json()
 }
 
 export async function closeHat(request: CloseHatRequest): Promise<void> {

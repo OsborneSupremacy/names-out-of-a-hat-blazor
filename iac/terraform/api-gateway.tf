@@ -23,6 +23,7 @@ resource "aws_api_gateway_deployment" "default" {
     module.lambda-get-hat,
     module.lambda-get-hats,
     module.lambda-get-participant,
+    module.lambda-preview-invitations-hat,
     module.lambda-remove-participant,
     module.lambda-send-invitations-hat,
     module.lambda-validate-hat

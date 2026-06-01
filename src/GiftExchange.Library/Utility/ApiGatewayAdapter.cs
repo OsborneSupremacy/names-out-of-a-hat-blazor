@@ -33,7 +33,7 @@ internal class ApiGatewayAdapter
         if(innerRequest.IsFaulted)
             return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
 
-        var (isValid, validationError) = GetValidationErrors(innerRequest);
+        var (isValid, validationError) = GetValidationError(innerRequest.Value);
 
         if(!isValid)
         {
@@ -59,7 +59,7 @@ internal class ApiGatewayAdapter
         Func<TRequest, Task<Result<TResponse>>> handler
     )
     {
-        var (isValid, validationError) = GetValidationErrors(innerRequest);
+        var (isValid, validationError) = GetValidationError(innerRequest);
 
         if(!isValid)
         {
@@ -88,7 +88,7 @@ internal class ApiGatewayAdapter
         return _jsonService.SerializeDefault(errorResponse);
     }
 
-    private (bool isValid, string error) GetValidationErrors<TRequest>(TRequest request)
+    private (bool isValid, string error) GetValidationError<TRequest>(TRequest request)
     {
         var validator = _serviceProvider.GetService<IValidator<TRequest>>();
 

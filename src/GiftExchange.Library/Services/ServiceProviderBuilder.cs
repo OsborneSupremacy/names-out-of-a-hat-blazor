@@ -53,6 +53,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<CreateHatRequest>, CreateHatRequestValidator>()
                 .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
+                .AddSingleton<IValidator<PreviewInvitationsRequest>, PreviewInvitationsRequestValidator>()
                 .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
                 .AddSingleton<IValidator<ValidateHatRequest>, ValidateHatRequestValidator>();
 
@@ -79,6 +80,7 @@ internal static class ServiceProviderBuilder
 
                 .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
+                .AddKeyedSingleton<IApiGatewayHandler, PreviewInvitationsService>("get/hat/previewinvitations")
                 .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
                 .AddKeyedSingleton<IApiGatewayHandler, CloseHatService>("post/hat/close")
 

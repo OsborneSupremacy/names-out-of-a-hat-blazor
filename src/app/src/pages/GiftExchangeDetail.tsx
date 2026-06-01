@@ -1,9 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getHat, editHat, addParticipant, removeParticipant, editParticipant, deleteHat, validateHat, assignRecipients, sendInvitations, closeHat, Hat } from '../api'
+import {
+  getHat,
+  editHat,
+  addParticipant,
+  removeParticipant,
+  editParticipant,
+  deleteHat,
+  validateHat,
+  assignRecipients,
+  previewInvitations,
+  sendInvitations,
+  closeHat,
+  Hat,
+  PreviewInvitationsResponse,
+} from '../api'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
+import { InvitationsPreviewModal } from '../components/InvitationsPreviewModal'
 import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
@@ -29,6 +44,9 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const [tempEligibleRecipients, setTempEligibleRecipients] = useState<string[]>([])
   const [isAssigning, setIsAssigning] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [showInvitationsPreview, setShowInvitationsPreview] = useState(false)
+  const [invitationsPreview, setInvitationsPreview] = useState<PreviewInvitationsResponse | null>(null)
   const [isSendingInvitations, setIsSendingInvitations] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
@@ -203,11 +221,32 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
   const handleSendInvitations = async () => {
     if (!hatId || !hat) return
 
-    const confirmed = window.confirm(
-      'This will send invitations to the gift exchange participants. Once you\'ve done this, this gift exchange will no longer be editable. Are you sure you want to proceed?'
-    )
+    setIsPreviewLoading(true)
+    setError('')
 
-    if (!confirmed) return
+    try {
+      const preview = await previewInvitations({
+        organizerEmail: userEmail,
+        hatId,
+      })
+
+      setInvitationsPreview(preview)
+      setShowInvitationsPreview(true)
+    } catch (err) {
+      console.error('Error loading invitation preview:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load invitation preview')
+    } finally {
+      setIsPreviewLoading(false)
+    }
+  }
+
+  const handleBackFromInvitationsPreview = () => {
+    if (isSendingInvitations) return
+    setShowInvitationsPreview(false)
+  }
+
+  const handleConfirmSendInvitations = async () => {
+    if (!hatId || !hat) return
 
     setIsSendingInvitations(true)
     setError('')
@@ -221,6 +260,8 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
       // Reload the hat data to reflect the updated status
       const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
+      setShowInvitationsPreview(false)
+      setInvitationsPreview(null)
     } catch (err) {
       console.error('Error sending invitations:', err)
       setError(err instanceof Error ? err.message : 'Failed to send invitations')
@@ -466,9 +507,13 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
                     <button
                       className="action-button send-button"
                       onClick={handleSendInvitations}
-                      disabled={isSendingInvitations}
+                      disabled={isSendingInvitations || isPreviewLoading}
                     >
-                      {isSendingInvitations ? 'Sending Invitations...' : 'Send Invitations'}
+                      {isPreviewLoading
+                        ? 'Loading Preview...'
+                        : isSendingInvitations
+                          ? 'Sending Invitations...'
+                          : 'Send Invitations'}
                     </button>
                     <button
                       className="action-button-secondary shake-again-button"
@@ -721,6 +766,16 @@ export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExch
         <AddParticipantModal
           onClose={() => setShowAddParticipantModal(false)}
           onSubmit={handleAddParticipant}
+        />
+      )}
+
+      {showInvitationsPreview && invitationsPreview && (
+        <InvitationsPreviewModal
+          subject={invitationsPreview.subject}
+          htmlBody={invitationsPreview.htmlBody}
+          isSending={isSendingInvitations}
+          onBack={handleBackFromInvitationsPreview}
+          onSend={handleConfirmSendInvitations}
         />
       )}
     </div>
