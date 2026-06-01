@@ -27,7 +27,7 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
         _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
-        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hat/previewinvitations");
+        _sut = serviceProvider.GetRequiredKeyedService<IApiGatewayHandler>("get/hat/{email}/previewinvitations/{id}");
     }
 
     [Fact]
@@ -38,10 +38,10 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
 
         var apiRequest = new APIGatewayProxyRequest
         {
-            QueryStringParameters = new Dictionary<string, string>
+            PathParameters = new Dictionary<string, string>
             {
-                { "hatId", hat.Id.ToString() },
-                { "organizerEmail", hat.Organizer.Email }
+                { "id", hat.Id.ToString() },
+                { "email", hat.Organizer.Email }
             }
         };
 
@@ -64,10 +64,10 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
         // arrange
         var apiRequest = new APIGatewayProxyRequest
         {
-            QueryStringParameters = new Dictionary<string, string>
+            PathParameters = new Dictionary<string, string>
             {
-                { "hatId", Guid.NewGuid().ToString() },
-                { "organizerEmail", "organizer@example.com" }
+                { "id", Guid.NewGuid().ToString() },
+                { "email", "organizer@example.com" }
             }
         };
 
@@ -86,10 +86,10 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
 
         var apiRequest = new APIGatewayProxyRequest
         {
-            QueryStringParameters = new Dictionary<string, string>
+            PathParameters = new Dictionary<string, string>
             {
-                { "hatId", hat.Id.ToString() },
-                { "organizerEmail", "not-an-email" }
+                { "id", hat.Id.ToString() },
+                { "email", "not-an-email" }
             }
         };
 

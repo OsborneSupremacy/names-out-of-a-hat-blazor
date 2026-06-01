@@ -32,7 +32,7 @@ internal class PreviewInvitationsService : IApiGatewayHandler
     private static Result<PreviewInvitationsRequest> GetInnerRequest(APIGatewayProxyRequest request)
     {
         var organizerEmail = request.GetEmailPathParameter();
-        var hatId = request.GetHatIdPathParameter();
+        var hatId = request.GetIdPathParameter();
 
         return new Result<PreviewInvitationsRequest>(new PreviewInvitationsRequest
         {

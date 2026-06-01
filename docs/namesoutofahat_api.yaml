@@ -357,18 +357,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Empty"
-  /hat/previewinvitations:
+  /hat/{email}/previewinvitations/{id}:
     get:
       operationId: "PreviewInvitations"
       parameters:
-      - name: "organizerEmail"
-        in: "query"
+      - name: "email"
+        in: "path"
         required: true
         schema:
           type: "string"
           format: "email"
-      - name: "hatId"
-        in: "query"
+      - name: "id"
+        in: "path"
         required: true
         schema:
           type: "string"

@@ -1,12 +1,12 @@
 module "lambda-preview-invitations-hat" {
   source                                            = "./modules/api"
   gateway_rest_api_id                               = aws_api_gateway_rest_api.giftexchange-gateway.id
-  gateway_resource_id                               = aws_api_gateway_resource.hat-preview-invitations-resource.id
+  gateway_resource_id                               = aws_api_gateway_resource.hat-email-preview-invitations-id-resource.id
   gateway_http_method                               = "GET"
   gateway_http_operation_name                       = "PreviewInvitations"
   gateway_method_request_parameters                 = {
-    "method.request.querystring.organizerEmail" = true,
-    "method.request.querystring.hatId"          = true,
+    "method.request.path.email" = true,
+    "method.request.path.id"    = true,
   }
   gateway_method_request_model_name                 = ""
   gateway_method_request_model_description          = ""

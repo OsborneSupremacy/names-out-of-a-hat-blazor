@@ -303,12 +303,7 @@ export async function sendInvitations(request: SendInvitationsRequest): Promise<
 export async function previewInvitations(request: PreviewInvitationsRequest): Promise<PreviewInvitationsResponse> {
   const headers = await getAuthHeaders()
 
-  const query = new URLSearchParams({
-    organizerEmail: request.organizerEmail,
-    hatId: request.hatId,
-  })
-
-  const response = await fetch(`${apiConfig.endpoint}/hat/previewinvitations?${query.toString()}`, {
+  const response = await fetch(`${apiConfig.endpoint}/hat/${encodeURIComponent(request.organizerEmail)}/previewinvitations/${request.hatId}`, {
     method: 'GET',
     headers,
   })

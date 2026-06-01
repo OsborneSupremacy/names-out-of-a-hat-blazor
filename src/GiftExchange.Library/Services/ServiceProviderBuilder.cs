@@ -80,7 +80,7 @@ internal static class ServiceProviderBuilder
 
                 .AddKeyedSingleton<IApiGatewayHandler, AssignRecipientsService>("post/recipients")
 
-                .AddKeyedSingleton<IApiGatewayHandler, PreviewInvitationsService>("get/hat/previewinvitations")
+                .AddKeyedSingleton<IApiGatewayHandler, PreviewInvitationsService>("get/hat/{email}/previewinvitations/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
                 .AddKeyedSingleton<IApiGatewayHandler, CloseHatService>("post/hat/close")
 
