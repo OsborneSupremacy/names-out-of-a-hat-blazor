@@ -22,13 +22,13 @@ public class EmailCompositionService
         if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
             e.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation.Trim()));
 
-        var body = [
-            @$"If you have any questions, contact <a href=""mailto:{hat.Organizer.Email}"">{hat.Organizer.Name}</a>.",
+        List<string> body = [
+            $"""If you have any questions, contact <a href="mailto:{hat.Organizer.Email}">{hat.Organizer.Name}</a>.""",
             "Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>",
-            @"<a href=""https://namesoutofahat.com""><b>🎩 Names Out Of A Hat 🎩</b></a>"
+            """<a href="https://namesoutofahat.com"><b>🎩 Names Out Of A Hat 🎩</b></a>"""
         ];
 
-        e.Add(body);
+        e.AddRange(body);
 
         var s = new StringBuilder();
         foreach (var i in e)
