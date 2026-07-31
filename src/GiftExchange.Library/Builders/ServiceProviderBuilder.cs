@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.Scheduler;
@@ -7,7 +6,7 @@ using Amazon.SimpleEmail;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
 
-namespace GiftExchange.Library.Services;
+namespace GiftExchange.Library.Builders;
 
 internal static class ServiceProviderBuilder
 {

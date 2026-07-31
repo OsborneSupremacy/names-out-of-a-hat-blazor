@@ -24,11 +24,11 @@ internal class GetHatService : IApiGatewayHandler
                     OrganizerEmail = organizerEmail,
                     HatId = hatId
                 },
-                GetHasAsync)
+                GetHatAsync)
             .ConfigureAwait(false);
     }
 
-    internal async Task<Result<Hat>> GetHasAsync(GetHatRequest request)
+    internal async Task<Result<Hat>> GetHatAsync(GetHatRequest request)
     {
         var (hatExists, hat) = await _giftExchangeProvider
             .GetHatAsync(request.OrganizerEmail, request.HatId)
