@@ -7,6 +7,13 @@ namespace GiftExchange.Library.Tests.Fixtures;
 
 public class DynamoDbFixture : IAsyncLifetime
 {
+    /// <summary>
+    /// Pinned explicitly: Testcontainers deprecated the implicit default image so that the tag a
+    /// test run uses is visible in the repository rather than inherited from the package version.
+    /// Tags: https://hub.docker.com/r/amazon/dynamodb-local/tags
+    /// </summary>
+    private const string DynamoDbImage = "amazon/dynamodb-local:1.21.0";
+
     private CancellationTokenSource CancellationTokenSource { get; }
 
     private readonly DynamoDbContainer _container;
@@ -15,7 +22,7 @@ public class DynamoDbFixture : IAsyncLifetime
     public DynamoDbFixture()
     {
         DotEnv.Load();
-        _container = new DynamoDbBuilder().Build();
+        _container = new DynamoDbBuilder(DynamoDbImage).Build();
         CancellationTokenSource = new();
     }
 

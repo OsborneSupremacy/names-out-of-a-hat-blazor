@@ -3,6 +3,7 @@ using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.Scheduler;
 using Amazon.SimpleEmail;
+using Amazon.SimpleSystemsManagement;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
 
@@ -29,6 +30,7 @@ internal static class ServiceProviderBuilder
                 .AddAWSService<IAmazonSQS>()
                 .AddAWSService<IAmazonScheduler>()
                 .AddAWSService<IAmazonComprehend>()
+                .AddAWSService<IAmazonSimpleSystemsManagement>()
                 .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(); // AddAWSService fails for SES
         }
 
@@ -50,6 +52,8 @@ internal static class ServiceProviderBuilder
         internal IServiceCollection AddValidators() =>
             services
                 .AddSingleton<IValidator<AddParticipantRequest>, AddParticipantRequestValidator>()
+                .AddSingleton<IValidator<RequestMagicLinkRequest>, RequestMagicLinkRequestValidator>()
+                .AddSingleton<IValidator<RedeemMagicLinkRequest>, RedeemMagicLinkRequestValidator>()
                 .AddSingleton<IValidator<CloseHatRequest>, CloseHatRequestValidator>()
                 .AddSingleton<IValidator<CreateHatRequest>, CreateHatRequestValidator>()
                 .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
@@ -61,8 +65,14 @@ internal static class ServiceProviderBuilder
         internal IServiceCollection AddBusinessServices() =>
             services
                 .AddSingleton<GiftExchangeProvider>()
+                .AddSingleton<LoginTokenProvider>()
+                .AddSingleton<SigningSecretProvider>()
+                .AddSingleton<SessionTokenService>()
                 .AddSingleton<IContentModerationService, ContentModerationService>()
                 .AddSingleton<HatPreconditionValidator>()
+
+                .AddKeyedSingleton<IApiGatewayHandler, RequestMagicLinkService>("post/auth/requestlink")
+                .AddKeyedSingleton<IApiGatewayHandler, RedeemMagicLinkService>("post/auth/redeem")
 
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")

@@ -28,6 +28,16 @@ public static class ApiGatewayProxyRequestExtensions
             return string.ToGuidOrEmpty(id);
         }
 
+        /// <summary>
+        /// The caller's email as established by the authorizer, not by anything the client sent.
+        /// Empty when the request did not pass through the authorizer.
+        /// </summary>
+        public string GetAuthenticatedEmail() =>
+            request.RequestContext?.Authorizer is { } authorizer
+            && authorizer.TryGetValue("email", out var authorizedEmail)
+                ? authorizedEmail?.ToString() ?? string.Empty
+                : string.Empty;
+
         public Guid GetHatIdPathParameter()
         {
             string id = request.PathParameters.TryGetValue("hatId", out var idOut) ? idOut! : string.Empty;

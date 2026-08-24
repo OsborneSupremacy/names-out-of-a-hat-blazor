@@ -3,7 +3,7 @@
 ## Solution Organization
 
 ```
-NamesOutOfAHat2.sln
+GiftExchange.slnx
 ├── src/GiftExchange.Library          # Main Lambda function library
 └── src/GiftExchange.Library.Tests    # Test project
 ```

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="docs/demo-01.gif" />
+    <File Path="docs/IMG_8222.jpg" />
+    <File Path="docs/IMG_8223.jpg" />
+    <File Path="docs/IMG_8224.jpg" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="src/GiftExchange.Library.Tests/GiftExchange.Library.Tests.csproj" />
+  <Project Path="src/GiftExchange.Library/GiftExchange.Library.csproj" />
+</Solution>

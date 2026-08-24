@@ -72,3 +72,9 @@ variable "authorizer_id" {
   type        = string
   default     = ""
 }
+
+variable "authorizer_type" {
+  description = "COGNITO_USER_POOLS or CUSTOM. Ignored when authorizer_id is empty."
+  type        = string
+  default     = "COGNITO_USER_POOLS"
+}
