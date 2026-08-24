@@ -65,8 +65,6 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
         var hat = hatPreconditionResult.Hat;
 
-        var messageGroupId = $"group-hat-{hat.Id}-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}";
-
         var sqsTasks = new List<Task>();
 
         foreach(var participant in hat.Participants)
@@ -86,8 +84,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
             var sqsRequest = new SendMessageRequest
             {
                 QueueUrl = _queueUrl,
-                MessageBody = jsonInvitation,
-                MessageGroupId = messageGroupId
+                MessageBody = jsonInvitation
             };
 
             sqsTasks.Add(_sqsClient.SendMessageAsync(sqsRequest));
