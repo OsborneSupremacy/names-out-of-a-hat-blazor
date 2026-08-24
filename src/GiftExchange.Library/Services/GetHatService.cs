@@ -14,7 +14,7 @@ internal class GetHatService : IApiGatewayHandler
 
     public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        var organizerEmail = request.GetEmailPathParameter();
+        var organizerEmail = request.GetAuthenticatedEmail();
         var hatId = request.GetIdPathParameter();
 
         return await _adapter

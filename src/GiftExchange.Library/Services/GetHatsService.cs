@@ -22,7 +22,7 @@ internal class GetHatsService : IApiGatewayHandler
     {
         return _adapter.AdaptAsync(new GetHatsRequest
         {
-            OrganizerEmail = request.GetEmailPathParameter()
+            OrganizerEmail = request.GetAuthenticatedEmail()
         }, ExecuteAsync);
     }
 

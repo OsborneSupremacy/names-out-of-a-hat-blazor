@@ -5,11 +5,12 @@ interface CreateHatModalProps {
   organizerName: string
   organizerEmail: string
   onClose: () => void
-  onSubmit: (hatName: string) => Promise<void>
+  onSubmit: (hatName: string, organizerName: string) => Promise<void>
 }
 
 export function CreateHatModal({ organizerName, organizerEmail, onClose, onSubmit }: CreateHatModalProps) {
   const [hatName, setHatName] = useState('')
+  const [name, setName] = useState(organizerName)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,11 +23,17 @@ export function CreateHatModal({ organizerName, organizerEmail, onClose, onSubmi
       return
     }
 
+    const trimmedOrganizerName = name.trim()
+    if (!trimmedOrganizerName) {
+      setError('Your name cannot be empty')
+      return
+    }
+
     setError('')
     setIsSubmitting(true)
 
     try {
-      await onSubmit(trimmedName)
+      await onSubmit(trimmedName, trimmedOrganizerName)
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create gift exchange')
@@ -61,9 +68,16 @@ export function CreateHatModal({ organizerName, organizerEmail, onClose, onSubmi
           </div>
 
           <div className="form-group">
-            <label>Organizer</label>
+            <label htmlFor="organizerName">Your Name *</label>
+            <input
+              type="text"
+              id="organizerName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="How participants will see you"
+              disabled={isSubmitting}
+            />
             <div className="organizer-info">
-              <div><strong>{organizerName}</strong></div>
               <div className="organizer-email">{organizerEmail}</div>
             </div>
           </div>

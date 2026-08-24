@@ -1,0 +1,81 @@
+.signin-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.signin-card {
+  width: 100%;
+  max-width: 26rem;
+  padding: 2rem;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.signin-card h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+}
+
+.signin-intro {
+  margin: 0 0 1.5rem;
+  opacity: 0.8;
+}
+
+.signin-card label {
+  display: block;
+  margin-bottom: 0.375rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.signin-card input {
+  width: 100%;
+  padding: 0.625rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.signin-primary,
+.signin-secondary {
+  width: 100%;
+  padding: 0.625rem;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.signin-primary {
+  border: none;
+  background-color: #646cff;
+  color: #fff;
+}
+
+.signin-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signin-secondary {
+  margin-top: 1rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  background: transparent;
+  color: inherit;
+}
+
+.signin-error {
+  margin-bottom: 1rem;
+  color: #d33;
+  text-align: left;
+}
+
+.signin-sent p {
+  opacity: 0.85;
+  line-height: 1.5;
+}

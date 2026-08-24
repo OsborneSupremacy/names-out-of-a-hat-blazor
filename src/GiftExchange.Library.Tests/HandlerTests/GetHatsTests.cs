@@ -47,10 +47,8 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
         await Task
             .WhenAll(_testDataService.CreateHatAsync(hatOne), _testDataService.CreateHatAsync(hatTwo));
 
-        var request = new APIGatewayProxyRequest
-        {
-            PathParameters = new Dictionary<string, string> { ["email"] = hatOne.OrganizerEmail }
-        };
+        var request = new APIGatewayProxyRequest()
+            .WithAuthenticatedEmail(hatOne.OrganizerEmail);
 
         // act
         var response = await _sut.FunctionHandler(request, _context);

@@ -40,10 +40,9 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
         {
             PathParameters = new Dictionary<string, string>
             {
-                { "id", hat.Id.ToString() },
-                { "email", hat.Organizer.Email }
+                { "id", hat.Id.ToString() }
             }
-        };
+        }.WithAuthenticatedEmail(hat.Organizer.Email);
 
         // act
         var response = await _sut.FunctionHandler(apiRequest, _context);
@@ -66,10 +65,9 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
         {
             PathParameters = new Dictionary<string, string>
             {
-                { "id", Guid.NewGuid().ToString() },
-                { "email", "organizer@example.com" }
+                { "id", Guid.NewGuid().ToString() }
             }
-        };
+        }.WithAuthenticatedEmail("organizer@example.com");
 
         // act
         var response = await _sut.FunctionHandler(apiRequest, _context);
@@ -88,10 +86,9 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
         {
             PathParameters = new Dictionary<string, string>
             {
-                { "id", hat.Id.ToString() },
-                { "email", "not-an-email" }
+                { "id", hat.Id.ToString() }
             }
-        };
+        }.WithAuthenticatedEmail("not-an-email");
 
         // act
         var response = await _sut.FunctionHandler(apiRequest, _context);

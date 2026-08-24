@@ -1,22 +1,23 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getHats, createHat, HatMetadata } from '../api'
+import { getDisplayName, setDisplayName } from '../auth'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { CreateHatModal } from '../components/CreateHatModal'
 
 interface HomeProps {
   userEmail: string
-  givenName: string
   onSignOut: () => void
 }
 
-export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
+export function Home({ userEmail, onSignOut }: HomeProps) {
   const navigate = useNavigate()
   const [hats, setHats] = useState<HatMetadata[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [organizerName, setOrganizerName] = useState(getDisplayName())
 
   const formatStatus = (status: string): string => {
     // Convert "IN_PROGRESS" to "In Progress"
@@ -48,10 +49,13 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
     setShowCreateModal(true)
   }
 
-  const handleCreateSubmit = async (hatName: string) => {
+  const handleCreateSubmit = async (hatName: string, name: string) => {
+    setDisplayName(name)
+    setOrganizerName(name)
+
     await createHat({
       hatName,
-      organizerName: givenName,
+      organizerName: name,
       organizerEmail: userEmail,
     })
 
@@ -68,13 +72,13 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
     <div className="app-container">
       <Header
         userEmail={userEmail}
-        givenName={givenName}
+        givenName={organizerName}
         onSignOut={onSignOut}
       />
 
       <main className="main-content">
         <div className="content-wrapper">
-          <h2>Hello {givenName || 'there'}!</h2>
+          <h2>Hello {organizerName || 'there'}!</h2>
           <p>Welcome to Names Out of a Hat!</p>
 
           {loading ? (
@@ -125,7 +129,7 @@ export function Home({ userEmail, givenName, onSignOut }: HomeProps) {
 
       {showCreateModal && (
         <CreateHatModal
-          organizerName={givenName}
+          organizerName={organizerName}
           organizerEmail={userEmail}
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateSubmit}

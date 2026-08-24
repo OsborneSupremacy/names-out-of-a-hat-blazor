@@ -1,5 +1,5 @@
-import { fetchAuthSession } from 'aws-amplify/auth'
-import { apiConfig } from './aws-config'
+import { apiConfig } from './config'
+import { getSession } from './auth'
 
 export interface HatMetadata {
   hatId: string
@@ -112,15 +112,14 @@ export interface Hat {
 }
 
 async function getAuthHeaders() {
-  const session = await fetchAuthSession()
-  const token = session.tokens?.idToken?.toString()
+  const session = getSession()
 
-  if (!token) {
-    throw new Error('No authentication token available')
+  if (!session) {
+    throw new Error('Your session has expired. Please sign in again.')
   }
 
   return {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': `Bearer ${session.token}`,
     'Content-Type': 'application/json',
   }
 }

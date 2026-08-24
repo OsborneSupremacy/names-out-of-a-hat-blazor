@@ -54,12 +54,11 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         {
             PathParameters = new Dictionary<string, string>
             {
-                { "email", hat.Organizer.Email },
                 { "hatId", hat.Id.ToString() },
                 { "participantEmail", person.Email }
             },
             QueryStringParameters = new Dictionary<string, string>()
-        }, _context);
+        }.WithAuthenticatedEmail(hat.Organizer.Email), _context);
 
         // assert
         response.StatusCode.Should().Be(200);

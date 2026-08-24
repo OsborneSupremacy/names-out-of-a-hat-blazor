@@ -58,11 +58,10 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
         {
             PathParameters = new Dictionary<string, string>
             {
-                { "email", getHatRequest.OrganizerEmail },
                 { "id", getHatRequest.HatId.ToString() }
             },
             QueryStringParameters = new Dictionary<string, string>()
-        };
+        }.WithAuthenticatedEmail(getHatRequest.OrganizerEmail);
 
         // act
         var response = await _sut.FunctionHandler(request, _context);

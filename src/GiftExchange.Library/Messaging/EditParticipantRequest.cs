@@ -1,7 +1,7 @@
 namespace GiftExchange.Library.Messaging;
 
 [UsedImplicitly]
-public record EditParticipantRequest
+public record EditParticipantRequest : IOrganizerScopedRequest
 {
     public required string OrganizerEmail { get; init; }
 
@@ -11,4 +11,7 @@ public record EditParticipantRequest
 
     // ReSharper disable once CollectionNeverUpdated.Global
     public required ImmutableList<string> EligibleRecipients { get; init; }
+
+    IOrganizerScopedRequest IOrganizerScopedRequest.WithOrganizerEmail(string organizerEmail) =>
+        this with { OrganizerEmail = organizerEmail };
 }

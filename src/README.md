@@ -8,7 +8,6 @@ aws apigateway get-export \
   --stage-name live \
   --export-type oas30 \
   --accepts application/yaml \
-  --profile benosborne \
   ../docs/namesoutofahat_api.yaml
 ```
 

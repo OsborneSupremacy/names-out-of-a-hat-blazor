@@ -28,12 +28,14 @@ internal class ApiGatewayAdapter
         Func<TRequest, Task<Result<TResponse>>> handler
     )
     {
-        var innerRequest = request.GetInnerRequest<TRequest>(_jsonService);
+        var deserializedRequest = request.GetInnerRequest<TRequest>(_jsonService);
 
-        if(innerRequest.IsFaulted)
-            return ProxyResponseBuilder.Build(innerRequest.StatusCode, innerRequest.Exception.Message);
+        if(deserializedRequest.IsFaulted)
+            return ProxyResponseBuilder.Build(deserializedRequest.StatusCode, deserializedRequest.Exception.Message);
 
-        var (isValid, validationError) = GetValidationError(innerRequest.Value);
+        var innerRequest = ApplyAuthenticatedOrganizer(deserializedRequest.Value, request);
+
+        var (isValid, validationError) = GetValidationError(innerRequest);
 
         if(!isValid)
         {
@@ -41,7 +43,7 @@ internal class ApiGatewayAdapter
             return ProxyResponseBuilder.Build(HttpStatusCode.BadRequest, BuildSerializedErrorResponse(validationError));
         }
 
-        var result = await handler(innerRequest.Value);
+        var result = await handler(innerRequest);
 
         if(result.IsFaulted)
             return ProxyResponseBuilder
@@ -78,6 +80,19 @@ internal class ApiGatewayAdapter
         return ProxyResponseBuilder
             .Build(result.StatusCode, _jsonService.SerializeDefault(result.Value));
     }
+
+    /// <summary>
+    /// Replaces any client-supplied organizer email with the one the authorizer established. The
+    /// substitution happens here rather than in each service so that a new endpoint cannot forget
+    /// to do it.
+    /// </summary>
+    private static TRequest ApplyAuthenticatedOrganizer<TRequest>(
+        TRequest innerRequest,
+        APIGatewayProxyRequest request
+    ) =>
+        innerRequest is IOrganizerScopedRequest scopedRequest
+            ? (TRequest)scopedRequest.WithOrganizerEmail(request.GetAuthenticatedEmail())
+            : innerRequest;
 
     private string BuildSerializedErrorResponse(string errorMessage)
     {

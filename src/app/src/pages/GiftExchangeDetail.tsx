@@ -15,6 +15,7 @@ import {
   Hat,
   PreviewInvitationsResponse,
 } from '../api'
+import { getDisplayName } from '../auth'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -23,11 +24,11 @@ import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
   userEmail: string
-  givenName: string
   onSignOut: () => void
 }
 
-export function GiftExchangeDetail({ userEmail, givenName, onSignOut }: GiftExchangeDetailProps) {
+export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailProps) {
+  const givenName = getDisplayName()
   const { hatId } = useParams<{ hatId: string }>()
   const navigate = useNavigate()
   const [hat, setHat] = useState<Hat | null>(null)

@@ -1,7 +1,7 @@
 namespace GiftExchange.Library.Messaging;
 
 [UsedImplicitly]
-public record AddParticipantRequest
+public record AddParticipantRequest : IOrganizerScopedRequest
 {
     public required string OrganizerEmail { get; init; }
 
@@ -10,4 +10,7 @@ public record AddParticipantRequest
     public required string Name { get; init; }
 
     public required string Email { get; init; }
+
+    IOrganizerScopedRequest IOrganizerScopedRequest.WithOrganizerEmail(string organizerEmail) =>
+        this with { OrganizerEmail = organizerEmail };
 }
