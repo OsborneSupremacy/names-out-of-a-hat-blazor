@@ -31,6 +31,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The schemas are compared against the records they describe by SchemaDriftTests. -->
+    <Content Include="..\GiftExchange.Library\Schemas\*.schema.json" Link="Schemas\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove=".env" />
     <Content Include=".env">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

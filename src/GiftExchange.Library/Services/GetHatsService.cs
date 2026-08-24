@@ -28,13 +28,14 @@ internal class GetHatsService : IApiGatewayHandler
 
     internal async Task<Result<GetHatsResponse>> ExecuteAsync(GetHatsRequest request)
     {
-        var result = await _giftExchangeProvider
+        var (organizerName, hats) = await _giftExchangeProvider
             .GetHatsAsync(request.OrganizerEmail)
             .ConfigureAwait(false);
 
         return new Result<GetHatsResponse>(new GetHatsResponse
         {
-            Hats = result
+            OrganizerName = organizerName,
+            Hats = hats
         }, HttpStatusCode.OK);
     }
 }

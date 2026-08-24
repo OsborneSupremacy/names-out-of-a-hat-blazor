@@ -37,6 +37,11 @@
                 "$ref": "#/definitions/participant"
             },
             "description": "The list of participants in the gift exchange"
+        },
+        "invitationsQueuedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When invitations were queued for sending"
         }
     },
     "required": [
@@ -46,7 +51,8 @@
         "additionalInformation",
         "priceRange",
         "organizer",
-        "participants"
+        "participants",
+        "invitationsQueuedDate"
     ],
     "additionalProperties": false,
     "definitions": {
@@ -73,39 +79,16 @@
             ],
             "additionalProperties": false
         },
-        "recipient": {
-            "type": "object",
-            "properties": {
-                "person": {
-                    "$ref": "#/definitions/person",
-                    "description": "The person who could be a potential recipient"
-                },
-                "eligible": {
-                    "type": "boolean",
-                    "description": "Whether this person is eligible to be picked as a recipient"
-                }
-            },
-            "required": [
-                "person",
-                "eligible"
-            ],
-            "additionalProperties": false
-        },
         "participant": {
             "type": "object",
             "properties": {
                 "pickedRecipient": {
                     "type": "string",
-                    "format": "email",
-                    "description": "The email of the person this participant will give a gift to"
+                    "description": "The name of the person this participant will give a gift to"
                 },
                 "person": {
                     "$ref": "#/definitions/person",
                     "description": "The person who is participating"
-                },
-                "invitationSent": {
-                    "type": "boolean",
-                    "description": "Whether an invitation has been sent to this participant"
                 },
                 "eligibleRecipients": {
                     "type": "array",

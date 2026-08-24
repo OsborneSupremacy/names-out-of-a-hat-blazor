@@ -1,7 +1,6 @@
 import { apiConfig } from './config'
 
 const TOKEN_KEY = 'noah.accessToken'
-const DISPLAY_NAME_KEY = 'noah.displayName'
 
 export interface Session {
   token: string
@@ -57,14 +56,6 @@ export function getSession(): Session | null {
 
 export function signOut(): void {
   localStorage.removeItem(TOKEN_KEY)
-}
-
-export function getDisplayName(): string {
-  return localStorage.getItem(DISPLAY_NAME_KEY) ?? ''
-}
-
-export function setDisplayName(name: string): void {
-  localStorage.setItem(DISPLAY_NAME_KEY, name)
 }
 
 export async function requestMagicLink(email: string): Promise<void> {

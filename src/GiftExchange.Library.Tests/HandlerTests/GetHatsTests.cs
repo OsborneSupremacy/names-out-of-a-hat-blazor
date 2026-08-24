@@ -41,7 +41,8 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
 
         var hatTwo = _hatDataModelFaker.Generate() with
         {
-            OrganizerEmail = hatOne.OrganizerEmail
+            OrganizerEmail = hatOne.OrganizerEmail,
+            OrganizerName = hatOne.OrganizerName
         };
 
         await Task
@@ -57,5 +58,24 @@ public class GetHatsTests : IClassFixture<DynamoDbFixture>
         response.StatusCode.Should().Be((int)HttpStatusCode.OK);
         var getHatsResponse = _jsonService.DeserializeDefault<GetHatsResponse>(response.Body);
         getHatsResponse!.Hats.Count.Should().Be(2);
+        getHatsResponse.OrganizerName.Should().Be(hatOne.OrganizerName);
+    }
+
+    [Fact]
+    public async Task GetHats_GivenOrganizerWithNoHats_ReturnsEmptyOrganizerName()
+    {
+        // arrange: nobody has created a hat for this address, so there is no name to read back and
+        // the UI has to ask for one.
+        var request = new APIGatewayProxyRequest()
+            .WithAuthenticatedEmail("no.hats.yet@example.com");
+
+        // act
+        var response = await _sut.FunctionHandler(request, _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        var getHatsResponse = _jsonService.DeserializeDefault<GetHatsResponse>(response.Body);
+        getHatsResponse!.Hats.Should().BeEmpty();
+        getHatsResponse.OrganizerName.Should().BeEmpty();
     }
 }

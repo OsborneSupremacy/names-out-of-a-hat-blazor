@@ -3,16 +3,21 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-        "Hats": {
+        "hats": {
             "type": "array",
             "items": {
                 "$ref": "#/definitions/hatmetadata"
             },
             "description": "List of hat metadata."
+        },
+        "organizerName": {
+            "type": "string",
+            "description": "The name the organizer is known by. Empty when they have no hats yet."
         }
     },
     "required": [
-        "Hats"
+        "organizerName",
+        "hats"
     ],
     "definitions": {
         "hatmetadata": {

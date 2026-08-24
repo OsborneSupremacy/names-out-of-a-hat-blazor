@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getHats, createHat, HatMetadata } from '../api'
-import { getDisplayName, setDisplayName } from '../auth'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { CreateHatModal } from '../components/CreateHatModal'
@@ -17,7 +16,7 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [organizerName, setOrganizerName] = useState(getDisplayName())
+  const [organizerName, setOrganizerName] = useState('')
 
   const formatStatus = (status: string): string => {
     // Convert "IN_PROGRESS" to "In Progress"
@@ -32,6 +31,7 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
       try {
         const response = await getHats(userEmail)
         setHats(response.hats)
+        setOrganizerName(response.organizerName)
       } catch (err) {
         console.error('Error loading gift exchanges:', err)
         setError(err instanceof Error ? err.message : 'Failed to load your gift exchanges')
@@ -50,9 +50,6 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
   }
 
   const handleCreateSubmit = async (hatName: string, name: string) => {
-    setDisplayName(name)
-    setOrganizerName(name)
-
     await createHat({
       hatName,
       organizerName: name,
@@ -62,6 +59,7 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
     // Refresh the hats list
     const updatedHats = await getHats(userEmail)
     setHats(updatedHats.hats)
+    setOrganizerName(updatedHats.organizerName)
   }
 
   const handleHatClick = (hatId: string) => {

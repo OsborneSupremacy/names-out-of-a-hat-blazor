@@ -3,26 +3,51 @@
   "title": "Participant",
   "type": "object",
   "properties": {
-    "PickedRecipient": {
-      "type": "string"
+    "pickedRecipient": {
+      "type": "string",
+      "description": "The name of the person this participant gives a gift to. Empty before the hat is shaken, and 'Hidden' until the hat is closed."
     },
-    "Person": {
-      "type": "object",
-      "description": "Person object structure goes here.",
-      "properties": {},
-      "additionalProperties": true
+    "person": {
+      "$ref": "#/$defs/person",
+      "description": "The person who is participating."
     },
-    "EligibleRecipients": {
+    "eligibleRecipients": {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "The names this participant is allowed to draw."
     }
   },
   "required": [
-    "PickedRecipient",
-    "Person",
-    "EligibleRecipients"
+    "pickedRecipient",
+    "person",
+    "eligibleRecipients"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "person": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "The name of the person."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 254,
+          "description": "The email address of the person."
+        }
+      },
+      "required": [
+        "name",
+        "email"
+      ],
+      "additionalProperties": false
+    }
+  }
 }

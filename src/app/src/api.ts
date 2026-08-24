@@ -8,6 +8,7 @@ export interface HatMetadata {
 }
 
 export interface GetHatsResponse {
+  organizerName: string
   hats: HatMetadata[]
 }
 

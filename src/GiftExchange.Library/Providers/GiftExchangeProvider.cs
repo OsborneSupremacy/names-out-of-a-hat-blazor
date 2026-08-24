@@ -22,7 +22,7 @@ public class GiftExchangeProvider
         _tableName = EnvReader.GetStringValue("TABLE_NAME");
     }
 
-    public async Task<ImmutableList<HatMetaData>> GetHatsAsync(string organizerEmail)
+    public async Task<(string organizerName, ImmutableList<HatMetaData> hats)> GetHatsAsync(string organizerEmail)
     {
         var request = new QueryRequest
         {
@@ -40,9 +40,9 @@ public class GiftExchangeProvider
             .ConfigureAwait(false);
 
         if (response.Items is not { Count: > 0 })
-            return [];
+            return (string.Empty, []);
 
-        return response.Items
+        var hats = response.Items
             .Select(i => new HatMetaData
             {
                 HatId = Guid.Parse(i["HatId"].S),
@@ -50,6 +50,14 @@ public class GiftExchangeProvider
                 Status = i.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress
             })
             .ToImmutableList();
+
+        // Every hat item carries the organizer's name and they are all the same person, so any
+        // non-empty one answers "what is this user called".
+        var organizerName = response.Items
+            .Select(i => i.TryGetValue("OrganizerName", out var name) ? name.S : string.Empty)
+            .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? string.Empty;
+
+        return (organizerName, hats);
     }
 
     /// <summary>
@@ -96,7 +104,7 @@ public class GiftExchangeProvider
         string hatName
     )
     {
-        var hats = await GetHatsAsync(organizerEmail)
+        var (_, hats) = await GetHatsAsync(organizerEmail)
             .ConfigureAwait(false);
 
         if(!hats.Any())

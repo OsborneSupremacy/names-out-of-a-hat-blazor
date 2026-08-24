@@ -51,15 +51,17 @@ public class GiftExchangeProviderTests : IClassFixture<DynamoDbFixture>
         var hatTwo = hats[1] with
         {
             OrganizerEmail = hatOne.OrganizerEmail,
+            OrganizerName = hatOne.OrganizerName
         };
 
         await _sut.CreateHatAsync(hatOne);
         await _sut.CreateHatAsync(hatTwo);
 
         // act
-        var result = await _sut.GetHatsAsync(hatOne.OrganizerEmail);
+        var (organizerName, result) = await _sut.GetHatsAsync(hatOne.OrganizerEmail);
 
         // assert
+        organizerName.Should().Be(hatOne.OrganizerName);
         result.Should().BeEquivalentTo([
             new HatMetaData { HatId = hatOne.HatId, HatName = hatOne.HatName, Status = HatStatus.InProgress },
             new HatMetaData { HatId = hatTwo.HatId, HatName = hatTwo.HatName, Status = HatStatus.InProgress }
