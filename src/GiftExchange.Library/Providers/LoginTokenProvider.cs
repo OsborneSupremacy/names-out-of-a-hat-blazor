@@ -11,7 +11,7 @@ namespace GiftExchange.Library.Providers;
 [UsedImplicitly]
 internal class LoginTokenProvider
 {
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(120);
+    private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(15);
 
     private static readonly TimeSpan ThrottleWindow = TimeSpan.FromMinutes(1);
 
