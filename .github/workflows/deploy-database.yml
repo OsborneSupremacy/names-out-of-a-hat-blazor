@@ -2,12 +2,6 @@ name: Deploy Database Schema
 
 on:
   workflow_dispatch:
-    inputs:
-      dry-run:
-        description: Print the SQL that would run, without applying it
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}
@@ -31,14 +25,6 @@ jobs:
       # encrypts, it just stops verifying the hostname.
       LIQUIBASE_COMMAND_URL: jdbc:postgresql://${{ vars.DSQL_ENDPOINT }}:5432/postgres?sslmode=verify-full
       LIQUIBASE_COMMAND_USERNAME: admin
-      # Pin this. `latest` will move under you and Liquibase majors change behaviour.
-      LIQUIBASE: >-
-        docker run --rm
-        -v ${{ github.workspace }}/db:/liquibase/changelog
-        -e LIQUIBASE_COMMAND_URL
-        -e LIQUIBASE_COMMAND_USERNAME
-        -e LIQUIBASE_COMMAND_PASSWORD
-        liquibase/liquibase:latest
 
     steps:
       - name: Checkout
@@ -63,16 +49,16 @@ jobs:
           echo "::add-mask::$token"
           echo "LIQUIBASE_COMMAND_PASSWORD=$token" >> "$GITHUB_ENV"
 
+      # Liquibase is a Java application. GitHub-hosted runners already have a JRE; a
+      # self-hosted runner would need actions/setup-java before this step.
+      - name: Setup Liquibase
+        uses: liquibase/setup-liquibase@v3
+        with:
+          version: '5.1.1'
+          edition: 'community'
+
       - name: Validate changelog
-        run: $LIQUIBASE validate --changelog-file=changelog/changelog.yaml
-
-      - name: Show pending changesets
-        run: $LIQUIBASE status --changelog-file=changelog/changelog.yaml --verbose
-
-      - name: Preview SQL
-        if: ${{ inputs.dry-run }}
-        run: $LIQUIBASE update-sql --changelog-file=changelog/changelog.yaml
+        run: liquibase validate --changelog-file=db/changelog.yaml
 
       - name: Apply changelog
-        if: ${{ !inputs.dry-run }}
-        run: $LIQUIBASE update --changelog-file=changelog/changelog.yaml
+        run: liquibase update --changelog-file=db/changelog.yaml
