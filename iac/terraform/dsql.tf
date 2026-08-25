@@ -8,7 +8,7 @@ resource "aws_dsql_cluster" "giftexchange_dsql_cluster" {
 
 resource "aws_route53_record" "giftexchange_dsql_cluster_record" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "giftexchange-db.${data.aws_route53_zone.main}"
+  name    = "giftexchange-db.${data.aws_route53_zone.main.name}"
   type    = "CNAME"
   ttl     = "60"
   records = [
