@@ -50,7 +50,7 @@ public class SchemaDriftTests
         { nameof(Participant), "Hat.schema.json", "definitions/participant" },
 
         { nameof(Participant), "Participant.schema.json", "" },
-        { nameof(Person), "Participant.schema.json", "$defs/person" },
+        { nameof(Person), "Participant.schema.json", "definitions/person" },
 
         { nameof(GetHatsResponse), "GetHatsResponse.schema.json", "" },
         { nameof(HatMetaData), "GetHatsResponse.schema.json", "definitions/hatmetadata" }
@@ -88,6 +88,78 @@ public class SchemaDriftTests
 
         onDisk.Except(covered).Should().BeEmpty("every schema should be checked against a record, or listed as unused");
         covered.Except(onDisk).Should().BeEmpty("the coverage list should not name schema files that no longer exist");
+    }
+
+    /// <summary>
+    /// API Gateway validates models against JSON Schema draft-04. Keywords from later drafts are
+    /// rejected at deploy time with "Unsupported keyword(s)", and a $ref that is not a plain
+    /// #/definitions/... pointer fails its canonical form check. Both are slow ways to find out.
+    /// </summary>
+    private static readonly ImmutableHashSet<string> KeywordsApiGatewayRejects =
+    [
+        "$defs", "$anchor", "$dynamicRef", "$dynamicAnchor", "const", "if", "then", "else",
+        "contains", "prefixItems", "unevaluatedProperties", "unevaluatedItems",
+        "dependentSchemas", "dependentRequired"
+    ];
+
+    [Fact]
+    public void EverySchemaFile_UsesOnlyWhatApiGatewayAccepts()
+    {
+        var offences = new List<string>();
+
+        foreach (var file in Directory.GetFiles(SchemaDirectory, "*.schema.json"))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(file));
+            Inspect(document.RootElement, document.RootElement, Path.GetFileName(file)!, offences);
+        }
+
+        offences.Should().BeEmpty();
+    }
+
+    private static void Inspect(JsonElement node, JsonElement root, string fileName, List<string> offences)
+    {
+        switch (node.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var property in node.EnumerateObject())
+                {
+                    if (KeywordsApiGatewayRejects.Contains(property.Name))
+                        offences.Add($"{fileName}: uses '{property.Name}', which API Gateway rejects");
+
+                    if (property.NameEquals("$ref"))
+                        InspectReference(property.Value.GetString(), root, fileName, offences);
+                    else
+                        Inspect(property.Value, root, fileName, offences);
+                }
+                break;
+
+            case JsonValueKind.Array:
+                foreach (var item in node.EnumerateArray())
+                    Inspect(item, root, fileName, offences);
+                break;
+        }
+    }
+
+    private static void InspectReference(string? reference, JsonElement root, string fileName, List<string> offences)
+    {
+        if (reference is null || !reference.StartsWith("#/definitions/", StringComparison.Ordinal))
+        {
+            offences.Add($"{fileName}: $ref '{reference}' is not the canonical #/definitions/... form");
+            return;
+        }
+
+        var node = root;
+
+        foreach (var segment in reference["#/".Length..].Split('/'))
+        {
+            if (!node.TryGetProperty(segment, out var child))
+            {
+                offences.Add($"{fileName}: $ref '{reference}' does not resolve");
+                return;
+            }
+
+            node = child;
+        }
     }
 
     [Fact]
