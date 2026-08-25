@@ -11,6 +11,8 @@ global using FluentValidation;
 
 global using JetBrains.Annotations;
 
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore.Metadata.Builders;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +25,7 @@ global using GiftExchange.Library.Contexts;
 global using GiftExchange.Library.Extensions;
 global using GiftExchange.Library.Messaging;
 global using GiftExchange.Library.DataModels;
+global using GiftExchange.Library.Entities;
 global using GiftExchange.Library.Models;
 global using GiftExchange.Library.Providers;
 global using GiftExchange.Library.Services;

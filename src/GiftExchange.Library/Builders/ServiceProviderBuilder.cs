@@ -4,6 +4,7 @@ using Amazon.Extensions.NETCore.Setup;
 using Amazon.Scheduler;
 using Amazon.SimpleEmail;
 using Amazon.SimpleSystemsManagement;
+using Amazon.AuroraDsql.Npgsql;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
 
@@ -31,7 +32,18 @@ internal static class ServiceProviderBuilder
                 .AddAWSService<IAmazonScheduler>()
                 .AddAWSService<IAmazonComprehend>()
                 .AddAWSService<IAmazonSimpleSystemsManagement>()
-                .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>(); // AddAWSService fails for SES
+                .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>() // AddAWSService fails for SES
+                .AddSingleton<DsqlDataSource>(_ => DsqlDataSourceProvider.Create())
+                // A factory rather than AddDbContext: this container has no scopes, so a scoped
+                // DbContext would be resolved from the root and shared like a singleton. A
+                // DbContext is not thread safe, so each unit of work gets its own.
+                .AddDbContextFactory<GiftExchangeDbContext>((provider, options) =>
+                    options.UseNpgsql(
+                        // The connector wraps an NpgsqlDataSource and exposes it for exactly this.
+                        provider.GetRequiredService<DsqlDataSource>().DataSource,
+                        // DSQL reports write conflicts as serialization failures (SQLSTATE
+                        // 40001), which Npgsql already classifies as transient.
+                        npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null)));
         }
 
         internal IServiceCollection AddUtilities()

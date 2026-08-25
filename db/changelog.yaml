@@ -170,3 +170,18 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: REVOKE SELECT ON hat_status FROM giftexchange_user
+
+  - changeSet:
+      id: giftexchange_user--0004
+      author: ben
+      comment: >
+        Maps the application's IAM role onto this database role. The checksum covers the
+        substituted ARN, so moving accounts means a new changeset rather than an edit.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0004.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: AWS IAM REVOKE giftexchange_user FROM '${app_role_arn}'

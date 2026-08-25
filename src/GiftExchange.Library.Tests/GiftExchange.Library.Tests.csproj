@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="8.10.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageReference Include="Testcontainers.DynamoDb" Version="4.14.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -27,10 +28,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GiftExchange.Library\GiftExchange.Library.csproj"/>
+    <ProjectReference Include="..\GiftExchange.Library\GiftExchange.Library.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The migration SQL is compared against the EF model by EntityMappingTests. -->
+    <Content Include="..\..\db\tables\*.sql" Link="DbTables\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
     <!-- The schemas are compared against the records they describe by SchemaDriftTests. -->
     <Content Include="..\GiftExchange.Library\Schemas\*.schema.json" Link="Schemas\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
