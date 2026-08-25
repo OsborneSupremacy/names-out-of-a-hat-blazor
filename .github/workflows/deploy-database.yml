@@ -1,0 +1,78 @@
+name: Deploy Database Schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Print the SQL that would run, without applying it
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  migrate:
+    name: Apply Liquibase changelog to Aurora DSQL
+    runs-on: ubuntu-latest
+
+    env:
+      # DSQL exposes a plain Postgres endpoint on 5432 and requires TLS. Fall back to
+      # sslmode=require if the certificate chain gives the JDBC driver trouble; that still
+      # encrypts, it just stops verifying the hostname.
+      LIQUIBASE_COMMAND_URL: jdbc:postgresql://${{ vars.DSQL_ENDPOINT }}:5432/postgres?sslmode=verify-full
+      LIQUIBASE_COMMAND_USERNAME: admin
+      # Pin this. `latest` will move under you and Liquibase majors change behaviour.
+      LIQUIBASE: >-
+        docker run --rm
+        -v ${{ github.workspace }}/db:/liquibase/changelog
+        -e LIQUIBASE_COMMAND_URL
+        -e LIQUIBASE_COMMAND_USERNAME
+        -e LIQUIBASE_COMMAND_PASSWORD
+        liquibase/liquibase:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # DSQL has no password. The "password" is a short-lived IAM-signed token, so it is
+      # generated immediately before use rather than stored as a secret. Masking it is not
+      # optional: until it expires it is a working admin credential for the cluster, and
+      # anything that dumps the environment would otherwise put it in the run log.
+      - name: Generate DSQL auth token
+        run: |
+          token=$(aws dsql generate-db-connect-admin-auth-token \
+            --hostname "${{ vars.DSQL_ENDPOINT }}" \
+            --region "${{ env.AWS_REGION }}" \
+            --expires-in 3600)
+          echo "::add-mask::$token"
+          echo "LIQUIBASE_COMMAND_PASSWORD=$token" >> "$GITHUB_ENV"
+
+      - name: Validate changelog
+        run: $LIQUIBASE validate --changelog-file=changelog/changelog.yaml
+
+      - name: Show pending changesets
+        run: $LIQUIBASE status --changelog-file=changelog/changelog.yaml --verbose
+
+      - name: Preview SQL
+        if: ${{ inputs.dry-run }}
+        run: $LIQUIBASE update-sql --changelog-file=changelog/changelog.yaml
+
+      - name: Apply changelog
+        if: ${{ !inputs.dry-run }}
+        run: $LIQUIBASE update --changelog-file=changelog/changelog.yaml

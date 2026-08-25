@@ -1,0 +1,172 @@
+# Aurora DSQL constraints that shape this changelog:
+#
+#   * One DDL statement per changeset. Every sqlFile below sets splitStatements: false and
+#     holds exactly one statement, so what Liquibase sends is what the file contains.
+#   * Secondary indexes require CREATE INDEX ASYNC. They are one-liners, so they sit inline
+#     here rather than in files.
+#   * No foreign keys, so referential cleanup on delete lives in the application.
+#
+# Files are named <object>--<nnnn>.sql so every change to an object sorts together. When
+# this file gets long, move the settled changesets into an archive changelog.
+
+databaseChangeLog:
+  - changeSet:
+      id: hat_status--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/hat_status--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE hat_status
+
+  - changeSet:
+      id: hat_status--0002
+      author: ben
+      comment: Seed data. Adding a status later is a new changeset, not an edit to this one.
+      changes:
+        - sqlFile:
+            path: tables/hat_status--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DELETE FROM hat_status
+
+  - changeSet:
+      id: hats--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/hats--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE hats
+
+  - changeSet:
+      id: participants--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/participants--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE participants
+
+  - changeSet:
+      id: participant_eligible_recipients--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/participant_eligible_recipients--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE participant_eligible_recipients
+
+  - changeSet:
+      id: idx_hats_organizer_email--0001
+      author: ben
+      comment: Backs "list my gift exchanges", the only unqualified read in the application.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_hats_organizer_email ON hats (organizer_email)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_hats_organizer_email
+
+  - changeSet:
+      id: uq_hats_organizer_name--0001
+      author: ben
+      comment: One gift exchange name per organizer, compared case-insensitively.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_hats_organizer_name ON hats (organizer_email, name_normalized)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_hats_organizer_name
+
+  - changeSet:
+      id: uq_participants_hat_email--0001
+      author: ben
+      comment: >
+        One row per email per hat. Deliberately no equivalent on name, so two participants
+        may share a display name.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_participants_hat_email ON participants (hat_id, email)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_participants_hat_email
+
+  - changeSet:
+      id: uq_eligible_recipients_participant_eligible--0001
+      author: ben
+      comment: >
+        Replaces the guarantee the old composite primary key gave: a participant cannot be
+        made eligible for the same recipient twice. Duplicate rows would inflate the
+        eligibility counts EligibilityValidationService relies on. The leading column also
+        covers lookups by participant_id.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_eligible_recipients_participant_eligible ON participant_eligible_recipients (participant_id, eligible_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_eligible_recipients_participant_eligible
+
+  - changeSet:
+      id: idx_eligible_recipients_eligible_participant--0001
+      author: ben
+      comment: >
+        Covers the reverse direction, which is what removing a participant needs. Lookups by
+        participant_id are served by uq_eligible_recipients_participant_eligible above.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_eligible_recipients_eligible_participant ON participant_eligible_recipients (eligible_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_eligible_recipients_eligible_participant
+
+  - changeSet:
+      id: giftexchange_user--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP ROLE giftexchange_user
+
+  - changeSet:
+      id: giftexchange_user--0002
+      author: ben
+      comment: CRUD on every table. Add a new changeset here whenever a table is added.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON hats, participants, participant_eligible_recipients FROM giftexchange_user
+
+  - changeSet:
+      id: giftexchange_user--0003
+      author: ben
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0003.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT ON hat_status FROM giftexchange_user
