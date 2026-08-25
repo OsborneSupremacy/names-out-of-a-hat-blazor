@@ -20,10 +20,16 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # DSQL exposes a plain Postgres endpoint on 5432 and requires TLS. Fall back to
-      # sslmode=require if the certificate chain gives the JDBC driver trouble; that still
-      # encrypts, it just stops verifying the hostname.
-      LIQUIBASE_COMMAND_URL: jdbc:postgresql://${{ vars.DSQL_ENDPOINT }}:5432/postgres?sslmode=verify-full
+      # DSQL exposes a plain Postgres endpoint on 5432 and requires TLS. Its certificate
+      # chains to Amazon Root CA 1, which is already in the runner's trust store.
+      #
+      # sslrootcert is not optional here. AWS documents PGSSLROOTCERT=system, but that is
+      # libpq syntax; the JDBC driver does not understand "system" and falls back to
+      # ~/.postgresql/root.crt, which does not exist on a runner. Pointing it at the OS
+      # bundle is the JDBC equivalent. If a future runner image drops the Amazon root,
+      # download https://www.amazontrust.com/repository/AmazonRootCA1.pem in a step and
+      # point sslrootcert at that instead.
+      LIQUIBASE_COMMAND_URL: jdbc:postgresql://${{ vars.DSQL_ENDPOINT }}:5432/postgres?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca-certificates.crt
       LIQUIBASE_COMMAND_USERNAME: admin
 
     steps:
