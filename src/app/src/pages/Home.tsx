@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getHats, createHat, HatMetadata } from '../api'
+import { formatHatStatus } from '../hatStatus'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { CreateHatModal } from '../components/CreateHatModal'
@@ -17,14 +18,6 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
   const [error, setError] = useState<string>('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [organizerName, setOrganizerName] = useState('')
-
-  const formatStatus = (status: string): string => {
-    // Convert "IN_PROGRESS" to "In Progress"
-    return status
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ')
-  }
 
   useEffect(() => {
     async function loadHats() {
@@ -105,7 +98,7 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
                           <strong>{hat.hatName}</strong>
                         </div>
                         <span className={`status-pill ${hat.status.toLowerCase().replace(/_/g, '-')}`}>
-                          {formatStatus(hat.status)}
+                          {formatHatStatus(hat.status)}
                         </span>
                       </li>
                     ))}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   getHat,
@@ -15,6 +15,7 @@ import {
   Hat,
   PreviewInvitationsResponse,
 } from '../api'
+import { HAT_STATUS_STEPS, formatHatStatus } from '../hatStatus'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -315,7 +316,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     if (!hatId || !hat) return
 
     const confirmed = window.confirm(
-      'Are you sure you want to close the gift exchange? The picked names for all recipients will be revealed. You should only do this once the exchange has actually happened.'
+      'Reveal who everybody drew? This shows the picked name for every participant and cannot be undone, so only do it once the gift exchange has actually happened.'
     )
     if (!confirmed) return
 
@@ -332,8 +333,8 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
     } catch (err) {
-      console.error('Error closing gift exchange:', err)
-      setError(err instanceof Error ? err.message : 'Failed to close gift exchange')
+      console.error('Error revealing picked names:', err)
+      setError(err instanceof Error ? err.message : 'Failed to reveal the picked names')
     } finally {
       setIsClosing(false)
     }
@@ -439,35 +440,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
 
               <div className="status-progression">
                 <div className="status-steps">
-                  <div className={`status-step ${hat.status === 'IN_PROGRESS' ? 'active' : ''}`}>
-                    <div className="status-step-indicator"></div>
-                    <div className="status-step-label">In Progress</div>
-                  </div>
-                  <div className="status-step-connector"></div>
-                  <div className={`status-step ${hat.status === 'READY_FOR_ASSIGNMENT' ? 'active' : ''}`}>
-                    <div className="status-step-indicator"></div>
-                    <div className="status-step-label">Ready For Assignment</div>
-                  </div>
-                  <div className="status-step-connector"></div>
-                  <div className={`status-step ${hat.status === 'NAMES_ASSIGNED' ? 'active' : ''}`}>
-                    <div className="status-step-indicator"></div>
-                    <div className="status-step-label">Names Assigned</div>
-                  </div>
-                  <div className="status-step-connector"></div>
-                  <div className={`status-step ${hat.status === 'INVITATIONS_SENT' ? 'active' : ''}`}>
-                    <div className="status-step-indicator"></div>
-                    <div className="status-step-label">Invitations Sent</div>
-                  </div>
-                  <div className="status-step-connector"></div>
-                  <div className={`status-step ${hat.status === 'READY_TO_CLOSE' ? 'active' : ''}`}>
-                    <div className="status-step-indicator"></div>
-                    <div className="status-step-label">Cooling Off</div>
-                  </div>
-                  <div className="status-step-connector"></div>
-                  <div className={`status-step ${hat.status === 'CLOSED' ? 'active' : ''}`}>
-                    <div className="status-step-indicator"></div>
-                    <div className="status-step-label">Closed</div>
-                  </div>
+                  {HAT_STATUS_STEPS.map((status, index) => (
+                    <Fragment key={status}>
+                      {index > 0 && <div className="status-step-connector"></div>}
+                      <div className={`status-step ${hat.status === status ? 'active' : ''}`}>
+                        <div className="status-step-indicator"></div>
+                        <div className="status-step-label">{formatHatStatus(status)}</div>
+                      </div>
+                    </Fragment>
+                  ))}
                 </div>
               </div>
 
@@ -547,7 +528,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                 {hat.status === 'INVITATIONS_SENT' && (
                   <div className="action-container">
                     <p className="action-complete">Invitations have been sent</p>
-                    <p className="action-hint">This gift exchange is in a waiting period and cannot be closed yet.</p>
+                    <p className="action-hint">The picks stay hidden for a short while so nobody's surprise is spoiled early.</p>
                   </div>
                 )}
 
@@ -558,15 +539,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                       onClick={handleCloseHat}
                       disabled={isClosing}
                     >
-                      {isClosing ? 'Closing...' : 'Close Gift Exchange'}
+                      {isClosing ? 'Revealing...' : 'Reveal Picked Names'}
                     </button>
-                    <p className="action-hint">Mark this gift exchange as completed. Once you do this, you will be able to view the picked recipients of all participants.</p>
+                    <p className="action-hint">Show who everybody drew. Do this once the gift exchange has actually happened — it cannot be undone.</p>
                   </div>
                 )}
 
                 {hat.status === 'CLOSED' && (
                   <div className="action-container">
-                    <p className="action-complete">This gift exchange is closed</p>
+                    <p className="action-complete">The picks are revealed</p>
                     <p className="action-hint">See below for the names everyone was assigned. See you next time!</p>
                   </div>
                 )}

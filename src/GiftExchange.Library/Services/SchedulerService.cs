@@ -37,7 +37,7 @@ internal class SchedulerService : ISchedulerService
         )
     {
         var scheduleName = $"hat-cooled-off-{request.HatId:N}";
-        var scheduleExpression = $"at({invitationsQueuedAt.UtcDateTime.AddMinutes(1):yyyy-MM-ddTHH:mm:ss})";
+        var scheduleExpression = $"at({invitationsQueuedAt.UtcDateTime.AddMinutes(5):yyyy-MM-ddTHH:mm:ss})";
         var payload = _jsonService.SerializeDefault(new HatCooledOffScheduleRequest
         {
             OrganizerEmail = request.OrganizerEmail,
