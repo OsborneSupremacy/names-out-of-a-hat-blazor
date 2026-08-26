@@ -24,8 +24,12 @@ internal class ContentModerationService : IContentModerationService
     }
 
     /// <summary>
-    /// Validates that the provided text does not contain toxic or inappropriate content
+    /// Validates that the provided text does not contain toxic or inappropriate content.
     /// </summary>
+    /// <remarks>
+    /// Fails closed: if the check cannot be performed, the content is rejected rather than
+    /// accepted. Empty text is the one exception, since there is nothing to check.
+    /// </remarks>
     /// <param name="text">The text to validate</param>
     /// <param name="fieldName">The name of the field being validated (for error messages)</param>
     /// <returns>A tuple indicating if validation passed and an error message if it failed</returns>
@@ -68,8 +72,16 @@ internal class ContentModerationService : IContentModerationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during content moderation for {FieldName}", fieldName);
-            return (true, string.Empty);
+            // Fail closed. Everything moderated here ends up in an email sent from our SES
+            // identity, so accepting unchecked content during a Comprehend outage would put that
+            // reputation in someone else's hands. The AWS SDK has already exhausted its own
+            // retries by the time an exception reaches us, so there is nothing left to wait for.
+            _logger.LogError(ex, "Content moderation failed for {FieldName}; rejecting the request.", fieldName);
+
+            // Deliberately distinct from the rejection message below: the caller's content may be
+            // perfectly fine, and telling someone their name is inappropriate when the checker was
+            // simply unreachable is both wrong and unhelpful.
+            return (false, $"We couldn't check the {fieldName} just now. Please try again in a moment.");
         }
     }
 
