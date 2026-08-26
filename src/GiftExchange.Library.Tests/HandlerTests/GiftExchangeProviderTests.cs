@@ -1,4 +1,7 @@
 using System.Data;
+using GiftExchange.Library.Providers;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using GiftExchange.Library.Contexts;
 using GiftExchange.Library.Entities;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -203,6 +206,36 @@ public class GiftExchangeProviderTests
         var (exists, stored) = await _sut.GetParticipantAsync(hat.OrganizerEmail, hat.HatId, giver.Person.Email);
         exists.Should().BeTrue();
         stored.PickedRecipient.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SaveChangesInsideATransaction_DoesNotCreateASavepoint()
+    {
+        // arrange: UpdateEligibleRecipientsAsync calls SaveChanges inside a transaction that
+        // InTransactionAsync already opened. EF's instinct there is to wrap the save in a
+        // savepoint so it can undo just that part, and DSQL rejects SAVEPOINT outright. Postgres
+        // allows it, so counting the attempts is the only way to see this locally.
+        var recorder = new RecordingTransactionInterceptor();
+
+        var provider = new GiftExchangeProvider(
+            _dbFixture.CreateContextFactory(recorder),
+            Substitute.For<ILogger<GiftExchangeProvider>>());
+
+        var hat = _hatDataModelFaker.Generate();
+        await provider.CreateHatAsync(hat);
+
+        var alpha = await provider.CreateParticipantAsync(ParticipantRequestFor(hat), []);
+        var beta = await provider.CreateParticipantAsync(ParticipantRequestFor(hat), [alpha]);
+
+        // act
+        await provider.UpdateEligibleRecipientsAsync(
+            hat.OrganizerEmail, hat.HatId, beta.Person.Email, [alpha.Person.Name]);
+
+        // assert
+        recorder.SavepointsCreated.Should().Be(0);
+
+        var (_, stored) = await provider.GetParticipantAsync(hat.OrganizerEmail, hat.HatId, beta.Person.Email);
+        stored.EligibleRecipients.Should().ContainSingle().Which.Should().Be(alpha.Person.Name);
     }
 
     [Fact]
