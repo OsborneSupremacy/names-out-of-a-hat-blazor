@@ -64,6 +64,7 @@ internal static class ServiceProviderBuilder
         internal IServiceCollection AddValidators() =>
             services
                 .AddSingleton<IValidator<AddParticipantRequest>, AddParticipantRequestValidator>()
+                .AddSingleton<IValidator<UpdateProfileRequest>, UpdateProfileRequestValidator>()
                 .AddSingleton<IValidator<RequestMagicLinkRequest>, RequestMagicLinkRequestValidator>()
                 .AddSingleton<IValidator<RedeemMagicLinkRequest>, RedeemMagicLinkRequestValidator>()
                 .AddSingleton<IValidator<CloseHatRequest>, CloseHatRequestValidator>()
@@ -91,6 +92,8 @@ internal static class ServiceProviderBuilder
 
                 .AddKeyedSingleton<IApiGatewayHandler, CreateHatService>("post/hat")
                 .AddKeyedSingleton<IApiGatewayHandler, EditHatService>("put/hat")
+
+                .AddKeyedSingleton<IApiGatewayHandler, UpdateProfileService>("put/profile")
 
                 .AddKeyedSingleton<IApiGatewayHandler, DeleteHatService>("delete/hat")
 

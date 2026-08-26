@@ -72,6 +72,7 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
         userEmail={userEmail}
         givenName={organizerName}
         onSignOut={onSignOut}
+        onNameUpdated={setOrganizerName}
       />
 
       <main className="main-content">

@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "Ignored if sent. The authorizer supplies the caller's address."
+        },
+        "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "The display name the organizer wants to be known by"
+        }
+    },
+    "required": [
+        "name"
+    ]
+}

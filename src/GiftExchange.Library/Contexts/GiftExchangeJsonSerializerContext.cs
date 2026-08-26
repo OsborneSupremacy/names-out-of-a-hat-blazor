@@ -36,6 +36,7 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(RemoveParticipantRequest))]
 [JsonSerializable(typeof(SendInvitationsRequest))]
 [JsonSerializable(typeof(StatusCodeOnlyResponse))]
+[JsonSerializable(typeof(UpdateProfileRequest))]
 [JsonSerializable(typeof(ValidateHatRequest))]
 [JsonSerializable(typeof(ValidateHatResponse))]
 internal partial class GiftExchangeJsonSerializerContext : JsonSerializerContext

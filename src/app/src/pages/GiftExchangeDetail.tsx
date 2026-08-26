@@ -75,6 +75,18 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     loadHat()
   }, [hatId, userEmail])
 
+  // The organizer's name is displayed from the loaded hat, so reload it rather than patching
+  // state that the server has just changed underneath us.
+  const handleNameUpdated = async () => {
+    if (!hatId) return
+
+    try {
+      setHat(await getHat(userEmail, hatId))
+    } catch (err) {
+      console.error('Error reloading gift exchange after rename:', err)
+    }
+  }
+
   const handleEdit = () => {
     setIsEditing(true)
   }
@@ -370,6 +382,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
         userEmail={userEmail}
         givenName={hat?.organizer.name ?? ''}
         onSignOut={onSignOut}
+        onNameUpdated={handleNameUpdated}
       />
 
       <main className="main-content">

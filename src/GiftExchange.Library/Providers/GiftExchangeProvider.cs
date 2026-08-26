@@ -190,6 +190,59 @@ public class GiftExchangeProvider
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Hats belonging to this organizer where somebody other than them already goes by the given
+    /// name. Renaming into one of those would leave two participants sharing a name.
+    /// </summary>
+    public async Task<ImmutableList<string>> FindHatsWhereParticipantNameIsTakenAsync(
+        string organizerEmail,
+        string name
+    )
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var normalized = Normalize(name);
+
+        var hatNames = await context.Hats
+            .AsNoTracking()
+            // ToLower, not ToLowerInvariant: see FindParticipantIdByNameAsync.
+            .Where(hat => hat.OrganizerEmail == organizerEmail
+                          && hat.Participants.Any(participant => participant.Email != organizerEmail
+                                                                 && participant.Name.ToLower() == normalized))
+            .Select(hat => hat.Name)
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return hatNames.ToImmutableList();
+    }
+
+    /// <summary>
+    /// Renames the organizer everywhere their name is stored: on each of their hats, and on their
+    /// own participant row within them. Both in one transaction, so the two never disagree.
+    ///
+    /// Scoped to hats they own. Their email may also appear as a participant in somebody else's
+    /// exchange, and renaming themselves there would change another organizer's data underneath
+    /// them.
+    /// </summary>
+    public Task UpdateOrganizerNameAsync(string organizerEmail, string name) =>
+        InTransactionAsync(async context =>
+        {
+            await context.Hats
+                .Where(hat => hat.OrganizerEmail == organizerEmail)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.OrganizerName, name))
+                .ConfigureAwait(false);
+
+            var ownHatIds = context.Hats
+                .Where(hat => hat.OrganizerEmail == organizerEmail)
+                .Select(hat => hat.Id);
+
+            await context.Participants
+                .Where(participant => participant.Email == organizerEmail
+                                      && ownHatIds.Contains(participant.HatId))
+                .ExecuteUpdateAsync(setters => setters.SetProperty(participant => participant.Name, name))
+                .ConfigureAwait(false);
+        });
+
     public async Task<Participant> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
@@ -329,6 +382,7 @@ public class GiftExchangeProvider
 
             var normalized = eligibleRecipients.Select(Normalize).ToList();
 
+            // ToLower, not ToLowerInvariant: see FindParticipantIdByNameAsync.
             var recipientIds = await context.Participants
                 .Where(candidate => candidate.HatId == hatId && normalized.Contains(candidate.Name.ToLower()))
                 .Select(candidate => candidate.Id)
@@ -485,6 +539,14 @@ public class GiftExchangeProvider
     /// Name lookups exist because the domain records still identify participants by name. They
     /// are only unambiguous because AddParticipantService refuses duplicate names within a hat.
     /// </summary>
+    /// <remarks>
+    /// ToLower rather than ToLowerInvariant, and deliberately so. Inside a LINQ expression tree
+    /// this is never executed as a .NET string operation: EF translates it to SQL lower() and
+    /// Postgres does the folding under the column's collation, so there is no .NET culture
+    /// involved to get wrong. ToLowerInvariant has no translation at all and throws at query time.
+    /// Use ToLowerInvariant everywhere the comparison really does happen in memory — see
+    /// <see cref="Normalize"/>.
+    /// </remarks>
     private static async Task<Guid?> FindParticipantIdByNameAsync(
         GiftExchangeDbContext context,
         Guid hatId,

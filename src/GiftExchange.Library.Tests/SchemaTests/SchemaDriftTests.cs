@@ -43,6 +43,7 @@ public class SchemaDriftTests
         { nameof(RemoveParticipantRequest), "RemoveParticipantRequest.schema.json", "" },
         { nameof(SendInvitationsRequest), "SendInvitationsRequest.schema.json", "" },
         { nameof(ValidateHatRequest), "ValidateHatRequest.schema.json", "" },
+        { nameof(UpdateProfileRequest), "UpdateProfileRequest.schema.json", "" },
         { nameof(ValidateHatResponse), "ValidateHatResponse.schema.json", "" },
 
         { nameof(Hat), "Hat.schema.json", "" },

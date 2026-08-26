@@ -1,15 +1,24 @@
 import { useState, useRef, useEffect } from 'react'
+import { updateProfile } from '../api'
+import { EditNameModal } from './EditNameModal'
 import './Header.css'
 
 interface HeaderProps {
   userEmail: string
   givenName: string
   onSignOut: () => void
+  onNameUpdated: (name: string) => void
 }
 
-export function Header({ userEmail, givenName, onSignOut }: HeaderProps) {
+export function Header({ userEmail, givenName, onSignOut, onNameUpdated }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showEditName, setShowEditName] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const handleNameSubmit = async (name: string) => {
+    await updateProfile({ name })
+    onNameUpdated(name)
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -56,6 +65,15 @@ export function Header({ userEmail, givenName, onSignOut }: HeaderProps) {
                 className="profile-menu-item"
                 onClick={() => {
                   setIsMenuOpen(false)
+                  setShowEditName(true)
+                }}
+              >
+                Edit Name
+              </button>
+              <button
+                className="profile-menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false)
                   onSignOut()
                 }}
               >
@@ -65,6 +83,14 @@ export function Header({ userEmail, givenName, onSignOut }: HeaderProps) {
           )}
         </div>
       </div>
+
+      {showEditName && (
+        <EditNameModal
+          currentName={givenName}
+          onClose={() => setShowEditName(false)}
+          onSubmit={handleNameSubmit}
+        />
+      )}
     </header>
   )
 }

@@ -219,3 +219,11 @@
     border-color: #6b7280;
   }
 }
+
+/* Explanatory note inside a modal, above the actions. */
+.modal-note {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  opacity: 0.75;
+}

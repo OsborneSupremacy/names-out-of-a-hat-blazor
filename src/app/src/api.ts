@@ -85,6 +85,10 @@ export interface PreviewInvitationsResponse {
   htmlBody: string
 }
 
+export interface UpdateProfileRequest {
+  name: string
+}
+
 export interface CloseHatRequest {
   organizerEmail: string
   hatId: string
@@ -326,5 +330,19 @@ export async function closeHat(request: CloseHatRequest): Promise<void> {
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to close gift exchange')
+  }
+}
+
+export async function updateProfile(request: UpdateProfileRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/profile`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to update your name')
   }
 }
