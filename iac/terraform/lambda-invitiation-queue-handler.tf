@@ -4,7 +4,7 @@ resource "aws_lambda_function" "invitation-queue-handler" {
   handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.InvitationQueueHandler::FunctionHandler"
   runtime          = "dotnet10"
   architectures    = ["arm64"]
-  memory_size      = 128
+  memory_size      = 512
   timeout          = 300
   filename         = local.publish_zip_path
   source_code_hash = filebase64sha256(local.publish_zip_path)

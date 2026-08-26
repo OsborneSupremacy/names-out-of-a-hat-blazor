@@ -4,8 +4,22 @@ resource "aws_lambda_function" "giftexchange_app" {
   handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.Router::FunctionHandler"
   runtime          = "dotnet10"
   architectures    = ["arm64"]
-  memory_size      = 128
-  timeout          = 30
+  # Lambda scales CPU with memory, so this is a CPU setting as much as a memory one. At 128 MB
+  # a cold start has to build the EF model, open a DSQL connection and sign an IAM token on a
+  # fraction of a core, which was exceeding API Gateway's 29 second integration ceiling. More
+  # memory usually costs the same or less here, because the work finishes in far fewer
+  # GB-seconds.
+  memory_size      = 1024
+
+  # Below API Gateway's 29 second integration ceiling, deliberately.
+  #
+  # At 30 seconds the two disagreed about who gives up first: API Gateway abandoned the request
+  # and returned 504 while the function carried on and could still commit, so a client could be
+  # told the write failed after it had succeeded. Timing out first means the invocation is killed,
+  # the transaction rolls back, and a failure the caller sees is a failure that happened. One
+  # second under the ceiling rather than exactly on it, because API Gateway starts its clock
+  # slightly before the invocation does.
+  timeout          = 28
   filename         = local.publish_zip_path
   source_code_hash = filebase64sha256(local.publish_zip_path)
   role             = aws_iam_role.giftexchange_app_exec_role.arn

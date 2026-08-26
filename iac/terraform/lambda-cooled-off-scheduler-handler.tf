@@ -8,7 +8,7 @@ resource "aws_lambda_function" "cooled-off-scheduler-handler" {
   handler          = "GiftExchange.Library::GiftExchange.Library.Handlers.CooledOffSchedulerHandler::FunctionHandler"
   runtime          = "dotnet10"
   architectures    = ["arm64"]
-  memory_size      = 128
+  memory_size      = 1024
   timeout          = 30
   filename         = local.publish_zip_path
   source_code_hash = filebase64sha256(local.publish_zip_path)
