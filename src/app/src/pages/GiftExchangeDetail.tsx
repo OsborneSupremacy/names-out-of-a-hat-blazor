@@ -446,7 +446,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     <div className="status-step-label">Invitations Sent</div>
                   </div>
                   <div className="status-step-connector"></div>
-                  <div className={`status-step ${hat.status === 'COOLED_OFF' ? 'active' : ''}`}>
+                  <div className={`status-step ${hat.status === 'READY_TO_CLOSE' ? 'active' : ''}`}>
                     <div className="status-step-indicator"></div>
                     <div className="status-step-label">Cooling Off</div>
                   </div>

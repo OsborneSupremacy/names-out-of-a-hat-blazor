@@ -1,6 +1,7 @@
 ﻿namespace GiftExchange.Library.Tests.HandlerTests;
 
-public class GetHatTests: IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class GetHatTests
 {
     private readonly JsonService _jsonService;
 
@@ -12,19 +13,19 @@ public class GetHatTests: IClassFixture<DynamoDbFixture>
 
     private readonly IApiGatewayHandler _sut;
 
-    public GetHatTests(DynamoDbFixture dbFixture)
+    public GetHatTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
         _hatDataModelFaker = new HatDataModelFaker();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
         _context = new FakeLambdaContext();
 
         var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();

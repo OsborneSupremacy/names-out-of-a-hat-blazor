@@ -1,118 +1,109 @@
-﻿using Amazon.DynamoDBv2.Model;
+using GiftExchange.Library.Contexts;
+using Npgsql;
 
 namespace GiftExchange.Library.Providers;
 
+/// <summary>
+/// Data access for gift exchanges.
+///
+/// The public surface still speaks the domain records, which identify participants by display
+/// name. Storage no longer does: eligibility and picked recipients are foreign keys, and this
+/// class translates at the boundary. That containment is deliberate — the API contract still
+/// carries names, so changing it is a separate job.
+/// </summary>
 [UsedImplicitly]
 public class GiftExchangeProvider
 {
-    private readonly IAmazonDynamoDB _dynamoDbClient;
+    /// <summary>Postgres unique_violation.</summary>
+    private const string UniqueViolation = "23505";
+
+    private readonly IDbContextFactory<GiftExchangeDbContext> _contextFactory;
 
     private readonly ILogger<GiftExchangeProvider> _logger;
 
-    private readonly string _tableName;
-
     // ReSharper disable once ConvertToPrimaryConstructor
     public GiftExchangeProvider(
-        IAmazonDynamoDB dynamoDbClient,
+        IDbContextFactory<GiftExchangeDbContext> contextFactory,
         ILogger<GiftExchangeProvider> logger
-        )
+    )
     {
-        _dynamoDbClient = dynamoDbClient ?? throw new ArgumentNullException(nameof(dynamoDbClient));
+        _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _tableName = EnvReader.GetStringValue("TABLE_NAME");
     }
 
     public async Task<(string organizerName, ImmutableList<HatMetaData> hats)> GetHatsAsync(string organizerEmail)
     {
-        var request = new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND begins_with(SK, :skPrefix)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
-                [":skPrefix"] = new() { S = "HAT#" }
-            },
-            ConsistentRead = true
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        var response = await _dynamoDbClient.QueryAsync(request)
+        var hats = await context.Hats
+            .AsNoTracking()
+            .Where(hat => hat.OrganizerEmail == organizerEmail)
+            .OrderByDescending(hat => hat.CreatedAt)
+            .Select(hat => new { hat.Id, hat.Name, hat.Status, hat.OrganizerName })
+            .ToListAsync()
             .ConfigureAwait(false);
 
-        if (response.Items is not { Count: > 0 })
-            return (string.Empty, []);
-
-        var hats = response.Items
-            .Select(i => new HatMetaData
-            {
-                HatId = Guid.Parse(i["HatId"].S),
-                HatName = i["HatName"].S,
-                Status = i.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress
-            })
-            .ToImmutableList();
-
-        // Every hat item carries the organizer's name and they are all the same person, so any
-        // non-empty one answers "what is this user called".
-        var organizerName = response.Items
-            .Select(i => i.TryGetValue("OrganizerName", out var name) ? name.S : string.Empty)
+        // Newest first, so this is the name the organizer used most recently.
+        var organizerName = hats
+            .Select(hat => hat.OrganizerName)
             .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? string.Empty;
 
-        return (organizerName, hats);
+        return (
+            organizerName,
+            hats.Select(hat => new HatMetaData
+            {
+                HatId = hat.Id,
+                HatName = hat.Name,
+                Status = hat.Status
+            }).ToImmutableList()
+        );
     }
 
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="hatDataModel"></param>
-    /// <returns>true if hat was created, false is had already existed.</returns>
+    /// <returns>true if the hat was created, false if the organizer already has one by that name.</returns>
     public async Task<bool> CreateHatAsync(HatDataModel hatDataModel)
     {
-        var item = new Dictionary<string, AttributeValue>
-        {
-            ["PK"] = new() { S = $"ORGANIZER#{hatDataModel.OrganizerEmail}#HAT" },
-            ["SK"] = new() { S = $"HAT#{hatDataModel.HatId}" },
-            ["HatId"] = new() { S = hatDataModel.HatId.ToString() },
-            ["OrganizerName"] = new() { S = hatDataModel.OrganizerName },
-            ["HatName"] = new() { S = hatDataModel.HatName },
-            ["HatStatus"] = new() { S = hatDataModel.Status },
-            ["AdditionalInformation"] = new() { S = hatDataModel.AdditionalInformation },
-            ["PriceRange"] = new() { S = hatDataModel.PriceRange },
-            ["InvitationsQueuedDate"] = new() { S = DateTimeOffset.MinValue.ToString("o") }
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        var request = new PutItemRequest
+        context.Hats.Add(new HatEntity
         {
-            TableName = _tableName,
-            Item = item,
-            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
-        };
+            Id = hatDataModel.HatId,
+            OrganizerEmail = hatDataModel.OrganizerEmail,
+            OrganizerName = hatDataModel.OrganizerName,
+            Name = hatDataModel.HatName,
+            NameNormalized = Normalize(hatDataModel.HatName),
+            Status = hatDataModel.Status,
+            AdditionalInformation = hatDataModel.AdditionalInformation,
+            PriceRange = hatDataModel.PriceRange,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
         try
         {
-            await _dynamoDbClient.PutItemAsync(request)
-                .ConfigureAwait(false);
+            await context.SaveChangesAsync().ConfigureAwait(false);
             return true;
         }
-        catch (ConditionalCheckFailedException)
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
         {
+            // The caller checks for a duplicate name first; this closes the window between that
+            // check and this write.
             return false;
         }
     }
 
-    public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(
-        string organizerEmail,
-        string hatName
-    )
+    public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(string organizerEmail, string hatName)
     {
-        var (_, hats) = await GetHatsAsync(organizerEmail)
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var normalized = Normalize(hatName);
+
+        var hatId = await context.Hats
+            .AsNoTracking()
+            .Where(hat => hat.OrganizerEmail == organizerEmail && hat.NameNormalized == normalized)
+            .Select(hat => (Guid?)hat.Id)
+            .FirstOrDefaultAsync()
             .ConfigureAwait(false);
 
-        if(!hats.Any())
-            return (false, Guid.Empty);
-
-        return hats.FirstOrDefault(h => h.HatName.ContentEquals(hatName)) is { } hat
-            ? (true, hat.HatId)
-            : (false, Guid.Empty);
+        return hatId is null ? (false, Guid.Empty) : (true, hatId.Value);
     }
 
     public async Task<(bool exists, Hat hat)> GetHatAsync(string organizerEmail, Guid hatId)
@@ -120,251 +111,159 @@ public class GiftExchangeProvider
         if (string.IsNullOrWhiteSpace(organizerEmail) || hatId == Guid.Empty)
             return (false, Hats.Empty);
 
-        var request = new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{hatId}" }
-            }
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        var response = await _dynamoDbClient
-            .GetItemAsync(request)
+        var hat = await context.Hats
+            .AsNoTracking()
+            .Include(entity => entity.Participants).ThenInclude(participant => participant.PickedRecipient)
+            .Include(entity => entity.Participants).ThenInclude(participant => participant.EligibleRecipients)
+            .ThenInclude(eligible => eligible.EligibleParticipant)
+            .SingleOrDefaultAsync(entity => entity.Id == hatId && entity.OrganizerEmail == organizerEmail)
             .ConfigureAwait(false);
 
-        if (response.Item == null || response.Item.Count == 0)
+        if (hat is null)
             return (false, Hats.Empty);
 
-        var participants = await GetParticipantsAsync(organizerEmail, hatId)
-            .ConfigureAwait(false);
-
-        var hat = new Hat
+        return (true, new Hat
         {
-            Id = Guid.Parse(response.Item["HatId"].S),
-            Name = response.Item["HatName"].S,
-            Status = response.Item.TryGetValue("HatStatus", out var status) ? status.S : HatStatus.InProgress,
-            AdditionalInformation = response.Item["AdditionalInformation"].S,
-            PriceRange = response.Item["PriceRange"].S,
-            Organizer = new Person {
-                Name = response.Item["OrganizerName"].S,
-                Email = organizerEmail
-            },
-            Participants = participants,
-            InvitationsQueuedDate = response.Item.TryGetValue("InvitationsQueuedDate", out var iqd)
-                ? DateTimeOffset.Parse(iqd.S)
-                : DateTimeOffset.MinValue
-        };
-        return (true, hat);
+            Id = hat.Id,
+            Name = hat.Name,
+            Status = hat.Status,
+            AdditionalInformation = hat.AdditionalInformation,
+            PriceRange = hat.PriceRange,
+            Organizer = new Person { Name = hat.OrganizerName, Email = hat.OrganizerEmail },
+            Participants = hat.Participants.Select(ToDomain).ToImmutableList(),
+            InvitationsQueuedDate = hat.InvitationsQueuedAt ?? DateTimeOffset.MinValue
+        });
     }
 
     public async Task EditHatAsync(EditHatRequest request)
     {
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{request.HatId}" }
-            },
-            UpdateExpression = "SET HatName = :name, AdditionalInformation = :additionalInfo, PriceRange = :priceRange",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":name"] = new() { S = request.Name },
-                [":additionalInfo"] = new() { S = request.AdditionalInformation },
-                [":priceRange"] = new() { S = request.PriceRange }
-            }
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        await _dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
-    }
-
-    public async Task DeleteHatAsync(DeleteHatRequest request)
-    {
-        List<Task> deleteTasks = [];
-
-        var deleteHatRequest = new DeleteItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{request.HatId}" }
-            }
-        };
-
-        deleteTasks.Add(_dynamoDbClient.DeleteItemAsync(deleteHatRequest));
-
-        var participants = await GetParticipantsAsync(request.OrganizerEmail, request.HatId)
+        await context.Hats
+            .Where(hat => hat.Id == request.HatId && hat.OrganizerEmail == request.OrganizerEmail)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(hat => hat.Name, request.Name)
+                .SetProperty(hat => hat.NameNormalized, Normalize(request.Name))
+                .SetProperty(hat => hat.AdditionalInformation, request.AdditionalInformation)
+                .SetProperty(hat => hat.PriceRange, request.PriceRange))
             .ConfigureAwait(false);
-
-        // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-        // No. It's more readable this way.
-        foreach (var participant in participants)
-        {
-            var deleteParticipantRequest = new DeleteItemRequest
-            {
-                TableName = _tableName,
-                Key = new Dictionary<string, AttributeValue>
-                {
-                    ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT#{request.HatId}#PARTICIPANT" },
-                    ["SK"] = new() { S = $"PARTICIPANT#{participant.Person.Email}" }
-                }
-            };
-
-            deleteTasks.Add(_dynamoDbClient .DeleteItemAsync(deleteParticipantRequest) );
-        }
-
-        await Task.WhenAll(deleteTasks).ConfigureAwait(false);
     }
 
-    public async Task UpdateHatStatusAsync(
-        string organizerEmail,
-        Guid hatId,
-        string newStatus
-        )
-    {
-        var updateRequest = new UpdateItemRequest
+    /// <summary>
+    /// Removes the hat and everything hanging off it. DSQL has no ON DELETE CASCADE, so the
+    /// order is explicit, and the whole thing runs in one transaction — the DynamoDB version
+    /// issued independent deletes and could leave a half-removed hat behind.
+    /// </summary>
+    public Task DeleteHatAsync(DeleteHatRequest request) =>
+        InTransactionAsync(async context =>
         {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{hatId}" }
-            },
-            UpdateExpression = "SET HatStatus = :status",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":status"] = new() { S = newStatus }
-            }
-        };
+            var participantIds = context.Participants
+                .Where(participant => participant.HatId == request.HatId)
+                .Select(participant => participant.Id);
 
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
+            await context.ParticipantEligibleRecipients
+                .Where(row => participantIds.Contains(row.ParticipantId)
+                              || participantIds.Contains(row.EligibleParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.Participants
+                .Where(participant => participant.HatId == request.HatId)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.Hats
+                .Where(hat => hat.Id == request.HatId && hat.OrganizerEmail == request.OrganizerEmail)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+        });
+
+    public async Task UpdateHatStatusAsync(string organizerEmail, Guid hatId, string newStatus)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        await context.Hats
+            .Where(hat => hat.Id == hatId && hat.OrganizerEmail == organizerEmail)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, newStatus))
             .ConfigureAwait(false);
     }
 
     public async Task<Participant> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
-        )
+    )
     {
-        var item = new Dictionary<string, AttributeValue>
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var participant = new ParticipantEntity
         {
-            ["PK"] = new() { S = $"ORGANIZER#{request.OrganizerEmail}#HAT#{request.HatId}#PARTICIPANT" },
-            ["SK"] = new() { S = $"PARTICIPANT#{request.Email}" },
-            ["Name"] = new() { S = request.Name },
-            ["Email"] = new() { S = request.Email }
+            Id = Guid.CreateVersion7(),
+            HatId = request.HatId,
+            Name = request.Name,
+            Email = request.Email
         };
 
-        var eligibleParticipantNames = existingParticipants
-            .Select(p => p.Person.Name)
+        context.Participants.Add(participant);
+
+        var existingEmails = existingParticipants
+            .Select(existing => existing.Person.Email)
             .ToList();
 
-        if(existingParticipants.Any())
-            item.Add("EligibleParticipants", new() { SS = eligibleParticipantNames });
-
-        var putItemRequest = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item,
-            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
-        };
-
-        await _dynamoDbClient.PutItemAsync(putItemRequest)
+        // The new participant may draw everyone already in the hat.
+        var eligibleIds = await context.Participants
+            .Where(candidate => candidate.HatId == request.HatId && existingEmails.Contains(candidate.Email))
+            .Select(candidate => candidate.Id)
+            .ToListAsync()
             .ConfigureAwait(false);
+
+        foreach (var eligibleId in eligibleIds)
+            context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
+            {
+                ParticipantEligibleRecipientsId = Guid.CreateVersion7(),
+                ParticipantId = participant.Id,
+                EligibleParticipantId = eligibleId
+            });
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
 
         return new Participant
         {
             PickedRecipient = string.Empty,
-            Person = new Person
-            {
-                Name = request.Name,
-                Email =  request.Email
-            },
-            EligibleRecipients = eligibleParticipantNames.ToImmutableList()
+            Person = new Person { Name = request.Name, Email = request.Email },
+            EligibleRecipients = existingParticipants
+                .Select(existing => existing.Person.Name)
+                .ToImmutableList()
         };
     }
 
-    public async Task<ImmutableList<Participant>> GetParticipantsAsync(
-        string organizerEmail,
-        Guid hatId
-        )
+    public async Task<ImmutableList<Participant>> GetParticipantsAsync(string organizerEmail, Guid hatId)
     {
-        var request = new QueryRequest
-        {
-            TableName = _tableName,
-            KeyConditionExpression = "PK = :pk AND begins_with(SK, :skPrefix)",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pk"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
-                [":skPrefix"] = new() { S = "PARTICIPANT#" }
-            },
-            ConsistentRead = true
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        var response = await _dynamoDbClient
-            .QueryAsync(request)
+        var participants = await QueryParticipants(context, organizerEmail, hatId)
+            .ToListAsync()
             .ConfigureAwait(false);
 
-        if (response.Items is not { Count: > 0 })
-            return [];
-
-        return response.Items
-            .Select(i => new Participant
-            {
-                PickedRecipient = i.TryGetValue("PickedRecipient", out var pr) ? pr.S : string.Empty,
-                Person = new Person
-                {
-                    Email = i["Email"].S,
-                    Name = i["Name"].S
-                },
-                EligibleRecipients = i.TryGetValue("EligibleParticipants", out var er)
-                    ? er.SS.ToImmutableList()
-                    : []
-            })
-            .ToImmutableList();
+        return participants.Select(ToDomain).ToImmutableList();
     }
 
     public async Task<(bool participantExists, Participant participant)> GetParticipantAsync(
         string requestOrganizerEmail,
         Guid requestHatId,
         string requestParticipantEmail
-        )
+    )
     {
-        var request = new GetItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT#{requestHatId}#PARTICIPANT" },
-                ["SK"] = new() { S = $"PARTICIPANT#{requestParticipantEmail}" }
-            }
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        var response = await _dynamoDbClient
-            .GetItemAsync(request)
+        var participant = await QueryParticipants(context, requestOrganizerEmail, requestHatId)
+            .SingleOrDefaultAsync(entity => entity.Email == requestParticipantEmail)
             .ConfigureAwait(false);
 
-        if (response.Item == null || response.Item.Count == 0)
-            return (false, Participants.Empty);
-
-        var participant = new Participant
-        {
-            PickedRecipient = response.Item.TryGetValue("PickedRecipient", out var pr) ? pr.S : string.Empty,
-            Person = new Person
-            {
-                Email = response.Item["Email"].S,
-                Name = response.Item["Name"].S
-            },
-            EligibleRecipients = response.Item.TryGetValue("EligibleParticipants", out var er)
-                ? er.SS.ToImmutableList()
-                : []
-        };
-
-        return (true, participant);
+        return participant is null
+            ? (false, Participants.Empty)
+            : (true, ToDomain(participant));
     }
 
     public async Task AddParticipantEligibleRecipientAsync(
@@ -372,96 +271,132 @@ public class GiftExchangeProvider
         Guid hatId,
         string participantEmail,
         string recipientName
-        )
+    )
     {
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
-                ["SK"] = new() { S = $"PARTICIPANT#{participantEmail}" }
-            },
-            UpdateExpression = "ADD EligibleParticipants :newRecipient",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":newRecipient"] = new() { SS = [recipientName] }
-            }
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
-            .ConfigureAwait(false);
+        var participantId = await FindParticipantIdByEmailAsync(context, hatId, participantEmail).ConfigureAwait(false);
+        var recipientId = await FindParticipantIdByNameAsync(context, hatId, recipientName).ConfigureAwait(false);
+
+        if (participantId is null || recipientId is null)
+        {
+            _logger.LogWarning("Could not add an eligible recipient to hat {HatId}: participant or recipient not found.", hatId);
+            return;
+        }
+
+        context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
+        {
+            ParticipantEligibleRecipientsId = Guid.CreateVersion7(),
+            ParticipantId = participantId.Value,
+            EligibleParticipantId = recipientId.Value
+        });
+
+        try
+        {
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            // Already eligible. The unique index makes this idempotent rather than a duplicate row.
+        }
     }
 
-    public async Task UpdateEligibleRecipientsAsync(
+    /// <summary>
+    /// Replaces a participant's eligibility list. An empty list is simply no rows — the DynamoDB
+    /// version wrote an empty string set here, which DynamoDB rejects outright, so removing a
+    /// participant who was someone's only eligible recipient used to fail with a 500.
+    /// </summary>
+    public Task UpdateEligibleRecipientsAsync(
         string organizerEmail,
         Guid hatId,
         string participantEmail,
         ImmutableList<string> eligibleRecipients
-        )
-    {
-        var updateRequest = new UpdateItemRequest
+    ) =>
+        InTransactionAsync(async context =>
         {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
+            var participantId = await FindParticipantIdByEmailAsync(context, hatId, participantEmail).ConfigureAwait(false);
+
+            if (participantId is null)
             {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
-                ["SK"] = new() { S = $"PARTICIPANT#{participantEmail}" }
-            },
-            UpdateExpression = "SET EligibleParticipants = :eligibleRecipients",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":eligibleRecipients"] = new() { SS = eligibleRecipients.ToList() }
+                _logger.LogWarning("Could not update eligible recipients for {ParticipantEmail}: not found in hat {HatId}.", participantEmail, hatId);
+                return;
             }
-        };
 
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
-            .ConfigureAwait(false);
-    }
+            await context.ParticipantEligibleRecipients
+                .Where(row => row.ParticipantId == participantId.Value)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
 
-    public async Task DeleteParticipantAsync(string requestOrganizerEmail, Guid requestHatId, string requestEmail)
-    {
-        var deleteRequest = new DeleteItemRequest
+            var normalized = eligibleRecipients.Select(Normalize).ToList();
+
+            var recipientIds = await context.Participants
+                .Where(candidate => candidate.HatId == hatId && normalized.Contains(candidate.Name.ToLower()))
+                .Select(candidate => candidate.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            foreach (var recipientId in recipientIds)
+                context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
+                {
+                    ParticipantEligibleRecipientsId = Guid.CreateVersion7(),
+                    ParticipantId = participantId.Value,
+                    EligibleParticipantId = recipientId
+                });
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        });
+
+    /// <summary>
+    /// Removes a participant, their eligibility rows in both directions, and any pick pointing at
+    /// them. Without foreign keys nothing cleans up on our behalf, and a dangling
+    /// picked_recipient_id would survive the delete.
+    /// </summary>
+    public Task DeleteParticipantAsync(string requestOrganizerEmail, Guid requestHatId, string requestEmail) =>
+        InTransactionAsync(async context =>
         {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{requestOrganizerEmail}#HAT#{requestHatId}#PARTICIPANT" },
-                ["SK"] = new() { S = $"PARTICIPANT#{requestEmail}" }
-            }
-        };
+            var participantId = await FindParticipantIdByEmailAsync(context, requestHatId, requestEmail).ConfigureAwait(false);
 
-        await _dynamoDbClient
-            .DeleteItemAsync(deleteRequest)
-            .ConfigureAwait(false);
-    }
+            if (participantId is null)
+                return;
+
+            await context.ParticipantEligibleRecipients
+                .Where(row => row.ParticipantId == participantId.Value
+                              || row.EligibleParticipantId == participantId.Value)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.Participants
+                .Where(participant => participant.PickedRecipientId == participantId.Value)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(participant => participant.PickedRecipientId, (Guid?)null))
+                .ConfigureAwait(false);
+
+            await context.Participants
+                .Where(participant => participant.Id == participantId.Value)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+        });
 
     public async Task UpdateParticipantPickedRecipientAsync(
         string organizerEmail,
         Guid hatId,
         string participantEmail,
         string pickedRecipientName
-        )
+    )
     {
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT#{hatId}#PARTICIPANT" },
-                ["SK"] = new() { S = $"PARTICIPANT#{participantEmail}" }
-            },
-            UpdateExpression = "SET PickedRecipient = :pickedRecipient",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":pickedRecipient"] = new() { S = pickedRecipientName }
-            }
-        };
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
+        var participantId = await FindParticipantIdByEmailAsync(context, hatId, participantEmail).ConfigureAwait(false);
+
+        if (participantId is null)
+            return;
+
+        var pickedId = string.IsNullOrWhiteSpace(pickedRecipientName)
+            ? null
+            : await FindParticipantIdByNameAsync(context, hatId, pickedRecipientName).ConfigureAwait(false);
+
+        await context.Participants
+            .Where(participant => participant.Id == participantId.Value)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(participant => participant.PickedRecipientId, pickedId))
             .ConfigureAwait(false);
     }
 
@@ -469,103 +404,144 @@ public class GiftExchangeProvider
         string organizerEmail,
         Guid hatId,
         string participantNameToRemove
-        )
+    )
     {
-        var (hatExists, hat) = await GetHatAsync(organizerEmail, hatId)
-            .ConfigureAwait(false);
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        if (!hatExists)
+        var participantId = await FindParticipantIdByNameAsync(context, hatId, participantNameToRemove).ConfigureAwait(false);
+
+        if (participantId is null)
             return;
 
-        var participants = hat.Participants
-            .Where(p => p.EligibleRecipients.Contains(participantNameToRemove, StringComparer.OrdinalIgnoreCase))
-            .ToImmutableList();
-
-        List<Task> updateTasks = [];
-
-        // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-        foreach (var participant in participants)
-        {
-            var updatedEligibleRecipients = participant
-                .EligibleRecipients
-                .Where(r => !r.ContentEquals(participantNameToRemove))
-                .ToImmutableList();
-
-            updateTasks.Add(
-                UpdateEligibleRecipientsAsync(
-                    organizerEmail,
-                    hatId,
-                    participant.Person.Email,
-                    updatedEligibleRecipients
-                )
-            );
-        }
-
-        await Task.WhenAll(updateTasks)
+        // Leaving someone with no eligible recipients is now representable. It is a validation
+        // problem for EligibilityValidationService to report, not a write that cannot be stored.
+        await context.ParticipantEligibleRecipients
+            .Where(row => row.EligibleParticipantId == participantId.Value)
+            .ExecuteDeleteAsync()
             .ConfigureAwait(false);
     }
 
-    public async Task<DateTimeOffset> MarkInvitationsAsQueuedAsync(
-        string organizerEmail,
-        Guid hatId
-        )
+    public async Task<DateTimeOffset> MarkInvitationsAsQueuedAsync(string organizerEmail, Guid hatId)
     {
-        var invitationsQueuedDate = DateTimeOffset.UtcNow;
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{hatId}" }
-            },
-            UpdateExpression = "SET HatStatus = :status, InvitationsQueuedDate = :invitationsQueuedDate",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":status"] = new() { S = HatStatus.InvitationsSent },
-                [":invitationsQueuedDate"] = new() { S = invitationsQueuedDate.ToString("o") }
-            }
-        };
+        var invitationsQueuedAt = DateTimeOffset.UtcNow;
 
-        await _dynamoDbClient
-            .UpdateItemAsync(updateRequest)
+        // Conditional on the expected status, so two concurrent sends cannot both mark the hat.
+        var updated = await context.Hats
+            .Where(hat => hat.Id == hatId
+                          && hat.OrganizerEmail == organizerEmail
+                          && hat.Status == HatStatus.NamesAssigned)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(hat => hat.Status, HatStatus.InvitationsSent)
+                .SetProperty(hat => hat.InvitationsQueuedAt, invitationsQueuedAt))
             .ConfigureAwait(false);
 
-        return invitationsQueuedDate;
+        if (updated == 0)
+            _logger.LogError("Hat {HatId} was not in {ExpectedStatus} when invitations were queued, so it was left unchanged.", hatId, HatStatus.NamesAssigned);
+
+        return invitationsQueuedAt;
     }
 
-    public async Task TryTransitionHatToCooledOffAsync(
+    public async Task TryTransitionHatToCooledOffAsync(string organizerEmail, Guid hatId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var updated = await context.Hats
+            .Where(hat => hat.Id == hatId
+                          && hat.OrganizerEmail == organizerEmail
+                          && hat.Status == HatStatus.InvitationsSent)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, HatStatus.CooledOff))
+            .ConfigureAwait(false);
+
+        if (updated == 0)
+            _logger.LogError("Couldn't update HatStatus to READY_TO_CLOSE for hat {hatId}, since it does not have expected status. Will not retry.", hatId);
+    }
+
+    private static IQueryable<ParticipantEntity> QueryParticipants(
+        GiftExchangeDbContext context,
         string organizerEmail,
         Guid hatId
-        )
+    ) =>
+        context.Participants
+            .AsNoTracking()
+            .Include(participant => participant.PickedRecipient)
+            .Include(participant => participant.EligibleRecipients).ThenInclude(row => row.EligibleParticipant)
+            .Where(participant => participant.HatId == hatId
+                                  && participant.Hat.OrganizerEmail == organizerEmail);
+
+    private static async Task<Guid?> FindParticipantIdByEmailAsync(
+        GiftExchangeDbContext context,
+        Guid hatId,
+        string email
+    ) =>
+        await context.Participants
+            .Where(participant => participant.HatId == hatId && participant.Email == email)
+            .Select(participant => (Guid?)participant.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// Name lookups exist because the domain records still identify participants by name. They
+    /// are only unambiguous because AddParticipantService refuses duplicate names within a hat.
+    /// </summary>
+    private static async Task<Guid?> FindParticipantIdByNameAsync(
+        GiftExchangeDbContext context,
+        Guid hatId,
+        string name
+    )
     {
-        var updateRequest = new UpdateItemRequest
+        var normalized = Normalize(name);
+
+        return await context.Participants
+            .Where(participant => participant.HatId == hatId && participant.Name.ToLower() == normalized)
+            .Select(participant => (Guid?)participant.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+    }
+
+    private static Participant ToDomain(ParticipantEntity participant) =>
+        new()
         {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                ["PK"] = new() { S = $"ORGANIZER#{organizerEmail}#HAT" },
-                ["SK"] = new() { S = $"HAT#{hatId}" }
-            },
-            ConditionExpression = "HatStatus = :expectedStatus",
-            UpdateExpression = "SET HatStatus = :newStatus",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                [":expectedStatus"] = new() { S = HatStatus.InvitationsSent },
-                [":newStatus"] = new() { S = HatStatus.CooledOff }
-            }
+            PickedRecipient = participant.PickedRecipient?.Name ?? string.Empty,
+            Person = new Person { Name = participant.Name, Email = participant.Email },
+            EligibleRecipients = participant.EligibleRecipients
+                .Select(row => row.EligibleParticipant.Name)
+                .ToImmutableList()
         };
 
-        try
+    private static string Normalize(string value) => value.TrimNullSafe().ToLowerInvariant();
+
+    private static bool IsUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { SqlState: UniqueViolation };
+
+    /// <summary>
+    /// Runs several statements as one unit, retried as a whole if the strategy decides to.
+    ///
+    /// The execution strategy wrapper is required because retries are enabled: EF refuses a
+    /// user-initiated transaction otherwise, since it cannot safely replay one it did not open.
+    ///
+    /// Every attempt gets its own context. Sharing one would leave entities from a failed attempt
+    /// sitting in the change tracker as Added, so a retry would insert them a second time and
+    /// collide with the unique index. It also keeps the retried work from closing over a context
+    /// whose lifetime is owned by this method.
+    /// </summary>
+    private async Task InTransactionAsync(Func<GiftExchangeDbContext, Task> work)
+    {
+        // Exists only to read the configured strategy, which comes from the provider rather than
+        // from any connection. It stays alive for the duration because the strategy uses it for
+        // diagnostics while executing.
+        await using var strategyContext = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
         {
-            await _dynamoDbClient
-                .UpdateItemAsync(updateRequest)
-                .ConfigureAwait(false);
-        }
-        catch (ConditionalCheckFailedException)
-        {
-            _logger.LogError("Couldn't update HatStatus to to READY_TO_CLOSE for hat {hatId}, since it does not have expected status. Will not retry.", hatId);
-        }
+            await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+            await using var transaction = await context.Database.BeginTransactionAsync().ConfigureAwait(false);
+
+            await work(context).ConfigureAwait(false);
+            await transaction.CommitAsync().ConfigureAwait(false);
+        }).ConfigureAwait(false);
     }
 }

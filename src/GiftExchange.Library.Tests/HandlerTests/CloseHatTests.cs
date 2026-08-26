@@ -1,6 +1,7 @@
 namespace GiftExchange.Library.Tests.HandlerTests;
 
-public class CloseHatTests : IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class CloseHatTests
 {
     private readonly JsonService _jsonService;
 
@@ -12,17 +13,17 @@ public class CloseHatTests : IClassFixture<DynamoDbFixture>
 
     private readonly IApiGatewayHandler _sut;
 
-    public CloseHatTests(DynamoDbFixture dbFixture)
+    public CloseHatTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
         _context = new FakeLambdaContext();
 
         var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 

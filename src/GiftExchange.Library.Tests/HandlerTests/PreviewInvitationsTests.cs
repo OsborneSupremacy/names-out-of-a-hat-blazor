@@ -1,6 +1,7 @@
 namespace GiftExchange.Library.Tests.HandlerTests;
 
-public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class PreviewInvitationsTests
 {
     private readonly JsonService _jsonService;
 
@@ -10,18 +11,18 @@ public class PreviewInvitationsTests : IClassFixture<DynamoDbFixture>
 
     private readonly IApiGatewayHandler _sut;
 
-    public PreviewInvitationsTests(DynamoDbFixture dbFixture)
+    public PreviewInvitationsTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
         _context = new FakeLambdaContext();
 
         var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
             .AddValidators()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 

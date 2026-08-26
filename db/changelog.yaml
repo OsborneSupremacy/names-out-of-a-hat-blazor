@@ -185,3 +185,16 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: AWS IAM REVOKE giftexchange_user FROM '${app_role_arn}'
+
+  - changeSet:
+      id: giftexchange_user--0005
+      author: ben
+      comment: The cooled-off scheduler connects as this role too.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0005.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: AWS IAM REVOKE giftexchange_user FROM '${scheduler_role_arn}'

@@ -1,6 +1,7 @@
 ﻿namespace GiftExchange.Library.Tests.HandlerTests;
 
-public class GetParticipantTests : IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class GetParticipantTests
 {
     private readonly JsonService _jsonService;
 
@@ -10,17 +11,17 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly IApiGatewayHandler _sut;
 
-    public GetParticipantTests(DynamoDbFixture dbFixture)
+    public GetParticipantTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
         _context = new FakeLambdaContext();
 
         IServiceProvider serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
@@ -37,9 +38,20 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
         var hat = await _testDataService.CreateTestHatAsync();
 
         var personFaker = new PersonFaker();
-        var participantFaker = new ParticipantFaker();
-
         var person = personFaker.Generate();
+
+        // Eligibility is stored by participant id now, so the people this participant may draw
+        // have to be real rows rather than fakes.
+        var existing = new List<Participant>();
+
+        foreach (var other in personFaker.Generate(2))
+            existing.Add(await _testDataService.CreateParticipantAsync(new AddParticipantRequest
+            {
+                OrganizerEmail = hat.Organizer.Email,
+                HatId = hat.Id,
+                Name = other.Name,
+                Email = other.Email
+            }, []));
 
         await _testDataService.CreateParticipantAsync(new AddParticipantRequest
         {
@@ -47,7 +59,7 @@ public class GetParticipantTests : IClassFixture<DynamoDbFixture>
             HatId = hat.Id,
             Name = person.Name,
             Email = person.Email
-        }, participantFaker.Generate(2).ToImmutableList());
+        }, existing.ToImmutableList());
 
         // act
         var response = await _sut.FunctionHandler(new APIGatewayProxyRequest

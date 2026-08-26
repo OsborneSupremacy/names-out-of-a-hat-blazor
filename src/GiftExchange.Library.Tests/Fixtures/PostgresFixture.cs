@@ -1,0 +1,64 @@
+using GiftExchange.Library.Contexts;
+using GiftExchange.Library.Entities;
+using Testcontainers.PostgreSql;
+
+namespace GiftExchange.Library.Tests.Fixtures;
+
+/// <summary>
+/// Stands in for Aurora DSQL, which has no local emulator.
+///
+/// Postgres is the closest thing that runs offline: same wire protocol and SQL dialect, so the
+/// EF mapping and the queries are genuinely exercised. It is not DSQL, though — it has foreign
+/// keys, sequences and no optimistic concurrency control, so it will happily accept things DSQL
+/// would reject and never reproduce a write conflict. Anything depending on those needs a real
+/// cluster.
+/// </summary>
+public class PostgresFixture : IAsyncLifetime
+{
+    private const string PostgresImage = "postgres:17-alpine";
+
+    private readonly PostgreSqlContainer _container;
+
+    public PostgresFixture()
+    {
+        DotEnv.Load();
+        _container = new PostgreSqlBuilder(PostgresImage).Build();
+    }
+
+    public IDbContextFactory<GiftExchangeDbContext> CreateContextFactory() =>
+        new PostgresContextFactory(_container.GetConnectionString());
+
+    public async Task InitializeAsync()
+    {
+        await _container.StartAsync();
+
+        await using var context = CreateContextFactory().CreateDbContext();
+        await context.Database.EnsureCreatedAsync();
+
+        // Liquibase seeds these in production. EnsureCreated builds the schema from the model but
+        // not the reference data, and Postgres — unlike DSQL — really does enforce the foreign key
+        // from hats.status, so every status has to exist before a hat can be written.
+        context.HatStatuses.AddRange(HatStatuses.All.Select(status => new HatStatusEntity { Status = status }));
+        await context.SaveChangesAsync();
+    }
+
+    public async Task DisposeAsync() => await _container.DisposeAsync();
+
+    private sealed class PostgresContextFactory(string connectionString)
+        : IDbContextFactory<GiftExchangeDbContext>
+    {
+        public GiftExchangeDbContext CreateDbContext() =>
+            new(new DbContextOptionsBuilder<GiftExchangeDbContext>()
+                .UseNpgsql(connectionString)
+                .Options);
+    }
+}
+
+/// <summary>
+/// One container for the whole run rather than one per test class.
+/// </summary>
+[CollectionDefinition(Name)]
+public class PostgresCollection : ICollectionFixture<PostgresFixture>
+{
+    public const string Name = "postgres";
+}

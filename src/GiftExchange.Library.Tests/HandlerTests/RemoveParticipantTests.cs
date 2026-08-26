@@ -1,6 +1,7 @@
 ﻿namespace GiftExchange.Library.Tests.HandlerTests;
 
-public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class RemoveParticipantTests
 {
     private readonly JsonService _jsonService;
 
@@ -12,19 +13,19 @@ public class RemoveParticipantTests : IClassFixture<DynamoDbFixture>
 
     private readonly IApiGatewayHandler _sut;
 
-    public RemoveParticipantTests(DynamoDbFixture dbFixture)
+    public RemoveParticipantTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
         _requestFaker = new CreateHatRequestFaker();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
         _context = new FakeLambdaContext();
 
         var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 

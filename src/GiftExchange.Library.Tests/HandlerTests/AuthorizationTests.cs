@@ -5,7 +5,8 @@ namespace GiftExchange.Library.Tests.HandlerTests;
 /// the adapter overwrites it with whatever the authorizer established. These tests pin that down,
 /// because the failure mode is silent — everything still returns a plausible status code.
 /// </summary>
-public class AuthorizationTests : IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class AuthorizationTests
 {
     private const string OtherUserEmail = "someone.else@example.com";
 
@@ -19,18 +20,18 @@ public class AuthorizationTests : IClassFixture<DynamoDbFixture>
 
     private readonly IApiGatewayHandler _getHat;
 
-    public AuthorizationTests(DynamoDbFixture dbFixture)
+    public AuthorizationTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
         _context = new FakeLambdaContext();
 
         var serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
             .AddValidators()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 

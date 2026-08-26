@@ -43,13 +43,16 @@ resource "aws_iam_role_policy" "cooled-off-scheduler-handler-policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      # This function moves a hat from INVITATIONS_SENT to READY_TO_CLOSE, which is a row in DSQL
+      # now rather than an item in DynamoDB. It connects as giftexchange_user, so it also needs the
+      # database-side mapping in db/roles/giftexchange_user--0005.sql.
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:UpdateItem"
+          "dsql:DbConnect"
         ]
         Resource = [
-          aws_dynamodb_table.giftexchange.arn
+          aws_dsql_cluster.giftexchange_dsql_cluster.arn
         ]
       },
       {

@@ -1,6 +1,7 @@
 ﻿namespace GiftExchange.Library.Tests.ServiceTests;
 
-public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
+[Collection(PostgresCollection.Name)]
+public class ValidationServiceTests
 {
     private readonly PersonFaker _personFaker;
 
@@ -8,18 +9,18 @@ public class ValidationServiceTests : IClassFixture<DynamoDbFixture>
     private readonly ValidationService _sut;
 
     // ReSharper disable once ConvertConstructorToMemberInitializers
-    public ValidationServiceTests(DynamoDbFixture dbFixture)
+    public ValidationServiceTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
 
-        var dynamoDbClient = dbFixture.CreateClient();
+        var contextFactory = dbFixture.CreateContextFactory();
 
         _personFaker = new PersonFaker();
 
         IServiceProvider serviceProvider = new ServiceCollection()
             .AddUtilities()
             .AddBusinessServices()
-            .AddSingleton(dynamoDbClient)
+            .AddSingleton(contextFactory)
             .AddSingleton<IContentModerationService, FakeContentModerationService>()
             .BuildServiceProvider();
 

@@ -51,6 +51,13 @@ resource "aws_lambda_permission" "giftexchange_app_allow_apigw_invoke" {
   source_arn    = "arn:aws:execute-api:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.giftexchange-gateway.id}/*/*"
 }
 
+# The table holds only magic link tokens now that gift exchanges live in DSQL. LoginTokenProvider
+# writes a token and consumes it with a conditional DeleteItem that returns the old item, so those
+# two actions cover everything it does.
+#
+# Scan is withheld deliberately. Only the hash of a token is stored, precisely so that reading the
+# table does not yield anything replayable; being able to enumerate it would undo that. There are
+# no indexes either, so the ARN needs no /index/* suffix.
 resource "aws_iam_role_policy" "giftexchange_app_dynamodb_policy" {
   name = "giftexchange-app-dynamodb-policy"
   role = aws_iam_role.giftexchange_app_exec_role.id
@@ -61,17 +68,10 @@ resource "aws_iam_role_policy" "giftexchange_app_dynamodb_policy" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:GetItem",
           "dynamodb:PutItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:Query",
-          "dynamodb:Scan"
+          "dynamodb:DeleteItem"
         ]
-        Resource = [
-          aws_dynamodb_table.giftexchange.arn,
-          "${aws_dynamodb_table.giftexchange.arn}/index/*" # Allow access to any GSI/LSI on the table
-        ]
+        Resource = [aws_dynamodb_table.giftexchange.arn]
       }
     ]
   })
