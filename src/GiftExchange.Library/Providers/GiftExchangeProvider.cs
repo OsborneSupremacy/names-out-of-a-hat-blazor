@@ -1,3 +1,4 @@
+using System.Data;
 using GiftExchange.Library.Contexts;
 using Npgsql;
 
@@ -588,7 +589,7 @@ public class GiftExchangeProvider
     /// collide with the unique index. It also keeps the retried work from closing over a context
     /// whose lifetime is owned by this method.
     /// </summary>
-    private async Task InTransactionAsync(Func<GiftExchangeDbContext, Task> work)
+    internal async Task InTransactionAsync(Func<GiftExchangeDbContext, Task> work)
     {
         // Exists only to read the configured strategy, which comes from the provider rather than
         // from any connection. It stays alive for the duration because the strategy uses it for
@@ -600,7 +601,13 @@ public class GiftExchangeProvider
         await strategy.ExecuteAsync(async () =>
         {
             await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
-            await using var transaction = await context.Database.BeginTransactionAsync().ConfigureAwait(false);
+            // REPEATABLE READ is stated explicitly because it is the only level DSQL accepts.
+            // Npgsql translates the default into READ COMMITTED, which DSQL rejects outright with
+            // "0A000: Unsupported isolation level". Postgres accepts both, so the test suite cannot
+            // catch this — it was only visible against a real cluster.
+            await using var transaction = await context.Database
+                .BeginTransactionAsync(IsolationLevel.RepeatableRead)
+                .ConfigureAwait(false);
 
             await work(context).ConfigureAwait(false);
             await transaction.CommitAsync().ConfigureAwait(false);

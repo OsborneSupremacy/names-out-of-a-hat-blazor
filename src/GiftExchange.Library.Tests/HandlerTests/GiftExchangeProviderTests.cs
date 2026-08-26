@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace GiftExchange.Library.Tests.HandlerTests;
 
 [Collection(PostgresCollection.Name)]
@@ -192,6 +194,30 @@ public class GiftExchangeProviderTests
         var (exists, stored) = await _sut.GetParticipantAsync(hat.OrganizerEmail, hat.HatId, giver.Person.Email);
         exists.Should().BeTrue();
         stored.PickedRecipient.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task InTransactionAsync_OpensTheTransactionAtRepeatableRead()
+    {
+        // arrange: DSQL accepts no other isolation level, and Npgsql's default is READ COMMITTED,
+        // which it rejects. Postgres tolerates both, so asserting the level is the only way this
+        // suite can protect a DSQL-only requirement.
+        string? isolationLevel = null;
+
+        // act
+        await _sut.InTransactionAsync(async context =>
+        {
+            var connection = context.Database.GetDbConnection();
+
+            await using var command = connection.CreateCommand();
+            command.Transaction = context.Database.CurrentTransaction!.GetDbTransaction();
+            command.CommandText = "SHOW transaction_isolation";
+
+            isolationLevel = (string?)await command.ExecuteScalarAsync();
+        });
+
+        // assert
+        isolationLevel.Should().Be("repeatable read");
     }
 
     /// <summary>
