@@ -1,3 +1,4 @@
+using Amazon.Lambda.SQSEvents;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -35,6 +36,9 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(RedeemMagicLinkResponse))]
 [JsonSerializable(typeof(RemoveParticipantRequest))]
 [JsonSerializable(typeof(SendInvitationsRequest))]
+// The assembly-level LambdaSerializer applies to every handler, so each entry point's event type
+// has to be here. LambdaHandlerSerializationTests keeps that honest.
+[JsonSerializable(typeof(SQSEvent))]
 [JsonSerializable(typeof(StatusCodeOnlyResponse))]
 [JsonSerializable(typeof(UpdateProfileRequest))]
 [JsonSerializable(typeof(ValidateHatRequest))]
