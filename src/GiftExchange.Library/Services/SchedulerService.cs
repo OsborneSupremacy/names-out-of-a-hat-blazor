@@ -49,9 +49,16 @@ internal class SchedulerService : ISchedulerService
             Name = scheduleName,
             GroupName = _cooledOffSchedulerGroupName,
             ActionAfterCompletion = ActionAfterCompletion.DELETE,
+            // OFF, not FLEXIBLE. FLEXIBLE requires MaximumWindowInMinutes and EventBridge rejects
+            // the request without it, which is why no schedule was ever created and hats stayed at
+            // INVITATIONS_SENT forever.
+            //
+            // A flexible window would also be actively unhelpful: it lets the schedule fire any
+            // time inside the window, so a short cool-off could be overshot by more than the
+            // cool-off itself. Nothing here needs the load-spreading it exists for.
             FlexibleTimeWindow = new FlexibleTimeWindow
             {
-                Mode = FlexibleTimeWindowMode.FLEXIBLE
+                Mode = FlexibleTimeWindowMode.OFF
             },
             ScheduleExpression = scheduleExpression,
             Target = new Target
