@@ -1,3 +1,6 @@
+using System.Data;
+using GiftExchange.Library.Contexts;
+using GiftExchange.Library.Entities;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GiftExchange.Library.Tests.HandlerTests;
@@ -10,6 +13,10 @@ public class GiftExchangeProviderTests
     private readonly HatDataModelFaker _hatDataModelFaker;
 
     private readonly AddParticipantRequestFaker _addParticipantRequestFaker;
+
+    private readonly IDbContextFactory<GiftExchangeDbContext> _contextFactory;
+
+    private readonly PostgresFixture _dbFixture;
 
     public GiftExchangeProviderTests(PostgresFixture dbFixture)
     {
@@ -27,6 +34,8 @@ public class GiftExchangeProviderTests
             .BuildServiceProvider();
 
         _sut = serviceProvider.GetRequiredService<GiftExchangeProvider>();
+        _contextFactory = contextFactory;
+        _dbFixture = dbFixture;
     }
 
     [Fact]
@@ -194,6 +203,64 @@ public class GiftExchangeProviderTests
         var (exists, stored) = await _sut.GetParticipantAsync(hat.OrganizerEmail, hat.HatId, giver.Person.Email);
         exists.Should().BeTrue();
         stored.PickedRecipient.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SaveChanges_OpensItsOwnImplicitTransactionAtRepeatableRead()
+    {
+        // arrange: this is the exact path that failed against DSQL. A SaveChanges with more than
+        // one statement makes EF open a transaction nobody asked for, at Npgsql's default of READ
+        // COMMITTED. Postgres accepts that, so only the recorded level shows whether the
+        // interceptor reached it.
+        var recorder = new RecordingTransactionInterceptor();
+        var contextFactory = _dbFixture.CreateContextFactory(recorder);
+
+        var hat = _hatDataModelFaker.Generate();
+        await _sut.CreateHatAsync(hat);
+
+        await using var context = contextFactory.CreateDbContext();
+
+        context.Participants.AddRange(
+            new ParticipantEntity
+            {
+                Id = Guid.CreateVersion7(), HatId = hat.HatId, Name = "First", Email = "first@example.com"
+            },
+            new ParticipantEntity
+            {
+                Id = Guid.CreateVersion7(), HatId = hat.HatId, Name = "Second", Email = "second@example.com"
+            });
+
+        // act
+        await context.SaveChangesAsync();
+
+        // assert
+        recorder.StartedLevels.Should().NotBeEmpty("a multi-statement SaveChanges opens a transaction");
+        recorder.StartedLevels.Should().AllSatisfy(level => level.Should().Be(IsolationLevel.RepeatableRead));
+    }
+
+    [Fact]
+    public async Task Transactions_AreUpgradedToRepeatableReadEvenWhenSomethingAsksForReadCommitted()
+    {
+        // arrange: EF opens transactions nobody asked for — SaveChanges wraps a multi-statement
+        // batch in one, at Npgsql's default of READ COMMITTED, which DSQL rejects. There is no
+        // overload to influence that, so an interceptor upgrades every transaction. Asking for
+        // READ COMMITTED explicitly is the observable stand-in for what EF does internally.
+        await using var context = _contextFactory.CreateDbContext();
+
+        await using var transaction = await context.Database
+            .BeginTransactionAsync(IsolationLevel.ReadCommitted);
+
+        // act
+        var connection = context.Database.GetDbConnection();
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction.GetDbTransaction();
+        command.CommandText = "SHOW transaction_isolation";
+
+        var isolationLevel = (string?)await command.ExecuteScalarAsync();
+
+        // assert
+        isolationLevel.Should().Be("repeatable read");
     }
 
     [Fact]

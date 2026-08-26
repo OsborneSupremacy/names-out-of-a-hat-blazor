@@ -1,5 +1,7 @@
 using GiftExchange.Library.Contexts;
 using GiftExchange.Library.Entities;
+using GiftExchange.Library.Interceptors;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Testcontainers.PostgreSql;
 
 namespace GiftExchange.Library.Tests.Fixtures;
@@ -25,8 +27,8 @@ public class PostgresFixture : IAsyncLifetime
         _container = new PostgreSqlBuilder(PostgresImage).Build();
     }
 
-    public IDbContextFactory<GiftExchangeDbContext> CreateContextFactory() =>
-        new PostgresContextFactory(_container.GetConnectionString());
+    public IDbContextFactory<GiftExchangeDbContext> CreateContextFactory(params IInterceptor[] extraInterceptors) =>
+        new PostgresContextFactory(_container.GetConnectionString(), extraInterceptors);
 
     public async Task InitializeAsync()
     {
@@ -44,12 +46,17 @@ public class PostgresFixture : IAsyncLifetime
 
     public async Task DisposeAsync() => await _container.DisposeAsync();
 
-    private sealed class PostgresContextFactory(string connectionString)
+    private sealed class PostgresContextFactory(string connectionString, IInterceptor[] extraInterceptors)
         : IDbContextFactory<GiftExchangeDbContext>
     {
         public GiftExchangeDbContext CreateDbContext() =>
             new(new DbContextOptionsBuilder<GiftExchangeDbContext>()
                 .UseNpgsql(connectionString)
+                // Registered here for the same reason as in ServiceProviderBuilder: without it
+                // these tests would exercise a differently configured context than the one that
+                // ships, and the isolation level assertions would prove nothing.
+                .AddInterceptors(new RepeatableReadTransactionInterceptor())
+                .AddInterceptors(extraInterceptors)
                 .Options);
     }
 }

@@ -5,6 +5,7 @@ using Amazon.Scheduler;
 using Amazon.SimpleEmail;
 using Amazon.SimpleSystemsManagement;
 using Amazon.AuroraDsql.Npgsql;
+using GiftExchange.Library.Interceptors;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
 
@@ -43,7 +44,10 @@ internal static class ServiceProviderBuilder
                         provider.GetRequiredService<DsqlDataSource>().DataSource,
                         // DSQL reports write conflicts as serialization failures (SQLSTATE
                         // 40001), which Npgsql already classifies as transient.
-                        npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null)));
+                        npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
+                    // DSQL accepts only REPEATABLE READ, including for the transactions EF opens
+                    // by itself around a multi-statement SaveChanges.
+                    .AddInterceptors(new RepeatableReadTransactionInterceptor()));
         }
 
         internal IServiceCollection AddUtilities()
