@@ -130,18 +130,23 @@ async function getAuthHeaders() {
 }
 
 async function handleApiError(response: Response, defaultMessage: string): Promise<never> {
+  // Reading the body is best effort: some endpoints answer with a status and no body at all, and
+  // API Gateway's own error responses are not always JSON. A parse failure must not become the
+  // message the user sees, which is what the previous `throw e` in the catch produced.
+  let message = ''
+
   try {
     const errorData = await response.json()
-    if (errorData.message) {
-      throw new Error(errorData.message)
+
+    if (typeof errorData?.message === 'string') {
+      message = errorData.message
     }
-  } catch (e) {
-    // If parsing fails or no message field, fall through to default
-    if (e instanceof Error && e.message !== defaultMessage) {
-      throw e
-    }
+  } catch {
+    // Leave message empty and fall through to the default.
   }
-  throw new Error(`${defaultMessage}: ${response.statusText}`)
+
+  // The status is included because it is often the only clue when the body is empty.
+  throw new Error(message || `${defaultMessage} (${response.status} ${response.statusText})`)
 }
 
 export async function getHats(email: string): Promise<GetHatsResponse> {
