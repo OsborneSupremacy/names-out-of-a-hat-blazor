@@ -1,6 +1,5 @@
 using GiftExchange.Library.Utility;
 using GiftExchange.Library.Contexts;
-using GiftExchange.Library.Entities;
 
 namespace GiftExchange.Library.Tests.HandlerTests;
 
@@ -122,7 +121,7 @@ public class GiftIdeaProviderTests
         route.Sender.Name.Should().Be(exchange.Alpha.Name);
 
         // Alpha drew Beta, so Beta's name is what must never appear in Alpha's submitted text.
-        route.SenderPickedRecipientName.Should().Be(exchange.Beta.Name);
+        route.SenderPickedRecipient.Name.Should().Be(exchange.Beta.Name);
 
         // Gamma drew Alpha, so Gamma is the one person these ideas are for.
         route.Giver.Email.Should().Be(exchange.Gamma.Email);
@@ -147,7 +146,7 @@ public class GiftIdeaProviderTests
         found.Should().BeTrue();
         route.Sender.Email.Should().Be(alpha.Email);
         route.Giver.Email.Should().BeEmpty("nobody has drawn them");
-        route.SenderPickedRecipientName.Should().BeEmpty("they have not drawn anybody either");
+        route.SenderPickedRecipient.Name.Should().BeEmpty("they have not drawn anybody either");
     }
 
     [Fact]

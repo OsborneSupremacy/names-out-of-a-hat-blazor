@@ -9,6 +9,26 @@ resource "aws_api_gateway_rest_api" "giftexchange-gateway" {
 resource "aws_api_gateway_deployment" "default" {
   rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
   description = "Deployment for the Gift Exchange API Gateway"
+
+  # Adding a method or an integration does not change this resource, so without something to force
+  # its hand Terraform leaves the existing deployment in place and the new endpoint is never
+  # published. It then answers "Missing Authentication Token", which is API Gateway's way of saying
+  # the route does not exist and reads like an auth problem instead.
+  #
+  # The endpoints written out longhand are the ones at risk: those built through ./modules/api are
+  # covered by the depends_on below, and these are not.
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.auth-requestlink-resource.id,
+      aws_api_gateway_resource.auth-redeem-resource.id,
+      aws_api_gateway_resource.ask-token-resource.id,
+      [for method in aws_api_gateway_method.auth-post : method.id],
+      [for method in aws_api_gateway_method.ask : method.id],
+      [for integration in aws_api_gateway_integration.auth-post : integration.id],
+      [for integration in aws_api_gateway_integration.ask : integration.id],
+    ]))
+  }
+
   lifecycle {
     create_before_destroy = true
   }

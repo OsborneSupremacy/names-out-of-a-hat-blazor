@@ -25,13 +25,21 @@ public record GiftIdeaRoute
     public required Person Sender { get; init; }
 
     /// <summary>
-    /// The name of the person the sender drew.
+    /// The person the sender drew.
     ///
-    /// Not needed to deliver anything — it is here to be looked for. If it appears in the submitted
-    /// text, the sender has quoted their own invitation into the message, and forwarding that would
-    /// tell <see cref="Giver"/> who the sender drew. That is the one secret this application keeps.
+    /// Serves two unrelated purposes. Their name is here to be looked for: if it appears in
+    /// submitted text, the sender has quoted their own invitation into the message, and forwarding
+    /// that would tell <see cref="Giver"/> who the sender drew — the one secret this application
+    /// keeps. Their address is where an Ask goes, since the sender asking for gift ideas is asking
+    /// this person for them.
     /// </summary>
-    public required string SenderPickedRecipientName { get; init; }
+    public required Person SenderPickedRecipient { get; init; }
+
+    /// <summary>
+    /// The participant row behind <see cref="SenderPickedRecipient"/>, or the all-zero id if the
+    /// hat has not been shaken. An Ask needs it to issue them a token of their own.
+    /// </summary>
+    public required Guid SenderPickedRecipientParticipantId { get; init; }
 
     /// <summary>
     /// Whoever drew the sender, and so the single person these ideas are for. Telling them that the
@@ -50,7 +58,8 @@ internal static class GiftIdeaRoutes
         HatName = string.Empty,
         HatStatus = string.Empty,
         Sender = Persons.Empty,
-        SenderPickedRecipientName = string.Empty,
+        SenderPickedRecipient = Persons.Empty,
+        SenderPickedRecipientParticipantId = Guid.Empty,
         Giver = Persons.Empty
     };
 }

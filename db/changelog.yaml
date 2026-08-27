@@ -603,3 +603,36 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: AWS IAM REVOKE giftexchange_user FROM '${inbound_mail_role_arn}'
+
+  - changeSet:
+      id: uq_gift_idea_token_participant--0002
+      author: ben
+      comment: >
+        Drops the one-token-per-participant rule. The Ask feature has to send somebody a working
+        SHARE GIFT IDEAS address in an email they did not originally receive, and only the hash of
+        their existing token is stored, so it cannot be reconstructed. Issuing an additional token
+        is the way to do that; replacing theirs in place would silently kill the address sitting in
+        their invitation.
+
+        Several live tokens per participant is therefore the intended state. Every one of them
+        routes to the same row, because the lookup is by token hash and never by participant.
+      changes:
+        - sql:
+            sql: DROP INDEX uq_gift_idea_token_participant
+      rollback:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_gift_idea_token_participant ON gift_idea_token (participant_id)
+
+  - changeSet:
+      id: idx_gift_idea_token_participant--0001
+      author: ben
+      comment: >
+        What the dropped unique index was also doing incidentally: making the cleanup in
+        DeleteParticipantAsync and DeleteHatAsync, which filter on participant_id, an index lookup
+        rather than a scan. Not unique, for the reason above.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_gift_idea_token_participant ON gift_idea_token (participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_gift_idea_token_participant

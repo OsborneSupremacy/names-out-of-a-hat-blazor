@@ -26,6 +26,76 @@ public class GiftIdeaEmailCompositionService
     public static string ForwardSubject(string senderName) =>
         $"{senderName} shared gift ideas with you";
 
+    public static string AskSubject(string hatName) =>
+        $"What would you like for {GetQualifiedName(hatName)}?";
+
+    public static string AskThrottledSubject => "You've already asked recently";
+
+    /// <summary>
+    /// Where gift ideas are received. A subdomain of its own, not the one invitations are sent
+    /// from: an MX record there would also catch the DMARC reports that already arrive at
+    /// mail.namesoutofahat.com, and SES receipt rules match a whole domain or one exact address,
+    /// with no way to claim a prefix.
+    /// </summary>
+    private const string GiftIdeasDomain = "ideas.namesoutofahat.com";
+
+    /// <summary>Where the Ask button points. The API, not the front end.</summary>
+    private const string AskUrl = "https://api.namesoutofahat.com/ask";
+
+    /// <summary>
+    /// The block inviting somebody to share gift ideas, addressed to the token issued to them.
+    /// </summary>
+    /// <remarks>
+    /// A <c>mailto:</c> link rather than a reply, and that distinction is doing security work
+    /// rather than cosmetic work. An invitation names the recipient's own pick, so a reply would
+    /// quote it, the quoted text would be hard to strip reliably across mail clients, and what
+    /// leaked would be their own pick, forwarded to the one person who must never learn it.
+    /// Clicking here opens an empty message instead, so there is nothing to quote and nothing to
+    /// strip.
+    ///
+    /// The address appears in full underneath, because a mail client that has not been registered
+    /// as the handler for mailto: links does nothing at all when this is clicked, with no error to
+    /// explain the silence.
+    ///
+    /// Shared between the invitation and the Ask, so that both carry the identical block and the
+    /// wording cannot drift between them.
+    /// </remarks>
+    public static string BuildShareGiftIdeasBlock(string giftIdeasToken)
+    {
+        var address = $"{giftIdeasToken}@{GiftIdeasDomain}";
+        var mailto = $"mailto:{HttpUtility.UrlEncode(giftIdeasToken)}@{GiftIdeasDomain}?subject=My%20gift%20ideas";
+
+        return $"""
+                <a href="{HttpUtility.HtmlAttributeEncode(mailto)}" style="background-color:#1f7a4d;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:4px;display:inline-block;font-weight:bold;">SHARE GIFT IDEAS</a>
+                <br /><br />
+                Click above to share gift ideas with only the person who picked your name. Nobody else in the exchange will see them &mdash; not even the organizer. Your email will open with the address already filled in; just type your ideas and send. We'll email you back to confirm exactly what was shared.
+                <br /><br />
+                <small style="color:#666666;">Button not working? Send your ideas to {HttpUtility.HtmlEncode(address)}</small>
+                """;
+    }
+
+    /// <summary>
+    /// The block offering to ask the recipient's own pick for gift ideas on their behalf.
+    /// </summary>
+    /// <remarks>
+    /// An ordinary link rather than a mailto:, because what it triggers happens on our side. It
+    /// lands on a confirmation page instead of performing the Ask outright, and that is deliberate:
+    /// a link in an email is fetched by mail security scanners before anybody reads it, so a link
+    /// that acted immediately would send the Ask on delivery — burning the throttle window and
+    /// mailing somebody on behalf of a person who never clicked anything.
+    /// </remarks>
+    public static string BuildAskBlock(string pickedName, string askToken)
+    {
+        var encodedName = HttpUtility.HtmlEncode(pickedName);
+        var url = $"{AskUrl}/{HttpUtility.UrlEncode(askToken)}";
+
+        return $"""
+                <a href="{HttpUtility.HtmlAttributeEncode(url)}" style="background-color:#2f5d8a;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:4px;display:inline-block;font-weight:bold;">ANONYMOUSLY ASK {encodedName.ToUpperInvariant()} FOR GIFT IDEAS</a>
+                <br /><br />
+                Click above to anonymously ask {encodedName} for gift ideas. Your name will not be revealed. If {encodedName} responds with gift ideas, we'll send them to you.
+                """;
+    }
+
     /// <summary>
     /// Sent back to the participant once their ideas are on their way.
     /// </summary>
@@ -86,6 +156,42 @@ public class GiftIdeaEmailCompositionService
             "This email address isn't monitored by a human, so nobody has read what you sent.",
             "If you want to share gift ideas, use the <b>SHARE GIFT IDEAS</b> button from your invitation. It opens a new email addressed to the right place.",
             "If you need to reach the person running your gift exchange, reply to their invitation directly or contact them yourself — we can't pass a message on for you."
+        ]);
+
+    /// <summary>
+    /// Sent to the person somebody has asked for gift ideas.
+    /// </summary>
+    /// <remarks>
+    /// Names nobody. The whole promise of the button that triggers this is anonymity, and in an
+    /// exchange this small, naming the asker would be naming the one person holding this
+    /// recipient's name. "Someone" is doing real work in that first line.
+    ///
+    /// It also gives nothing away by existing: everybody is drawn by exactly one person, so
+    /// learning that somebody has your name tells you what you already knew.
+    /// </remarks>
+    public string ComposeAsk(string hatName, string giftIdeasToken) =>
+        Wrap([
+            $"Someone in {HttpUtility.HtmlEncode(GetQualifiedName(hatName))} would like to know what you'd like.",
+            "They picked your name, and they're hoping for a hint. You can share as much or as little as you like.",
+            BuildShareGiftIdeasBlock(giftIdeasToken),
+            "<i>We won't tell you who asked, and we won't tell them we passed the message on.</i>"
+        ]);
+
+    /// <summary>
+    /// Sent to somebody who asked again too soon.
+    /// </summary>
+    /// <remarks>
+    /// Says when the last Ask went out, because the likeliest reader is somebody who does not
+    /// remember making it — and being told a date is what turns "you already asked" from an
+    /// accusation into a fact they can check.
+    /// </remarks>
+    public string ComposeAskThrottled(string pickedName, DateTimeOffset previouslyAskedAt) =>
+        Wrap([
+            previouslyAskedAt == DateTimeOffset.MinValue
+                ? $"We've already asked {HttpUtility.HtmlEncode(pickedName)} to share gift ideas on your behalf recently."
+                : $"We asked {HttpUtility.HtmlEncode(pickedName)} to share gift ideas on your behalf on {previouslyAskedAt:d MMMM yyyy}.",
+            "You'll need to wait a while before asking again.",
+            $"If {HttpUtility.HtmlEncode(pickedName)} shares anything, we'll send it to you as soon as they do."
         ]);
 
     private static string ExplainRejection(GiftIdeaSubmissionOutcome outcome) =>

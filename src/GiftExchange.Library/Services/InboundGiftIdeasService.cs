@@ -1,5 +1,3 @@
-using Amazon.Lambda.SimpleEmailEvents;
-using Amazon.Lambda.SimpleEmailEvents.Actions;
 using Amazon.S3;
 
 // The SES event library nests its record and receipt types inside the event and makes each of them
@@ -11,9 +9,6 @@ using InboundRecord = Amazon.Lambda.SimpleEmailEvents.SimpleEmailEvent<
 using InboundReceipt = Amazon.Lambda.SimpleEmailEvents.SimpleEmailEvent<
     Amazon.Lambda.SimpleEmailEvents.Actions.LambdaReceiptAction>.SimpleEmailReceipt<
     Amazon.Lambda.SimpleEmailEvents.Actions.LambdaReceiptAction>;
-using Amazon.SimpleEmail;
-using Amazon.SimpleEmail.Model;
-using MimeKit;
 
 namespace GiftExchange.Library.Services;
 
@@ -31,9 +26,8 @@ namespace GiftExchange.Library.Services;
 [UsedImplicitly]
 internal class InboundGiftIdeasService
 {
+    /// <summary>The address every outbound message comes from, and one this rule also answers.</summary>
     private const string SenderEmail = "donotreply@mail.namesoutofahat.com";
-
-    private const string TestRecipient = "osborne.ben@gmail.com";
 
     private const string GiftIdeasDomain = "ideas.namesoutofahat.com";
 
@@ -45,7 +39,7 @@ internal class InboundGiftIdeasService
 
     private readonly IAmazonS3 _s3Client;
 
-    private readonly IAmazonSimpleEmailService _sesClient;
+    private readonly AutomaticEmailSender _sender;
 
     private readonly IContentModerationService _contentModerationService;
 
@@ -63,12 +57,10 @@ internal class InboundGiftIdeasService
 
     private readonly string _objectKeyPrefix;
 
-    private readonly bool _liveMode;
-
     public InboundGiftIdeasService(
         GiftExchangeProvider giftExchangeProvider,
         IAmazonS3 s3Client,
-        IAmazonSimpleEmailService sesClient,
+        AutomaticEmailSender sender,
         IContentModerationService contentModerationService,
         InboundEmailParser parser,
         GiftIdeaContentPolicy contentPolicy,
@@ -79,7 +71,7 @@ internal class InboundGiftIdeasService
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _s3Client = s3Client ?? throw new ArgumentNullException(nameof(s3Client));
-        _sesClient = sesClient ?? throw new ArgumentNullException(nameof(sesClient));
+        _sender = sender ?? throw new ArgumentNullException(nameof(sender));
         _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
         _contentPolicy = contentPolicy ?? throw new ArgumentNullException(nameof(contentPolicy));
@@ -88,7 +80,6 @@ internal class InboundGiftIdeasService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _bucketName = EnvReader.GetStringValue("INBOUND_MAIL_BUCKET");
         _objectKeyPrefix = EnvReader.TryGetStringValue("INBOUND_MAIL_PREFIX", out var prefix) ? prefix ?? string.Empty : string.Empty;
-        _liveMode = EnvReader.TryGetBooleanValue("LIVE_MODE", out var boolOut) && boolOut;
     }
 
     public async Task<GiftIdeaSubmissionOutcome> ProcessRecordAsync(InboundRecord record)
@@ -150,7 +141,7 @@ internal class InboundGiftIdeasService
                     route, GiftIdeaSubmissionOutcome.RejectedExchangeNotAcceptingIdeas, email)
                 .ConfigureAwait(false);
 
-        var policyOutcome = _contentPolicy.Check(email.Body, route.SenderPickedRecipientName);
+        var policyOutcome = _contentPolicy.Check(email.Body, route.SenderPickedRecipient.Name);
 
         if (policyOutcome != GiftIdeaSubmissionOutcome.Shared)
             return await ReplyWithRejectionAsync(route, policyOutcome, email).ConfigureAwait(false);
@@ -172,7 +163,7 @@ internal class InboundGiftIdeasService
         // exists and can be delivered again; the reverse would lose what somebody wrote.
         await ForwardToGiverAsync(route, email.Body).ConfigureAwait(false);
 
-        await SendAsync(
+        await _sender.SendAsync(
                 route.Sender.Email,
                 GiftIdeaEmailCompositionService.ConfirmationSubject,
                 _composer.ComposeConfirmation(email.Body, email.AttachmentNames))
@@ -249,7 +240,7 @@ internal class InboundGiftIdeasService
             return GiftIdeaSubmissionOutcome.RedirectedFromDoNotReply;
         }
 
-        await SendAsync(source, GiftIdeaEmailCompositionService.DoNotReplySubject, _composer.ComposeDoNotReply())
+        await _sender.SendAsync(source, GiftIdeaEmailCompositionService.DoNotReplySubject, _composer.ComposeDoNotReply())
             .ConfigureAwait(false);
 
         return GiftIdeaSubmissionOutcome.RedirectedFromDoNotReply;
@@ -263,7 +254,7 @@ internal class InboundGiftIdeasService
     {
         _logger.LogInformation("Refused a gift ideas submission: {Outcome}", outcome);
 
-        await SendAsync(
+        await _sender.SendAsync(
                 route.Sender.Email,
                 GiftIdeaEmailCompositionService.CouldNotShareSubject,
                 _composer.ComposeRejection(outcome, email.AttachmentNames))
@@ -282,7 +273,7 @@ internal class InboundGiftIdeasService
             return Task.CompletedTask;
         }
 
-        return SendAsync(
+        return _sender.SendAsync(
             route.Giver.Email,
             GiftIdeaEmailCompositionService.ForwardSubject(route.Sender.Name),
             _composer.ComposeForward(route.Sender.Name, route.HatName, ideas));
@@ -303,49 +294,4 @@ internal class InboundGiftIdeasService
         return buffer;
     }
 
-    /// <summary>
-    /// Sends one of our automatic messages.
-    /// </summary>
-    /// <remarks>
-    /// Built as raw MIME rather than through SendEmail, which has no way to set a header. The
-    /// header in question is <c>Auto-Submitted: auto-replied</c>, from RFC 3834, and it is what
-    /// stops a well-behaved autoresponder at the far end from answering this and being answered in
-    /// turn. Every message this class sends is a response to a message, so every one of them needs
-    /// it.
-    ///
-    /// No Reply-To on any of them. On the forward that is load-bearing: a reply that reached the
-    /// sender would tell them who holds their name.
-    /// </remarks>
-    private async Task SendAsync(string recipient, string subject, string htmlBody)
-    {
-        var destination = _liveMode ? recipient : TestRecipient;
-
-        var message = new MimeMessage
-        {
-            Subject = subject + (_liveMode ? string.Empty : " - TEST MODE"),
-            Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody()
-        };
-
-        message.From.Add(MailboxAddress.Parse(SenderEmail));
-        message.To.Add(MailboxAddress.Parse(destination));
-        message.Headers.Add("Auto-Submitted", "auto-replied");
-
-        using var buffer = new MemoryStream();
-        await message.WriteToAsync(buffer).ConfigureAwait(false);
-        buffer.Position = 0;
-
-        try
-        {
-            await _sesClient
-                .SendRawEmailAsync(new SendRawEmailRequest { RawMessage = new RawMessage { Data = buffer } })
-                .ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            // Logged and swallowed. A submission that was stored is not un-stored because we could
-            // not tell somebody about it, and throwing here would have SES retry the whole message
-            // and store it a second time.
-            _logger.LogError(exception, "Failed to send an inbound gift ideas response.");
-        }
-    }
 }

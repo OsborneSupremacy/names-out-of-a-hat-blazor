@@ -27,11 +27,15 @@ internal class GiftIdeaTokenEntityConfiguration : IEntityTypeConfiguration<GiftI
             .HasDatabaseName("uq_gift_idea_token_hash")
             .IsUnique();
 
-        // One live token per participant. Reissuing replaces the row rather than leaving a second
-        // address that still writes to the same participant.
+        // Several live tokens per participant is the intended state, not an oversight. An Ask has
+        // to put a working SHARE GIFT IDEAS address into an email the recipient never received,
+        // and only the hash of their existing token is kept, so a new one is issued alongside it
+        // rather than over it — every address anyone has ever been sent keeps working.
+        //
+        // Not unique, therefore. It exists so the cleanup in DeleteParticipantAsync and
+        // DeleteHatAsync can find a participant's tokens without a scan.
         builder
             .HasIndex(token => token.ParticipantId)
-            .HasDatabaseName("uq_gift_idea_token_participant")
-            .IsUnique();
+            .HasDatabaseName("idx_gift_idea_token_participant");
     }
 }

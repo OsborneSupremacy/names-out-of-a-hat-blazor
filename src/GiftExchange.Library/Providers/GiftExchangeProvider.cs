@@ -1,5 +1,4 @@
 using System.Data;
-using GiftExchange.Library.Contexts;
 using Npgsql;
 
 namespace GiftExchange.Library.Providers;
@@ -440,6 +439,37 @@ public class GiftExchangeProvider
     }
 
     /// <summary>
+    /// Issues one more routing token for a single participant, alongside any they already hold.
+    /// </summary>
+    /// <remarks>
+    /// Alongside, not instead of. An Ask has to put a working SHARE GIFT IDEAS address in front of
+    /// somebody who never asked for one, and their existing token cannot be reconstructed — only
+    /// its hash was kept, which is the entire point of keeping it that way. Replacing the row would
+    /// hand them a new address while silently killing the one already sitting in their invitation,
+    /// so a second is added and both keep working. Lookup is by token hash and never by
+    /// participant, so nothing downstream has to know how many there are.
+    /// </remarks>
+    /// <returns>The token in the clear. Only ever available here.</returns>
+    public async Task<string> IssueGiftIdeaTokenAsync(Guid participantId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var token = SecretToken.Create();
+
+        context.GiftIdeaTokens.Add(new GiftIdeaTokenEntity
+        {
+            GiftIdeaTokenId = Guid.CreateVersion7(),
+            ParticipantId = participantId,
+            TokenHash = SecretToken.Hash(token),
+            IssuedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
+
+        return token;
+    }
+
+    /// <summary>
     /// Resolves an incoming gift ideas email to the participant who sent it and the participant it
     /// is for, from the hash of the token in the address it was addressed to.
     /// </summary>
@@ -476,7 +506,9 @@ public class GiftExchangeProvider
                     hat.Status,
                     SenderName = sender.Name,
                     SenderEmail = sender.Email,
-                    PickedName = pickedPerson.Name
+                    PickedParticipantId = picked.ParticipantId,
+                    PickedName = pickedPerson.Name,
+                    PickedEmail = pickedPerson.Email
                 })
             .SingleOrDefaultAsync()
             .ConfigureAwait(false);
@@ -502,7 +534,8 @@ public class GiftExchangeProvider
             HatName = match.HatName,
             HatStatus = match.Status,
             Sender = new Person { Name = match.SenderName, Email = match.SenderEmail },
-            SenderPickedRecipientName = match.PickedName,
+            SenderPickedRecipient = new Person { Name = match.PickedName, Email = match.PickedEmail },
+            SenderPickedRecipientParticipantId = match.PickedParticipantId,
             Giver = giver is null
                 ? Persons.Empty
                 : new Person { Name = giver.Name, Email = giver.Email }

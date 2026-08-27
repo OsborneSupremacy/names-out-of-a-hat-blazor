@@ -1,5 +1,4 @@
 using MimeKit;
-using System.Text;
 
 namespace GiftExchange.Library.Tests.ServiceTests;
 

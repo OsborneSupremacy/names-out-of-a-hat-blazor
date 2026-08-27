@@ -6,14 +6,6 @@ namespace GiftExchange.Library.Services;
 [UsedImplicitly]
 public class EmailCompositionService
 {
-    /// <summary>
-    /// Where gift ideas are received. A subdomain of its own, not the one invitations are sent
-    /// from: an MX record there would also catch the DMARC reports that already arrive at
-    /// mail.namesoutofahat.com, and SES receipt rules match a whole domain or one exact address,
-    /// with no way to claim a prefix.
-    /// </summary>
-    private const string GiftIdeasDomain = "ideas.namesoutofahat.com";
-
     public string ComposeEmail(Hat hat, string participant, string pickedName, string giftIdeasToken)
     {
         // Everything below originates with the organizer or a participant. The subject is plain
@@ -36,7 +28,13 @@ public class EmailCompositionService
             lines.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation.Trim()));
 
         if (!string.IsNullOrWhiteSpace(giftIdeasToken))
-            lines.Add(BuildGiftIdeasInvitation(giftIdeasToken));
+        {
+            // Ask first, then share. The order matches what somebody opening this actually wants
+            // to do: they have just been told a name, and the immediate question is what that
+            // person wants, not what they themselves want.
+            lines.Add(GiftIdeaEmailCompositionService.BuildAskBlock(pickedName, giftIdeasToken));
+            lines.Add(GiftIdeaEmailCompositionService.BuildShareGiftIdeasBlock(giftIdeasToken));
+        }
 
         lines.AddRange([
             $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
@@ -54,37 +52,6 @@ public class EmailCompositionService
         }
 
         return body.ToString();
-    }
-
-    /// <summary>
-    /// The block inviting this participant to share gift ideas, addressed to the token issued to
-    /// them.
-    /// </summary>
-    /// <remarks>
-    /// A <c>mailto:</c> link rather than a reply, and that distinction is doing security work
-    /// rather than cosmetic work. This email tells the participant whose name they drew. A reply
-    /// would quote it, the quoted text would be hard to strip reliably across mail clients, and
-    /// what leaked would be the sender's own pick, forwarded to the one person who must not learn
-    /// it. Clicking here opens an empty message instead, so there is nothing to quote and nothing
-    /// to strip. The "do not reply" line further down stays true and stays necessary: it is what
-    /// steers somebody away from the reply button and towards this.
-    ///
-    /// The address appears in full underneath, because a mail client that has not been registered
-    /// as the handler for mailto: links does nothing at all when this is clicked, with no error to
-    /// explain the silence.
-    /// </remarks>
-    private static string BuildGiftIdeasInvitation(string giftIdeasToken)
-    {
-        var address = $"{giftIdeasToken}@{GiftIdeasDomain}";
-        var mailto = $"mailto:{HttpUtility.UrlEncode(giftIdeasToken)}@{GiftIdeasDomain}?subject=My%20gift%20ideas";
-
-        return $"""
-                <a href="{HttpUtility.HtmlAttributeEncode(mailto)}" style="background-color:#1f7a4d;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:4px;display:inline-block;font-weight:bold;">SHARE GIFT IDEAS</a>
-                <br /><br />
-                Click above to share gift ideas with only the person who picked your name. Nobody else in the exchange will see them &mdash; not even the organizer. Your email will open with the address already filled in; just type your ideas and send. We'll email you back to confirm exactly what was shared.
-                <br /><br />
-                <small style="color:#666666;">Button not working? Send your ideas to {HttpUtility.HtmlEncode(address)}</small>
-                """;
     }
 
     /// <summary>

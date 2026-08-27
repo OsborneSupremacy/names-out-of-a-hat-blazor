@@ -94,6 +94,12 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, RequestMagicLinkService>("post/auth/requestlink")
                 .AddKeyedSingleton<IApiGatewayHandler, RedeemMagicLinkService>("post/auth/redeem")
 
+                // Two methods, one service. The GET renders a confirmation page and the POST
+                // behind it performs the Ask, so that a mail scanner following the link in an
+                // invitation cannot send it on somebody's behalf.
+                .AddKeyedSingleton<IApiGatewayHandler, AskForGiftIdeasService>("get/ask/{token}")
+                .AddKeyedSingleton<IApiGatewayHandler, AskForGiftIdeasService>("post/ask/{token}")
+
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")
 
@@ -124,6 +130,8 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<GiftIdeaContentPolicy>()
                 .AddSingleton<InboundEmailParser>()
                 .AddSingleton<IReplyThrottleProvider, ReplyThrottleProvider>()
+                .AddSingleton<AutomaticEmailSender>()
+                .AddSingleton<AskPageComposer>()
                 .AddSingleton<InboundGiftIdeasService>()
                 .AddSingleton<InvitationQueueHandlerService>()
                 .AddSingleton<ISchedulerService, SchedulerService>()

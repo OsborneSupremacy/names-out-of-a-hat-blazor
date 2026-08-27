@@ -99,7 +99,7 @@ public class InboundGiftIdeasServiceTests
         _sut = new InboundGiftIdeasService(
             _provider,
             _s3,
-            _ses,
+            new AutomaticEmailSender(_ses, Substitute.For<ILogger<AutomaticEmailSender>>()),
             _moderation,
             new InboundEmailParser(),
             new GiftIdeaContentPolicy(),

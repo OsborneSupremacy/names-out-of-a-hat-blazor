@@ -80,4 +80,68 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
             return false;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<(bool reserved, DateTimeOffset previouslyAskedAt)> TryReserveAskSlotAsync(
+        Guid askerParticipantId,
+        TimeSpan window
+    )
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expiresAt = now.Add(window).ToUnixTimeSeconds();
+
+        var request = new PutItemRequest
+        {
+            TableName = _tableName,
+            Item = new Dictionary<string, AttributeValue>
+            {
+                ["PK"] = new() { S = $"ASKTHROTTLE#{askerParticipantId}" },
+                ["SK"] = new() { S = "ASKTHROTTLE" },
+                ["AskedAt"] = new() { N = now.ToUnixTimeSeconds().ToString() },
+                ["ExpiresAt"] = new() { N = expiresAt.ToString() },
+                ["ttl"] = new() { N = expiresAt.ToString() }
+            },
+            ConditionExpression = "attribute_not_exists(PK) OR ExpiresAt < :now",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":now"] = new() { N = now.ToUnixTimeSeconds().ToString() }
+            },
+            // The item that blocked the write comes back with the rejection, which is the only way
+            // to tell the asker when they last asked without a second read that could disagree
+            // with the one that just refused them.
+            ReturnValuesOnConditionCheckFailure = ReturnValuesOnConditionCheckFailure.ALL_OLD
+        };
+
+        try
+        {
+            await _dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
+            return (true, DateTimeOffset.MinValue);
+        }
+        catch (ConditionalCheckFailedException exception)
+        {
+            return (false, ReadAskedAt(exception));
+        }
+        catch (Exception exception)
+        {
+            // Fails closed, as above. An Ask not sent is a nuisance; an outage that lets somebody
+            // mail their recipient without limit is a way to harass them through this application.
+            _logger.LogError(exception, "Could not reserve an Ask slot; suppressing the Ask.");
+            return (false, DateTimeOffset.MinValue);
+        }
+    }
+
+    /// <summary>
+    /// When the Ask that blocked this one was made, or the minimum if the item did not come back.
+    /// </summary>
+    /// <remarks>
+    /// Tolerant on purpose. The date only shapes a sentence in an email, so a missing or unparseable
+    /// value is worth degrading over rather than failing over — the caller words it differently and
+    /// the throttle still holds.
+    /// </remarks>
+    private static DateTimeOffset ReadAskedAt(ConditionalCheckFailedException exception) =>
+        exception.Item is not null
+        && exception.Item.TryGetValue("AskedAt", out var askedAt)
+        && long.TryParse(askedAt.N, out var seconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+            : DateTimeOffset.MinValue;
 }
