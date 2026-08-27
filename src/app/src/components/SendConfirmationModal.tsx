@@ -32,65 +32,78 @@ export function SendConfirmationModal({
     <div className="modal-overlay" onClick={isSending ? undefined : onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Before you send</h2>
+          <h2>Before sending</h2>
         </div>
 
-        <p className="send-confirmation-lead">
-          You're about to email {recipientCount} {recipientCount === 1 ? 'person' : 'people'}.
-        </p>
-
-        <div className="send-confirmation-terms">
-          <p>
-            <strong>You are identified.</strong> This gift exchange is linked to{' '}
-            <strong>{organizerEmail}</strong>, verified when you signed in
-            {senderIpAddress && (
-              <>
-                , and this request is coming from <strong>{senderIpAddress}</strong>
-              </>
-            )}
-            . Both are recorded.
+        <div className="send-confirmation-body">
+          <p className="send-confirmation-lead">
+            These invitations will go to {recipientCount}{' '}
+            {recipientCount === 1 ? 'person' : 'people'}.
           </p>
-          <p>
-            <strong>You are responsible for the content.</strong> The gift exchange name,
-            participant names and anything you added appear in every invitation, sent under your
-            name and address.
-          </p>
-          <p>
-            Do not use this to harass, deceive, conceal who you are, or for any unlawful purpose.
-            Reports are investigated, and records including your email and IP address may be given
-            to recipients or to law enforcement.
-          </p>
-        </div>
 
-        <label className="send-confirmation-acknowledgement">
-          <input
-            type="checkbox"
-            checked={acknowledged}
-            onChange={(e) => setAcknowledged(e.target.checked)}
-            disabled={isSending}
-          />
-          <span>I have read this and I am sending to people who know me</span>
-        </label>
+          <div className="send-confirmation-terms">
+            <p>By sending these invitations, I confirm that:</p>
+            <ul>
+              <li>
+                This email is sent on my behalf by namesoutofahat.com, under my name and email
+                address.
+              </li>
+              <li>
+                I am responsible for its content, including the gift exchange name, the participant
+                names, and any additional information I have provided.
+              </li>
+              <li>
+                This gift exchange is linked to <strong>{organizerEmail}</strong>, which I verified
+                when I signed in
+                {senderIpAddress && (
+                  <>
+                    , and this request comes from <strong>{senderIpAddress}</strong>
+                  </>
+                )}
+                . I understand that both are recorded.
+              </li>
+              <li>
+                I will not use this service to harass or deceive anyone, to conceal my identity, or
+                for any unlawful purpose.
+              </li>
+              <li>
+                I understand that namesoutofahat.com investigates reports of misuse, and that
+                records including my email address and IP address may be disclosed to recipients or
+                to law enforcement.
+              </li>
+            </ul>
+          </div>
 
-        <div className="modal-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={onCancel}
-            disabled={isSending}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="primary-button"
-            onClick={onConfirm}
-            disabled={!acknowledged || isSending}
-          >
-            {isSending
-              ? 'Sending...'
-              : `Send ${recipientCount} ${recipientCount === 1 ? 'Invitation' : 'Invitations'}`}
-          </button>
+          <label className="send-confirmation-acknowledgement">
+            <input
+              type="checkbox"
+              checked={acknowledged}
+              onChange={(e) => setAcknowledged(e.target.checked)}
+              disabled={isSending}
+            />
+            <span>I have read and agree to the above</span>
+          </label>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onCancel}
+              disabled={isSending}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={onConfirm}
+              disabled={!acknowledged || isSending}
+            >
+              {isSending
+                ? 'Sending...'
+                : `Send ${recipientCount} ${recipientCount === 1 ? 'Invitation' : 'Invitations'}`}
+            </button>
+          </div>
         </div>
       </div>
     </div>
