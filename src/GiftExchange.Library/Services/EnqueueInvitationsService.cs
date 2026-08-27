@@ -72,16 +72,28 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
         var hat = hatPreconditionResult.Hat;
 
+        // Before anything is queued, because the token has to be inside the invitation. Issued here
+        // rather than when a participant is added: this is the first moment there is an email going
+        // to them to carry it, and a token nobody has been told is only a row.
+        var giftIdeasTokens = await _giftExchangeProvider
+            .IssueGiftIdeaTokensAsync(request.HatId)
+            .ConfigureAwait(false);
+
         var sqsTasks = new List<Task>();
 
         foreach(var participant in hat.Participants)
         {
+            // An address with no token issued against it gets an invitation without the block, not
+            // a broken one. Nothing should reach this, since the tokens were just written for every
+            // participant in the hat.
+            var giftIdeasToken = giftIdeasTokens.GetValueOrDefault(participant.Person.Email, string.Empty);
+
             var invitation = new GiftExchangeEmailRequest
             {
                 HatId = request.HatId,
                 OrganizerEmail = request.OrganizerEmail,
                 HtmlBody = _emailCompositionService
-                    .ComposeEmail(hat, participant.Person.Name, participant.PickedRecipient),
+                    .ComposeEmail(hat, participant.Person.Name, participant.PickedRecipient, giftIdeasToken),
                 RecipientEmail = participant.Person.Email,
                 Subject = EmailCompositionService.GetSubject(hat)
             };

@@ -6,6 +6,13 @@ internal class PreviewInvitationsService : IApiGatewayHandler
     private const string PlaceholderParticipantName = "[Participant Name]";
     private const string PlaceholderPickedName = "[Picked Name]";
 
+    /// <summary>
+    /// Stands in for the routing token so the organizer sees the gift ideas block as participants
+    /// will. Deliberately not a real token: a preview is composed for whoever is looking at it, and
+    /// issuing one here would hand the organizer an address that writes to somebody else's row.
+    /// </summary>
+    private const string PlaceholderGiftIdeasToken = "example-token";
+
     private readonly ApiGatewayAdapter _adapter;
 
     private readonly HatPreconditionValidator _hatPreconditionValidator;
@@ -64,7 +71,11 @@ internal class PreviewInvitationsService : IApiGatewayHandler
         var preview = new PreviewInvitationsResponse
         {
             Subject = EmailCompositionService.GetSubject(hat),
-            HtmlBody = _emailCompositionService.ComposeEmail(hat, PlaceholderParticipantName, PlaceholderPickedName),
+            HtmlBody = _emailCompositionService.ComposeEmail(
+                hat,
+                PlaceholderParticipantName,
+                PlaceholderPickedName,
+                PlaceholderGiftIdeasToken),
             SenderIpAddress = request.SenderIpAddress
         };
 

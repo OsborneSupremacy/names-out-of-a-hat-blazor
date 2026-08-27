@@ -8,7 +8,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_NamesTheOrganizersAddressAlongsideTheirName()
     {
         // act
-        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie");
+        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
 
         // assert
         body.Should().Contain("Ben (ben@example.com) has added you to the Family Christmas!");
@@ -38,7 +38,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_CarriesTheSmallPrintAndTheOrganizersAddress()
     {
         // act
-        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie");
+        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
 
         // assert
         body.Should().Contain("This email was sent on behalf of ben@example.com");
@@ -56,7 +56,7 @@ public class EmailCompositionServiceTests
             with { PriceRange = "<b>$20</b>", AdditionalInformation = "<img src=x onerror=alert(1)>" };
 
         // act
-        var body = _sut.ComposeEmail(hat, "<script>a</script>", "<script>b</script>");
+        var body = _sut.ComposeEmail(hat, "<script>a</script>", "<script>b</script>", "token");
 
         // assert
         // What makes the payloads inert is the escaped angle brackets, not the absence of the
@@ -66,6 +66,59 @@ public class EmailCompositionServiceTests
         body.Should().Contain("&lt;script&gt;");
         body.Should().Contain("&lt;img src=x onerror=alert(1)&gt;");
         body.Should().Contain("Ampersand &amp; Co");
+    }
+
+    [Fact]
+    public void ComposeEmail_CarriesAGiftIdeasButtonAddressedToTheParticipantsOwnToken()
+    {
+        // act
+        var body = _sut.ComposeEmail(
+            HatFor("Ben", "ben@example.com", "Family Christmas"),
+            "Alice",
+            "Charlie",
+            "abc123");
+
+        // assert
+        body.Should().Contain("SHARE GIFT IDEAS");
+        body.Should().Contain("mailto:abc123@ideas.namesoutofahat.com");
+
+        // Printed in full as well as linked. A client that is not registered as the handler for
+        // mailto: does nothing at all when the button is clicked, with no error to explain it.
+        body.Should().Contain("abc123@ideas.namesoutofahat.com");
+    }
+
+    [Fact]
+    public void ComposeEmail_GivesTheGiftIdeasButtonAMailtoRatherThanAReply()
+    {
+        // act
+        var body = _sut.ComposeEmail(
+            HatFor("Ben", "ben@example.com", "Family Christmas"),
+            "Alice",
+            "Charlie",
+            "abc123");
+
+        // assert: this is a security property, not a styling one. This email names the recipient's
+        // own pick, so a reply would quote it, and the quoted text would be forwarded to the one
+        // person who must never learn it. A mailto: opens an empty message with nothing to quote.
+        body.Should().NotContain("href=\"mailto:donotreply");
+        body.Should().Contain("Please do not reply to this email",
+            "the warning is what steers somebody away from the reply button and towards the button");
+    }
+
+    [Fact]
+    public void ComposeEmail_GivenNoToken_LeavesTheGiftIdeasBlockOutEntirely()
+    {
+        // act: an invitation with no token issued gets no block, rather than a button addressed to
+        // "@ideas.namesoutofahat.com" that silently routes nowhere.
+        var body = _sut.ComposeEmail(
+            HatFor("Ben", "ben@example.com", "Family Christmas"),
+            "Alice",
+            "Charlie",
+            string.Empty);
+
+        // assert
+        body.Should().NotContain("SHARE GIFT IDEAS");
+        body.Should().NotContain("ideas.namesoutofahat.com");
     }
 
     private static Hat HatFor(string organizerName, string organizerEmail, string hatName) =>

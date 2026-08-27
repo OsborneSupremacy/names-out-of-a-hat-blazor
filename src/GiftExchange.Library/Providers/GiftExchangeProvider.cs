@@ -342,6 +342,19 @@ public class GiftExchangeProvider
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 
+            // Gift ideas and the tokens that route them go with the exchange they were written for.
+            // Nothing cleans these up on our behalf: they are mapped without navigations precisely
+            // so that no foreign key exists, so the sweep is ours to do.
+            await context.GiftIdeas
+                .Where(giftIdea => participantIds.Contains(giftIdea.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.GiftIdeaTokens
+                .Where(token => participantIds.Contains(token.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
             await context.Participants
                 .Where(participant => participant.HatId == request.HatId)
                 .ExecuteDeleteAsync()
@@ -361,6 +374,168 @@ public class GiftExchangeProvider
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
         });
+
+    /// <summary>
+    /// Issues a gift ideas routing token to every participant in a hat, storing only the hash of
+    /// each, and hands back the tokens in the clear so they can be put into the invitations.
+    ///
+    /// This is the only moment the plaintext exists on this side. Nothing can reproduce it
+    /// afterwards, which is the point: once the invitations are sent, the token lives in the
+    /// participant's mailbox and nowhere else.
+    /// </summary>
+    /// <returns>Token by participant email address. Addresses are unique across the application.</returns>
+    public async Task<ImmutableDictionary<string, string>> IssueGiftIdeaTokensAsync(Guid hatId)
+    {
+        var issued = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        await InTransactionAsync(async context =>
+        {
+            // InTransactionAsync retries the whole delegate on a fresh context, so a second attempt
+            // has to start from nothing. Without this, a retry would return tokens from the failed
+            // attempt alongside the ones actually written, and half the invitations would carry an
+            // address that routes nowhere.
+            issued.Clear();
+
+            var participants = await context.Participants
+                .AsNoTracking()
+                .Where(participant => participant.HatId == hatId)
+                .Select(participant => new { participant.ParticipantId, participant.Person.Email })
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            if (participants.Count == 0)
+                return;
+
+            var participantIds = participants
+                .Select(participant => participant.ParticipantId)
+                .ToList();
+
+            // Reissuing replaces. One live token each is what uq_gift_idea_token_participant says,
+            // and leaving the old row would keep an address alive that still writes to this
+            // participant after they had been given a new one.
+            await context.GiftIdeaTokens
+                .Where(token => participantIds.Contains(token.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            foreach (var participant in participants)
+            {
+                var token = SecretToken.Create();
+
+                context.GiftIdeaTokens.Add(new GiftIdeaTokenEntity
+                {
+                    GiftIdeaTokenId = Guid.CreateVersion7(),
+                    ParticipantId = participant.ParticipantId,
+                    TokenHash = SecretToken.Hash(token),
+                    IssuedAt = DateTimeOffset.UtcNow
+                });
+
+                issued[participant.Email] = token;
+            }
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+        return issued.ToImmutable();
+    }
+
+    /// <summary>
+    /// Resolves an incoming gift ideas email to the participant who sent it and the participant it
+    /// is for, from the hash of the token in the address it was addressed to.
+    /// </summary>
+    /// <param name="tokenHash">
+    /// <see cref="SecretToken.Hash"/> of the token taken from the recipient address. The plaintext
+    /// is never passed here — nothing stored could be compared against it.
+    /// </param>
+    public async Task<(bool found, GiftIdeaRoute route)> FindGiftIdeaRouteAsync(string tokenHash)
+    {
+        // An empty hash is not a lookup worth making. It cannot match a stored row, since every one
+        // holds a real digest, but refusing it here says so outright rather than relying on that.
+        if (string.IsNullOrWhiteSpace(tokenHash))
+            return (false, GiftIdeaRoutes.Empty);
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        // The joins through the pick are inner, which is what the sentinel participant and person
+        // are for: a participant who has not drawn anybody carries the all-zero id, and that id
+        // names a real row whose name is the empty string.
+        var match = await (
+                from token in context.GiftIdeaTokens.AsNoTracking()
+                where token.TokenHash == tokenHash
+                join participant in context.Participants on token.ParticipantId equals participant.ParticipantId
+                join sender in context.Persons on participant.PersonId equals sender.PersonId
+                join hat in context.Hats on participant.HatId equals hat.HatId
+                join picked in context.Participants
+                    on participant.PickedRecipientParticipantId equals picked.ParticipantId
+                join pickedPerson in context.Persons on picked.PersonId equals pickedPerson.PersonId
+                select new
+                {
+                    participant.ParticipantId,
+                    hat.HatId,
+                    HatName = hat.Name,
+                    hat.Status,
+                    SenderName = sender.Name,
+                    SenderEmail = sender.Email,
+                    PickedName = pickedPerson.Name
+                })
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (match is null)
+            return (false, GiftIdeaRoutes.Empty);
+
+        // Who drew the sender, which is the inverse of a pick and so cannot be reached by following
+        // one. Read separately rather than joined above: this is the one part that may legitimately
+        // find nothing, and an inner join would have discarded the whole match along with it.
+        var giver = await (
+                from participant in context.Participants.AsNoTracking()
+                where participant.PickedRecipientParticipantId == match.ParticipantId
+                join person in context.Persons on participant.PersonId equals person.PersonId
+                select new { person.Name, person.Email })
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        return (true, new GiftIdeaRoute
+        {
+            ParticipantId = match.ParticipantId,
+            HatId = match.HatId,
+            HatName = match.HatName,
+            HatStatus = match.Status,
+            Sender = new Person { Name = match.SenderName, Email = match.SenderEmail },
+            SenderPickedRecipientName = match.PickedName,
+            Giver = giver is null
+                ? Persons.Empty
+                : new Person { Name = giver.Name, Email = giver.Email }
+        });
+    }
+
+    /// <summary>
+    /// Appends a submission. Nothing is overwritten: the newest row for a participant is the one
+    /// that counts, and the ones before it stay for the reasons gift_idea--0001.sql gives.
+    /// </summary>
+    /// <param name="inboundMessageId">
+    /// The SES message id this arrived in, or the empty string if it did not arrive by email. It is
+    /// what ties the row back to the raw message when somebody reports it.
+    /// </param>
+    public async Task<Guid> AddGiftIdeaAsync(Guid participantId, string ideas, string inboundMessageId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var giftIdea = new GiftIdeaEntity
+        {
+            GiftIdeaId = Guid.CreateVersion7(),
+            ParticipantId = participantId,
+            Ideas = ideas,
+            CreatedAt = DateTimeOffset.UtcNow,
+            InboundMessageId = inboundMessageId
+        };
+
+        context.GiftIdeas.Add(giftIdea);
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
+
+        return giftIdea.GiftIdeaId;
+    }
 
     public async Task UpdateHatStatusAsync(string organizerEmail, Guid hatId, string newStatus)
     {
@@ -599,9 +774,9 @@ public class GiftExchangeProvider
         });
 
     /// <summary>
-    /// Removes a participant from a hat, along with their eligibility rows in both directions and
-    /// any pick pointing at them. Without foreign keys nothing cleans up on our behalf, and a
-    /// dangling picked_recipient_participant_id would survive the delete.
+    /// Removes a participant from a hat, along with their eligibility rows in both directions, any
+    /// pick pointing at them, and everything they shared. Without foreign keys nothing cleans up on
+    /// our behalf, and a dangling picked_recipient_participant_id would survive the delete.
     ///
     /// The person stays. Leaving a hat is not ceasing to exist, and they may be in another one.
     /// </summary>
@@ -616,6 +791,19 @@ public class GiftExchangeProvider
             await context.ParticipantEligibleRecipients
                 .Where(row => row.ParticipantId == participantId
                               || row.EligibleParticipantId == participantId)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // What they shared goes with them, and so does the address that let them share it.
+            // Leaving the token behind would keep a live mailbox pointed at a participant who is no
+            // longer in the hat.
+            await context.GiftIdeas
+                .Where(giftIdea => giftIdea.ParticipantId == participantId)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.GiftIdeaTokens
+                .Where(token => token.ParticipantId == participantId)
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 
