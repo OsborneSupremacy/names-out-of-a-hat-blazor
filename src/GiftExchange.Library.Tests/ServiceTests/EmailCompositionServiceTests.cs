@@ -42,7 +42,7 @@ public class EmailCompositionServiceTests
 
         // assert
         body.Should().Contain("This email was sent on behalf of ben@example.com");
-        body.Should().Contain("is not responsible for content provided by the gift exchange organizer");
+        body.Should().Contain("namesoutofahat.com is not responsible for them");
         body.Should().Contain("namesoutofahat.com");
         body.Should().NotContain("namesoutofhat.com", "the domain is namesoutofahat.com");
     }

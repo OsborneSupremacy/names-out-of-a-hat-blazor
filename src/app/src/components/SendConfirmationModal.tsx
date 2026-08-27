@@ -45,31 +45,36 @@ export function SendConfirmationModal({
             <p>By sending these invitations, I confirm that:</p>
             <ul>
               <li>
-                This email is sent on my behalf by namesoutofahat.com, under my name and email
+                They are sent by namesoutofahat.com on my behalf, and carry my name and email
                 address.
               </li>
               <li>
-                I am responsible for its content, including the gift exchange name, the participant
-                names, and any additional information I have provided.
+                I am responsible for what they say — the gift exchange name, the participant names,
+                and any additional information I have added.
               </li>
+              {/*
+                * The closing sentence has to agree with how many things it just named. Without an
+                * IP there is only the address, and "both are recorded" would be counting something
+                * the reader cannot see.
+                */}
               <li>
-                This gift exchange is linked to <strong>{organizerEmail}</strong>, which I verified
-                when I signed in
-                {senderIpAddress && (
+                I am sending as <strong>{organizerEmail}</strong>, the address I verified when I
+                signed in
+                {senderIpAddress ? (
                   <>
-                    , and this request comes from <strong>{senderIpAddress}</strong>
+                    , from <strong>{senderIpAddress}</strong>. Both are recorded.
                   </>
+                ) : (
+                  <>. It is recorded.</>
                 )}
-                . I understand that both are recorded.
               </li>
               <li>
                 I will not use this service to harass or deceive anyone, to conceal my identity, or
-                for any unlawful purpose.
+                for anything unlawful.
               </li>
               <li>
-                I understand that namesoutofahat.com investigates reports of misuse, and that
-                records including my email address and IP address may be disclosed to recipients or
-                to law enforcement.
+                I understand that namesoutofahat.com investigates reports of misuse, and may
+                disclose these records to recipients or to law enforcement.
               </li>
             </ul>
           </div>

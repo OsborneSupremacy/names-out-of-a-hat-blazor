@@ -18,6 +18,15 @@ function renderModal(overrides: Partial<Parameters<typeof SendConfirmationModal>
   return props
 }
 
+/**
+ * The terms as read, one string per bullet. Each bullet mixes plain text with <strong>, so its
+ * sentence only exists once the children are joined — queryByText matches a single node and would
+ * miss a phrase that spans them.
+ */
+function terms() {
+  return screen.getAllByRole('listitem').map((item) => item.textContent ?? '')
+}
+
 describe('SendConfirmationModal', () => {
   it('shows the organizer address and the originating IP', () => {
     renderModal()
@@ -68,8 +77,25 @@ describe('SendConfirmationModal', () => {
   it('omits the IP clause when no address was resolved', () => {
     renderModal({ senderIpAddress: '' })
 
-    expect(screen.queryByText(/this request comes from/i)).not.toBeInTheDocument()
+    expect(terms().some((term) => /, from/i.test(term))).toBe(false)
     expect(screen.getByText('organizer@example.com')).toBeInTheDocument()
+  })
+
+  /*
+   * The clause names one thing or two depending on whether an IP was resolved, and the sentence
+   * that closes it has to agree. It used to say "both are recorded" either way.
+   */
+  it('counts only what it names when no IP was resolved', () => {
+    renderModal({ senderIpAddress: '' })
+
+    expect(terms().some((term) => /both are recorded/i.test(term))).toBe(false)
+    expect(terms().some((term) => /it is recorded/i.test(term))).toBe(true)
+  })
+
+  it('counts both the address and the IP when one was resolved', () => {
+    renderModal()
+
+    expect(terms().some((term) => /both are recorded/i.test(term))).toBe(true)
   })
 
   it('locks the acknowledgement and both buttons while sending', () => {

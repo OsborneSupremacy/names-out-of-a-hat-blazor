@@ -61,14 +61,26 @@ public class EmailCompositionService
             // which produced "added you to the the Family Christmas!".
             : $"{hat.Organizer.Name} has added you to {GetQualifiedName(hat.Name)}!";
 
+    /// <summary>
+    /// The footer every invitation carries: who it came from, what this service checks, and what it
+    /// does not stand behind.
+    /// </summary>
+    /// <remarks>
+    /// The second paragraph is a claim about what actually happens, so it is worth keeping true. An
+    /// organizer signs in by email before they can send anything, and every piece of text an
+    /// organizer supplies that can reach this email — the exchange name, their own name, the
+    /// participant names, the price range and the additional information — passes through
+    /// <see cref="ContentModerationService"/> on its way in. "Automatically" is doing real work in
+    /// that sentence: nobody reads these, and the paragraph after it is what that costs.
+    /// </remarks>
     private static string BuildSmallPrint(string organizerEmail) =>
         $"""
          <small style="color:#666666;">
-         This email was sent on behalf of {organizerEmail}, using <a href="https://namesoutofahat.com">namesoutofahat.com</a>, a free randomized-names-type gift exchange facilitation app.
+         This email was sent on behalf of {organizerEmail} through <a href="https://namesoutofahat.com">namesoutofahat.com</a>, a free app for running gift exchanges where names are drawn at random.
          <br /><br />
-         namesoutofahat.com verifies the email address of the gift exchange organizer and uses content filtering to screen for illegal and inappropriate content.
+         Organizers confirm their email address before they can send invitations, and everything they write is screened automatically for illegal and inappropriate content.
          <br /><br />
-         Other than those measures, namesoutofahat.com is not responsible for content provided by the gift exchange organizer, which includes the gift exchange name, participant names, and additional information.
+         Beyond those checks, the gift exchange name, the participant names and any additional information are the organizer's own words, and namesoutofahat.com is not responsible for them.
          </small>
          """;
 
