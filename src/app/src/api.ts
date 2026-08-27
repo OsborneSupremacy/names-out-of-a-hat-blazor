@@ -90,6 +90,17 @@ export interface UpdateProfileRequest {
   name: string
 }
 
+export interface CopyHatRequest {
+  organizerEmail: string
+  hatId: string
+  newHatName: string
+  excludePreviousRecipients: boolean
+}
+
+export interface CopyHatResponse {
+  hatId: string
+}
+
 export interface CloseHatRequest {
   organizerEmail: string
   hatId: string
@@ -337,6 +348,22 @@ export async function closeHat(request: CloseHatRequest): Promise<void> {
   if (!response.ok) {
     await handleApiError(response, 'Failed to close gift exchange')
   }
+}
+
+export async function copyHat(request: CopyHatRequest): Promise<CopyHatResponse> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat/copy`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to copy gift exchange')
+  }
+
+  return response.json()
 }
 
 export async function updateProfile(request: UpdateProfileRequest): Promise<void> {

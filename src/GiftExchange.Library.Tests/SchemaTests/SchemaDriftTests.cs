@@ -32,6 +32,8 @@ public class SchemaDriftTests
         { nameof(AddParticipantRequest), "AddParticipantRequest.schema.json", "" },
         { nameof(AssignRecipientsRequest), "AssignRecipientsRequest.schema.json", "" },
         { nameof(CloseHatRequest), "CloseHatRequest.schema.json", "" },
+        { nameof(CopyHatRequest), "CopyHatRequest.schema.json", "" },
+        { nameof(CopyHatResponse), "CopyHatResponse.schema.json", "" },
         { nameof(CreateHatRequest), "CreateHatRequest.schema.json", "" },
         { nameof(CreateHatResponse), "CreateHatResponse.schema.json", "" },
         { nameof(DeleteHatRequest), "DeleteHatRequest.schema.json", "" },

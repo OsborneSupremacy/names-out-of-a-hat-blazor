@@ -289,6 +289,16 @@
   box-shadow: 0 10px 20px -3px rgba(245, 158, 11, 0.4);
 }
 
+/* The one thing left to do on a revealed exchange, so it gets a real button rather than a link,
+   in the same brand purple as the send action. */
+.copy-hat-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.copy-hat-button:hover:not(:disabled) {
+  box-shadow: 0 10px 20px -3px rgba(102, 126, 234, 0.4);
+}
+
 .action-button-secondary {
   padding: 0.75rem 1.5rem;
   font-size: 0.875rem;

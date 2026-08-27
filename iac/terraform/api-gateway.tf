@@ -16,6 +16,7 @@ resource "aws_api_gateway_deployment" "default" {
     module.lambda-add-participant,
     module.lambda-assign-recipients,
     module.lambda-close-hat,
+    module.lambda-copy-hat,
     module.lambda-create-hat,
     module.lambda-delete-hat,
     module.lambda-edit-hat,

@@ -143,6 +143,81 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Empty"
+  /hat/copy:
+    post:
+      operationId: "CopyHat"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopyHatRequest"
+        required: true
+      responses:
+        "404":
+          description: "404 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content: {}
+        "409":
+          description: "409 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestOrConflictResponse"
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CopyHatResponse"
+      security:
+      - cognito-authorizer: []
+    options:
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: "string"
+            Access-Control-Allow-Methods:
+              schema:
+                type: "string"
+            Access-Control-Allow-Headers:
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Empty"
   /participant/{organizerEmail}/{hatId}/{participantEmail}:
     get:
       operationId: "GetParticipant"
@@ -1171,6 +1246,40 @@ components:
         hatId:
           type: "string"
           description: "The unique identifier of the hat to close"
+          format: "uuid"
+      additionalProperties: false
+    CopyHatRequest:
+      required:
+      - "excludePreviousRecipients"
+      - "hatId"
+      - "newHatName"
+      - "organizerEmail"
+      type: "object"
+      properties:
+        organizerEmail:
+          type: "string"
+          description: "The email address of the organizer"
+          format: "email"
+        hatId:
+          type: "string"
+          description: "The unique identifier of the hat being copied"
+          format: "uuid"
+        newHatName:
+          type: "string"
+          description: "The name of the new hat"
+        excludePreviousRecipients:
+          type: "boolean"
+          description: "Whether the recipient a participant drew in the source hat should be\
+            \ ineligible for them in the new hat"
+      additionalProperties: false
+    CopyHatResponse:
+      required:
+      - "hatId"
+      type: "object"
+      properties:
+        hatId:
+          type: "string"
+          description: "The unique identifier of the newly created hat"
           format: "uuid"
       additionalProperties: false
     CreateHatRequest:

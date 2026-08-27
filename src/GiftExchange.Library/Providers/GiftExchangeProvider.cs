@@ -91,6 +91,104 @@ public class GiftExchangeProvider
         }
     }
 
+    /// <summary>
+    /// Writes a new hat holding the same people and the same eligibility rules as an existing
+    /// one, with nobody assigned a recipient. Everything lands in one transaction, so a failure
+    /// part way through cannot leave a hat with half its participants.
+    ///
+    /// Participants are re-created with new ids rather than reused, and the eligibility rows are
+    /// translated through that mapping. Matching on name would have been simpler and wrong: two
+    /// people in a hat may share a display name.
+    /// </summary>
+    /// <param name="sourceHatId">The hat being copied. It is only read.</param>
+    /// <param name="newHat">The hat to write. Its organizer scopes the read of the source.</param>
+    /// <param name="excludePreviousRecipients">
+    /// When true, the participant somebody drew in the source hat is left out of their
+    /// eligibility list in the copy.
+    /// </param>
+    /// <returns>true if the copy was written, false if the organizer already has a hat by that name.</returns>
+    public async Task<bool> CopyHatAsync(
+        Guid sourceHatId,
+        HatDataModel newHat,
+        bool excludePreviousRecipients
+    )
+    {
+        try
+        {
+            await InTransactionAsync(async context =>
+            {
+                var source = await context.Hats
+                    .AsNoTracking()
+                    .Include(hat => hat.Participants).ThenInclude(participant => participant.EligibleRecipients)
+                    .SingleAsync(hat => hat.Id == sourceHatId && hat.OrganizerEmail == newHat.OrganizerEmail)
+                    .ConfigureAwait(false);
+
+                context.Hats.Add(new HatEntity
+                {
+                    Id = newHat.HatId,
+                    OrganizerEmail = newHat.OrganizerEmail,
+                    OrganizerName = newHat.OrganizerName,
+                    Name = newHat.HatName,
+                    NameNormalized = Normalize(newHat.HatName),
+                    Status = newHat.Status,
+                    AdditionalInformation = newHat.AdditionalInformation,
+                    PriceRange = newHat.PriceRange,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+
+                var newParticipantIds = source.Participants
+                    .ToDictionary(participant => participant.Id, _ => Guid.CreateVersion7());
+
+                foreach (var participant in source.Participants)
+                    context.Participants.Add(new ParticipantEntity
+                    {
+                        Id = newParticipantIds[participant.Id],
+                        HatId = newHat.HatId,
+                        Name = participant.Name,
+                        Email = participant.Email
+                        // PickedRecipientId stays null. A copy has not been shaken, which is the
+                        // whole point of making one.
+                    });
+
+                foreach (var participant in source.Participants)
+                foreach (var eligibility in participant.EligibleRecipients)
+                {
+                    if (excludePreviousRecipients && eligibility.EligibleParticipantId == participant.PickedRecipientId)
+                        continue;
+
+                    // Nothing enforces referential integrity in DSQL, so a row pointing at a
+                    // participant who is no longer in the hat is copied as nothing at all rather
+                    // than taken on faith.
+                    if (!newParticipantIds.TryGetValue(eligibility.EligibleParticipantId, out var eligibleId))
+                    {
+                        _logger.LogWarning(
+                            "Skipped an eligibility row while copying hat {SourceHatId}: recipient {EligibleParticipantId} is not a participant in it.",
+                            sourceHatId,
+                            eligibility.EligibleParticipantId);
+                        continue;
+                    }
+
+                    context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
+                    {
+                        ParticipantEligibleRecipientsId = Guid.CreateVersion7(),
+                        ParticipantId = newParticipantIds[participant.Id],
+                        EligibleParticipantId = eligibleId
+                    });
+                }
+
+                await context.SaveChangesAsync().ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+            return true;
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            // The caller checks the name first; this closes the window between that check and
+            // this write, as it does for a hat created from scratch.
+            return false;
+        }
+    }
+
     public async Task<(bool exists, Guid hatId)> DoesHatAlreadyExistAsync(string organizerEmail, string hatName)
     {
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);

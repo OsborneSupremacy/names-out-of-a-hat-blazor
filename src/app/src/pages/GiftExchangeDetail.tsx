@@ -12,6 +12,7 @@ import {
   previewInvitations,
   sendInvitations,
   closeHat,
+  copyHat,
   Hat,
   PreviewInvitationsResponse,
 } from '../api'
@@ -21,6 +22,7 @@ import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
 import { InvitationsPreviewModal } from '../components/InvitationsPreviewModal'
 import { SendConfirmationModal } from '../components/SendConfirmationModal'
+import { CopyHatModal } from '../components/CopyHatModal'
 import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
@@ -52,6 +54,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [isSendingInvitations, setIsSendingInvitations] = useState(false)
   const [showSendConfirmation, setShowSendConfirmation] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [showCopyModal, setShowCopyModal] = useState(false)
 
   useEffect(() => {
     async function loadHat() {
@@ -356,6 +359,23 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     }
   }
 
+  /**
+   * The copy is a separate gift exchange, so the organizer is taken to it. Staying on a revealed
+   * exchange after asking for a new one would leave them wondering whether anything happened.
+   */
+  const handleCopyHat = async (newHatName: string, excludePreviousRecipients: boolean) => {
+    if (!hatId) return
+
+    const { hatId: newHatId } = await copyHat({
+      organizerEmail: userEmail,
+      hatId,
+      newHatName,
+      excludePreviousRecipients,
+    })
+
+    navigate(`/gift-exchange/${newHatId}`)
+  }
+
   const handleShakeHat = async () => {
     if (!hatId || !hat) return
 
@@ -564,7 +584,14 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                 {hat.status === 'CLOSED' && (
                   <div className="action-container">
                     <p className="action-complete">The picks are revealed</p>
-                    <p className="action-hint">See below for the names everyone was assigned. See you next time!</p>
+                    <p className="action-hint">See below for the names everyone was assigned.</p>
+                    <button
+                      className="action-button copy-hat-button"
+                      onClick={() => setShowCopyModal(true)}
+                    >
+                      Copy to a New Exchange
+                    </button>
+                    <p className="action-hint">Start the next one with the same people and the same rules. This exchange stays as it is.</p>
                   </div>
                 )}
               </div>
@@ -798,6 +825,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           isSending={isSendingInvitations}
           onBack={handleBackFromInvitationsPreview}
           onSend={handleProceedToSendConfirmation}
+        />
+      )}
+
+      {showCopyModal && hat && (
+        <CopyHatModal
+          sourceHatName={hat.name}
+          participants={hat.participants}
+          onClose={() => setShowCopyModal(false)}
+          onSubmit={handleCopyHat}
         />
       )}
 

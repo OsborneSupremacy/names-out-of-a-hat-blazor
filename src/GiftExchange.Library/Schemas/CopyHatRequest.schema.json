@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The email address of the organizer"
+        },
+        "hatId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the hat being copied"
+        },
+        "newHatName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "description": "The name of the new hat"
+        },
+        "excludePreviousRecipients": {
+            "type": "boolean",
+            "description": "Whether the recipient a participant drew in the source hat should be ineligible for them in the new hat"
+        }
+    },
+    "required": [
+        "organizerEmail",
+        "hatId",
+        "newHatName",
+        "excludePreviousRecipients"
+    ],
+    "additionalProperties": false
+}

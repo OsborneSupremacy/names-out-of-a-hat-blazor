@@ -72,6 +72,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<RequestMagicLinkRequest>, RequestMagicLinkRequestValidator>()
                 .AddSingleton<IValidator<RedeemMagicLinkRequest>, RedeemMagicLinkRequestValidator>()
                 .AddSingleton<IValidator<CloseHatRequest>, CloseHatRequestValidator>()
+                .AddSingleton<IValidator<CopyHatRequest>, CopyHatRequestValidator>()
                 .AddSingleton<IValidator<CreateHatRequest>, CreateHatRequestValidator>()
                 .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
@@ -113,6 +114,7 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, PreviewInvitationsService>("get/hat/{email}/previewinvitations/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
                 .AddKeyedSingleton<IApiGatewayHandler, CloseHatService>("post/hat/close")
+                .AddKeyedSingleton<IApiGatewayHandler, CopyHatService>("post/hat/copy")
 
                 .AddSingleton<ValidationService>() // registered separately for direct use
                 .AddSingleton<EmailCompositionService>()
