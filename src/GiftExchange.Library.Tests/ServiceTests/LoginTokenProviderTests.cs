@@ -97,10 +97,24 @@ public class LoginTokenProviderTests
     }
 
     [Fact]
+    public async Task CreateLoginTokenAsync_DrawsTheFullTwoHundredAndFiftySixBits()
+    {
+        // act
+        var token = await _sut.CreateLoginTokenAsync("ben@example.com");
+
+        // assert: 32 random bytes, which base64url renders as 43 characters once the padding is
+        // stripped. Pinned because the encoding is now shared with the gift ideas routing tokens,
+        // which are deliberately half this length so they stay readable inside an email address —
+        // and picking up their default here would quietly halve the entropy of every sign-in link
+        // without changing anything visible.
+        token.Should().HaveLength(43);
+    }
+
+    [Fact]
     public async Task TryRedeemLoginTokenAsync_ConsumesTheTokenAndReturnsItsAddress()
     {
         // arrange
-        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(in: 5));
+        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(inMinutes: 5));
 
         // act
         var (redeemed, email) = await _sut.TryRedeemLoginTokenAsync("a-token");
@@ -114,7 +128,7 @@ public class LoginTokenProviderTests
     public async Task TryRedeemLoginTokenAsync_LooksTheTokenUpByItsHash()
     {
         // arrange
-        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(in: 5));
+        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(inMinutes: 5));
 
         // act
         await _sut.TryRedeemLoginTokenAsync("a-token");
@@ -127,7 +141,7 @@ public class LoginTokenProviderTests
     public async Task TryRedeemLoginTokenAsync_DeletesConditionallySoATokenWorksOnce()
     {
         // arrange
-        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(in: 5));
+        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(inMinutes: 5));
 
         // act
         await _sut.TryRedeemLoginTokenAsync("a-token");
@@ -146,7 +160,7 @@ public class LoginTokenProviderTests
     {
         // arrange: DynamoDB reaps expired items on its own schedule, typically within 48 hours, so
         // an item still being present is not evidence that it is still live.
-        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(in: -1));
+        GivenTheStoredItem(("Email", new AttributeValue { S = "ben@example.com" }), Expiring(inMinutes: -1));
 
         // act
         var (redeemed, email) = await _sut.TryRedeemLoginTokenAsync("a-token");
@@ -213,10 +227,10 @@ public class LoginTokenProviderTests
                 Attributes = attributes.ToDictionary(pair => pair.Name, pair => pair.Value)
             });
 
-    private static (string, AttributeValue) Expiring(int @in) =>
+    private static (string, AttributeValue) Expiring(int inMinutes) =>
         ("ExpiresAt", new AttributeValue
         {
-            N = DateTimeOffset.UtcNow.AddMinutes(@in).ToUnixTimeSeconds().ToString()
+            N = DateTimeOffset.UtcNow.AddMinutes(inMinutes).ToUnixTimeSeconds().ToString()
         });
 
     private PutItemRequest CapturedPut() =>

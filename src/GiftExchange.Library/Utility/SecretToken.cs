@@ -13,11 +13,21 @@ namespace GiftExchange.Library.Utility;
 internal static class SecretToken
 {
     /// <summary>
-    /// 128 bits. Enough that guessing is not a strategy, while keeping the encoded form short
-    /// enough to sit in an email address a person might have to read out or retype — which is the
-    /// difference between this and a token that only ever appears inside a link.
+    /// 128 bits, for a token that has to be legible.
+    ///
+    /// Enough that guessing is not a strategy, while keeping the encoded form short enough to sit
+    /// in an email address somebody might have to read off a screen and retype. A token that only
+    /// ever travels inside a link has no such constraint and can afford to be longer.
     /// </summary>
-    private const int TokenBytes = 16;
+    public const int LegibleTokenBytes = 16;
+
+    /// <summary>
+    /// 256 bits, for a token nobody ever has to look at.
+    ///
+    /// The length magic link tokens have always used. They appear only in a URL, so nothing is
+    /// paid for the extra characters.
+    /// </summary>
+    public const int OpaqueTokenBytes = 32;
 
     /// <summary>
     /// A new token in the clear. This is the only time it exists outside whatever it is sent in;
@@ -25,10 +35,15 @@ internal static class SecretToken
     /// </summary>
     /// <remarks>
     /// Base64url rather than plain base64: it yields only letters, digits, '-' and '_', all of
-    /// which an email local part may carry unquoted, where base64's '+' and '/' may not.
+    /// which an email local part may carry unquoted and a query string may carry unencoded, where
+    /// base64's '+' and '/' may not.
     /// </remarks>
-    public static string Create() =>
-        Convert.ToBase64String(RandomNumberGenerator.GetBytes(TokenBytes))
+    /// <param name="tokenBytes">
+    /// How much randomness to draw. Stated by the caller rather than fixed here, because the two
+    /// callers are bound by different things — see the constants above.
+    /// </param>
+    public static string Create(int tokenBytes = LegibleTokenBytes) =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(tokenBytes))
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');

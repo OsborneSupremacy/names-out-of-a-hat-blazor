@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Amazon.DynamoDBv2.Model;
 
 namespace GiftExchange.Library.Providers;
@@ -32,7 +30,7 @@ internal class LoginTokenProvider
     /// <returns>The plaintext token. This is the only time it exists outside the email.</returns>
     public async Task<string> CreateLoginTokenAsync(string email)
     {
-        var token = Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+        var token = SecretToken.Create(SecretToken.OpaqueTokenBytes);
         var expiresAt = DateTimeOffset.UtcNow.Add(TokenLifetime);
 
         var request = new PutItemRequest
@@ -131,15 +129,17 @@ internal class LoginTokenProvider
         }
     }
 
+    /// <summary>
+    /// The item key a token is stored under: its digest, never the token.
+    /// </summary>
+    /// <remarks>
+    /// The prefix is what keeps login items apart from the throttle items sharing this table. The
+    /// hashing itself is <see cref="SecretToken"/>'s, so this class and the gift ideas routing
+    /// tokens cannot drift into two different ideas of what "stored as a hash" means.
+    /// </remarks>
     private static string BuildLoginKey(string token) =>
-        $"LOGIN#{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)))}";
+        $"LOGIN#{SecretToken.Hash(token)}";
 
     private static string NormalizeEmail(string email) =>
         email.TrimNullSafe().ToLowerInvariant();
-
-    private static string Base64UrlEncode(byte[] bytes) =>
-        Convert.ToBase64String(bytes)
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
 }
