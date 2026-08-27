@@ -514,6 +514,7 @@
 }
 
 .organizer-badge {
+  margin-left: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -752,22 +753,63 @@
   gap: 0.75rem;
 }
 
-.recipient-summary-list {
+.recipient-summary {
   display: flex;
   flex-direction: column;
+  gap: 0.625rem;
+}
+
+/*
+ * Label and names sit on one line, with the label given a fixed width so that the two groups line
+ * their names up under each other rather than starting at different offsets.
+ */
+.recipient-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem 0.625rem;
+}
+
+.recipient-group-label {
+  flex: 0 0 5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.recipient-chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
   gap: 0.375rem;
 }
 
-.recipient-summary-item {
-  margin: 0;
-  color: #374151;
-  font-size: 0.875rem;
+.recipient-chip {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.8125rem;
   line-height: 1.4;
 }
 
-.recipient-summary-label {
-  font-weight: 700;
-  color: #1f2937;
+.recipient-group-eligible .recipient-chip {
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.recipient-group-ineligible .recipient-chip {
+  background-color: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+}
+
+.recipient-group-empty {
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: #9ca3af;
 }
 
 .delete-section {
@@ -1022,12 +1064,24 @@
     color: #9ca3af;
   }
 
-  .recipient-summary-item {
-    color: #d1d5db;
+  .recipient-group-label {
+    color: #9ca3af;
   }
 
-  .recipient-summary-label {
-    color: #f9fafb;
+  .recipient-group-eligible .recipient-chip {
+    background-color: rgba(16, 185, 129, 0.16);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: #6ee7b7;
+  }
+
+  .recipient-group-ineligible .recipient-chip {
+    background-color: rgba(75, 85, 99, 0.35);
+    border-color: #4b5563;
+    color: #9ca3af;
+  }
+
+  .recipient-group-empty {
+    color: #6b7280;
   }
 
   .row-edit-indicator {

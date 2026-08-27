@@ -409,9 +409,13 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     }
   }
 
-  const showRowEditAffordance = hat
+  const isEditableStatus = hat
     ? ['IN_PROGRESS', 'READY_FOR_ASSIGNMENT', 'NAMES_ASSIGNED'].includes(hat.status)
     : false
+
+  // Eligibility is about who somebody may draw, so with only the organizer in the hat there is
+  // nothing to edit. Offering the row anyway opened an editor with nothing in it.
+  const canEditEligibility = isEditableStatus && (hat?.participants.length ?? 0) > 1
 
   return (
     <div className="app-container">
@@ -633,7 +637,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                 <div className="section-header">
                   <div>
                     <h3>Participants ({hat.participants.length})</h3>
-                    {showRowEditAffordance && (
+                    {canEditEligibility && (
                       <p className="participants-edit-hint">Click a participant row to edit eligible recipients.</p>
                     )}
                   </div>
@@ -676,7 +680,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                       <thead>
                         <tr>
                           <th>Name</th>
-                          <th>Eligible Recipients</th>
+                          <th>Recipients</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -694,8 +698,12 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                           return (
                             <tr
                               key={index}
-                              className={`${isEditingThis ? 'editing-row' : 'clickable-row'} ${showRowEditAffordance ? 'editable-status-clickable' : ''}`.trim()}
-                              onClick={() => !isEditingThis && handleEditEligibleRecipients(
+                              className={[
+                                isEditingThis ? 'editing-row' : '',
+                                !isEditingThis && canEditEligibility ? 'clickable-row' : '',
+                                canEditEligibility ? 'editable-status-clickable' : '',
+                              ].filter(Boolean).join(' ')}
+                              onClick={() => canEditEligibility && !isEditingThis && handleEditEligibleRecipients(
                                 participant.person.email,
                                 participant.eligibleRecipients
                               )}
@@ -707,7 +715,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                     {isOrganizer && <span className="organizer-badge">Organizer</span>}
                                   </strong>
                                   <span className="participant-email">{participant.person.email}</span>
-                                  {showRowEditAffordance && !isEditingThis && (
+                                  {canEditEligibility && !isEditingThis && (
                                     <span className="row-edit-indicator">Click row to edit</span>
                                   )}
                                   {isEditingThis && !isOrganizer && (
@@ -762,16 +770,28 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                           </div>
                                         </>
                                       ) : (
-                                        <div className="recipient-summary-list">
-                                          <p className="recipient-summary-item">
-                                            <span className="recipient-summary-label">Eligible:</span>{' '}
-                                            {eligibleRecipients.length > 0 ? eligibleRecipients.join(', ') : 'None'}
-                                          </p>
+                                        <div className="recipient-summary">
+                                          <div className="recipient-group recipient-group-eligible">
+                                            <span className="recipient-group-label">Eligible</span>
+                                            {eligibleRecipients.length > 0 ? (
+                                              <div className="recipient-chips">
+                                                {eligibleRecipients.map((name, nameIndex) => (
+                                                  <span key={`${name}-${nameIndex}`} className="recipient-chip">{name}</span>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <span className="recipient-group-empty">None</span>
+                                            )}
+                                          </div>
                                           {ineligibleRecipients.length > 0 && (
-                                            <p className="recipient-summary-item">
-                                              <span className="recipient-summary-label">Not Eligible:</span>{' '}
-                                              {ineligibleRecipients.join(', ')}
-                                            </p>
+                                            <div className="recipient-group recipient-group-ineligible">
+                                              <span className="recipient-group-label">Ineligible</span>
+                                              <div className="recipient-chips">
+                                                {ineligibleRecipients.map((name, nameIndex) => (
+                                                  <span key={`${name}-${nameIndex}`} className="recipient-chip">{name}</span>
+                                                ))}
+                                              </div>
+                                            </div>
                                           )}
                                         </div>
                                       )}
