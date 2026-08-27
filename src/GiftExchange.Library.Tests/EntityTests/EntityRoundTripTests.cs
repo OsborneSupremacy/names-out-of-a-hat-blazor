@@ -64,7 +64,8 @@ public class EntityRoundTripTests : IDisposable
                 PriceRange = string.Empty,
                 InvitationsQueuedAt = DateTimeOffset.MinValue,
                 InvitationsSentFromIp = string.Empty,
-                CreatedAt = DateTimeOffset.UtcNow
+                CreatedAt = DateTimeOffset.UtcNow,
+                CopiedFromHatId = Guid.Empty
             });
 
             context.Participants.AddRange(
@@ -302,7 +303,8 @@ public class EntityRoundTripTests : IDisposable
             PriceRange = string.Empty,
             InvitationsQueuedAt = DateTimeOffset.MinValue,
             InvitationsSentFromIp = string.Empty,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow,
+            CopiedFromHatId = Guid.Empty
         };
 
     public void Dispose() => _connection.Dispose();

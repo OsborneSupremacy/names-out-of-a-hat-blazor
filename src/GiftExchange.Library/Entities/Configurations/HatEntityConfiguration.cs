@@ -22,6 +22,12 @@ internal class HatEntityConfiguration : IEntityTypeConfiguration<HatEntity>
         builder.Property(hat => hat.InvitationsSentFromIp).HasColumnName("invitations_sent_from_ip").HasMaxLength(45).IsRequired();
         builder.Property(hat => hat.CreatedAt).HasColumnName("created_at").IsRequired();
 
+        // Mapped as a plain column with no relationship behind it. See the remarks on the property.
+        builder
+            .Property(hat => hat.CopiedFromHatId)
+            .HasColumnName("copied_from_hat_id")
+            .IsRequired();
+
         builder.HasIndex(hat => hat.OrganizerPersonId).HasDatabaseName("idx_hat_organizer_person");
 
         builder

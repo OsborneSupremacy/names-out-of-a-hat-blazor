@@ -26,6 +26,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,8 +34,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The migration SQL is compared against the EF model by EntityMappingTests. -->
-    <Content Include="..\..\db\tables\*.sql" Link="DbTables\%(Filename)%(Extension)">
+    <!--
+      The migrations are compared against the EF model by EntityMappingTests. The changelog is the
+      subject: it holds the order, and the smaller statements inline rather than in a file.
+    -->
+    <Content Include="..\..\db\changelog.yaml" Link="Db\changelog.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
+    <Content Include="..\..\db\tables\*.sql" Link="Db\tables\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 

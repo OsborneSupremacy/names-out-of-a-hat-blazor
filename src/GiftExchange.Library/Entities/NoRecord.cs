@@ -44,7 +44,8 @@ public static class NoRecord
             PriceRange = string.Empty,
             InvitationsQueuedAt = DateTimeOffset.MinValue,
             InvitationsSentFromIp = string.Empty,
-            CreatedAt = DateTimeOffset.MinValue
+            CreatedAt = DateTimeOffset.MinValue,
+            CopiedFromHatId = Guid.Empty
         };
 
     /// <summary>

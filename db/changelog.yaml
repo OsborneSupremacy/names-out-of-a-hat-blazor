@@ -459,3 +459,47 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: DELETE FROM participant WHERE participant_id = '00000000-0000-0000-0000-000000000000'
+
+  # Three changesets for one column. It cannot be added as NOT NULL in one step: the table already
+  # holds rows, and this schema has no defaults for a new column to borrow.
+  - changeSet:
+      id: hat--0003
+      author: ben
+      comment: >
+        Which exchange a copy came from, or the all-zero id if it was not copied. That id is the
+        sentinel hat, so "not a copy" still names a row and a query following this column can inner
+        join rather than outer.
+
+        Arrives nullable and is tightened in hat--0005, once hat--0004 has filled it in. Groundwork
+        for eligibility that spans years; nothing reads it yet.
+      changes:
+        - sql:
+            sql: ALTER TABLE hat ADD COLUMN copied_from_hat_id UUID
+      rollback:
+        - sql:
+            sql: ALTER TABLE hat DROP COLUMN copied_from_hat_id
+
+  - changeSet:
+      id: hat--0004
+      author: ben
+      comment: >
+        Nothing that already exists was recorded as a copy, the sentinel included, so every row
+        starts out pointing at "no gift exchange". Unconditional on purpose: the column was only
+        just added, so no row has it set.
+      changes:
+        - sql:
+            sql: UPDATE hat SET copied_from_hat_id = '00000000-0000-0000-0000-000000000000'
+      rollback:
+        - sql:
+            sql: UPDATE hat SET copied_from_hat_id = NULL
+
+  - changeSet:
+      id: hat--0005
+      author: ben
+      comment: Now that every row has a value, the column takes the rule the rest of the schema follows.
+      changes:
+        - sql:
+            sql: ALTER TABLE hat ALTER COLUMN copied_from_hat_id SET NOT NULL
+      rollback:
+        - sql:
+            sql: ALTER TABLE hat ALTER COLUMN copied_from_hat_id DROP NOT NULL

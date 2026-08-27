@@ -100,7 +100,8 @@ public class GiftExchangeProvider
             PriceRange = hatDataModel.PriceRange,
             InvitationsQueuedAt = DateTimeOffset.MinValue,
             InvitationsSentFromIp = string.Empty,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow,
+            CopiedFromHatId = Guid.Empty
         });
 
         try
@@ -125,6 +126,10 @@ public class GiftExchangeProvider
     /// second exchange among the same group, not a second set of humans. The eligibility rows are
     /// translated through the mapping from old participant id to new. Matching on name would have
     /// been simpler and wrong: two people in a hat may share a display name.
+    ///
+    /// The copy records the hat it came from. Nothing reads that yet — it is what a future rule
+    /// along the lines of "nobody draws the same person two years running" would need, and it can
+    /// only be captured at the moment the copy is made.
     /// </summary>
     /// <param name="sourceHatId">The hat being copied. It is only read.</param>
     /// <param name="newHat">The hat to write. Its organizer scopes the read of the source.</param>
@@ -166,7 +171,10 @@ public class GiftExchangeProvider
                     PriceRange = newHat.PriceRange,
                     InvitationsQueuedAt = DateTimeOffset.MinValue,
                     InvitationsSentFromIp = string.Empty,
-                    CreatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    // Copying a copy records the hat it came from, not the one at the head of the
+                    // chain, so the chain stays walkable one link at a time.
+                    CopiedFromHatId = sourceHatId
                 });
 
                 var newParticipantIds = source.Participants
@@ -337,6 +345,15 @@ public class GiftExchangeProvider
             await context.Participants
                 .Where(participant => participant.HatId == request.HatId)
                 .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // Any copy taken from this hat would otherwise point at an exchange that no longer
+            // exists. Clearing it says "not a copy", which is true once the source is gone, and is
+            // the same cleanup DeleteParticipantAsync does for a pick. Only this organizer's hats
+            // can be affected: CopyHatAsync will not copy a hat you do not own.
+            await context.Hats
+                .Where(hat => hat.CopiedFromHatId == request.HatId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.CopiedFromHatId, Guid.Empty))
                 .ConfigureAwait(false);
 
             await context.Hats

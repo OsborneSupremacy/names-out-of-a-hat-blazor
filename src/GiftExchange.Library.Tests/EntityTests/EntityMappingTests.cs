@@ -14,8 +14,6 @@ namespace GiftExchange.Library.Tests.EntityTests;
 /// </summary>
 public partial class EntityMappingTests
 {
-    private static readonly string TableSqlDirectory = Path.Combine(AppContext.BaseDirectory, "DbTables");
-
     /// <summary>
     /// Builds the model without opening a connection. Any misconfigured relationship or duplicate
     /// mapping throws here.
@@ -49,7 +47,7 @@ public partial class EntityMappingTests
 
         var surviving = ParseTables().Keys.ToImmutableSortedSet();
 
-        mapped.Should().BeSubsetOf(surviving, "every entity should map to a table db/tables leaves in place");
+        mapped.Should().BeSubsetOf(surviving, "every entity should map to a table the migrations leave in place");
     }
 
     [Fact]
@@ -181,22 +179,20 @@ public partial class EntityMappingTests
     }
 
     /// <summary>
-    /// Replays the migration SQL far enough to know which tables survive and which columns each of
+    /// Replays the migrations far enough to know which tables survive and which columns each of
     /// them ends up with, keyed by column name and holding the full definition so the rules above
     /// have something to read.
     ///
-    /// Files are applied in filename order, which the object--nnnn convention makes chronological,
-    /// because a column can be introduced by a later ALTER rather than the original CREATE, and a
-    /// table can be dropped entirely by a later file.
+    /// Applied in changelog order, which is the order Liquibase applies them, because a column can
+    /// be introduced by a later ALTER rather than the original CREATE and a table can be dropped
+    /// entirely further down.
     /// </summary>
     private static Dictionary<string, ImmutableDictionary<string, string>> ParseTables()
     {
         var tables = new Dictionary<string, ImmutableDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var file in Directory.GetFiles(TableSqlDirectory, "*.sql").Order(StringComparer.Ordinal))
+        foreach (var (_, sql) in Migrations.Statements)
         {
-            var sql = Regex.Replace(File.ReadAllText(file), "--.*", string.Empty);
-
             var create = Regex.Match(sql, @"CREATE\s+TABLE\s+(\w+)\s*\((.*)\)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
             if (create.Success)
@@ -226,7 +222,22 @@ public partial class EntityMappingTests
             var dropColumn = Regex.Match(sql, @"ALTER\s+TABLE\s+(\w+)\s+DROP\s+COLUMN\s+(\w+)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
             if (dropColumn.Success && tables.TryGetValue(dropColumn.Groups[1].Value, out var remaining))
+            {
                 tables[dropColumn.Groups[1].Value] = remaining.Remove(dropColumn.Groups[2].Value);
+                continue;
+            }
+
+            // A column that already holds rows cannot be added as NOT NULL in one statement, and
+            // this schema has no defaults for it to borrow, so it arrives nullable and is tightened
+            // afterwards. Folding that back into the definition is what lets the rules above read
+            // the column's settled state rather than its first draft.
+            var setNotNull = Regex.Match(sql, @"ALTER\s+TABLE\s+(\w+)\s+ALTER\s+COLUMN\s+(\w+)\s+SET\s+NOT\s+NULL", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            if (setNotNull.Success
+                && tables.TryGetValue(setNotNull.Groups[1].Value, out var tightened)
+                && tightened.TryGetValue(setNotNull.Groups[2].Value, out var definition))
+                tables[setNotNull.Groups[1].Value] =
+                    tightened.SetItem(setNotNull.Groups[2].Value, $"{definition} NOT NULL");
         }
 
         return tables;

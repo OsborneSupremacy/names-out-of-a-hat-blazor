@@ -12,7 +12,9 @@ namespace GiftExchange.Library.Tests.EntityTests;
 /// </summary>
 public partial class NoRecordTests
 {
-    private static readonly string TableSqlDirectory = Path.Combine(AppContext.BaseDirectory, "DbTables");
+    /// <summary>The changesets that insert the sentinel rows.</summary>
+    private static readonly ImmutableList<string> SeedChangeSets =
+        ["person--0002", "hat--0002", "participant--0002"];
 
     [Fact]
     public void SentinelPerson_IsEmptyThroughout()
@@ -41,6 +43,19 @@ public partial class NoRecordTests
         hat.InvitationsQueuedAt.Should().Be(DateTimeOffset.MinValue);
         hat.InvitationsSentFromIp.Should().BeEmpty();
         hat.CreatedAt.Should().Be(DateTimeOffset.MinValue);
+        hat.CopiedFromHatId.Should().Be(Guid.Empty);
+    }
+
+    [Fact]
+    public void SentinelParticipant_IsEmptyThroughout()
+    {
+        var participant = NoRecord.Participant();
+
+        participant.ParticipantId.Should().Be(Guid.Empty);
+        participant.HatId.Should().Be(Guid.Empty);
+        participant.PersonId.Should().Be(Guid.Empty);
+        // It draws itself, which is what makes following any unshaken pick an inner join.
+        participant.PickedRecipientParticipantId.Should().Be(Guid.Empty);
     }
 
     /// <summary>
@@ -56,43 +71,36 @@ public partial class NoRecordTests
     }
 
     [Fact]
-    public void SentinelParticipant_IsEmptyThroughout()
+    public void EverySentinelValueInTheMigrations_IsEmpty()
     {
-        var participant = NoRecord.Participant();
-
-        participant.ParticipantId.Should().Be(Guid.Empty);
-        participant.HatId.Should().Be(Guid.Empty);
-        participant.PersonId.Should().Be(Guid.Empty);
-        // It draws itself, which is what makes following any unshaken pick an inner join.
-        participant.PickedRecipientParticipantId.Should().Be(Guid.Empty);
-    }
-
-    [Fact]
-    public void EverySentinelValueInTheMigrationSql_IsEmpty()
-    {
-        foreach (var file in SeedFiles)
+        foreach (var changeSet in SeedChangeSets)
         {
-            var values = ParseInsertedValues(file);
+            var values = ParseInsertedValues(changeSet);
 
-            values.Should().NotBeEmpty($"{file} should insert a sentinel row");
+            values.Should().NotBeEmpty($"{changeSet} should insert a sentinel row");
 
             values
                 .Where(value => value != "''" && value != AllZeroId && !IsMinimumTimestamp(value))
-                .Should().BeEmpty($"every column {file} inserts should be empty, the all-zero id, or the minimum timestamp");
+                .Should().BeEmpty($"every column {changeSet} inserts should be empty, the all-zero id, or the minimum timestamp");
         }
     }
 
     /// <summary>
-    /// The seed SQL and the model have to name the same columns. A column added to the table but
-    /// left out of the seed would leave the sentinel row in the real database describing something
-    /// narrower than the one the suite tests against — and, since the table has no defaults, the
-    /// INSERT would simply fail on deploy.
+    /// The migrations and the model have to describe the same row.
+    ///
+    /// A seed cannot name a column that did not exist when it ran, so a column added later counts
+    /// too — but only because the schema forbids both nulls and defaults, which leaves a backfill
+    /// as the one way to give the existing rows, sentinel included, a value. That is asserted
+    /// rather than assumed.
+    ///
+    /// Without this, a column added to the table and forgotten everywhere else would leave the real
+    /// sentinel narrower than the one the suite builds from the model.
     /// </summary>
     [Theory]
-    [InlineData("person--0002.sql", "person")]
-    [InlineData("hat--0002.sql", "hat")]
-    [InlineData("participant--0002.sql", "participant")]
-    public void TheMigrationSeed_NamesEveryColumnTheModelMaps(string file, string table)
+    [InlineData("person--0002", "person")]
+    [InlineData("hat--0002", "hat")]
+    [InlineData("participant--0002", "participant")]
+    public void TheMigrationSeed_AccountsForEveryColumnTheModelMaps(string changeSet, string table)
     {
         var entity = BuildModel()
             .GetEntityTypes()
@@ -105,14 +113,44 @@ public partial class NoRecordTests
             .Where(column => column is not null)
             .ToImmutableSortedSet()!;
 
-        var seeded = ParseInsertedColumns(file);
+        var seeded = ParseInsertedColumns(changeSet);
+        var addedLater = ColumnsAddedAfter(changeSet, table);
 
-        seeded.Should().BeEquivalentTo(mapped);
+        seeded.Union(addedLater).Should().BeEquivalentTo(mapped);
 
         // Every named column gets a value, which is what makes the row insertable into a table with
         // no defaults to fall back on.
-        ParseInsertedValues(file).Should().HaveCount(seeded.Count);
+        ParseInsertedValues(changeSet).Should().HaveCount(seeded.Count);
+
+        addedLater.Should().BeSubsetOf(
+            ColumnsBackfilled(table),
+            "a column added after the sentinel was seeded can only reach it through a backfill");
     }
+
+    /// <summary>Columns an ALTER adds to this table after the seed has run.</summary>
+    private static ImmutableSortedSet<string> ColumnsAddedAfter(string seedChangeSet, string table)
+    {
+        var seedIndex = Migrations.Statements.FindIndex(statement => statement.ChangeSetId == seedChangeSet);
+
+        seedIndex.Should().BeGreaterThanOrEqualTo(0, $"{seedChangeSet} should be in the changelog");
+
+        return MatchingTable(Migrations.Statements.Skip(seedIndex + 1), AddedColumn(), table);
+    }
+
+    /// <summary>Columns an UPDATE assigns a value to across every row of this table.</summary>
+    private static ImmutableSortedSet<string> ColumnsBackfilled(string table) =>
+        MatchingTable(Migrations.Statements, BackfilledColumn(), table);
+
+    private static ImmutableSortedSet<string> MatchingTable(
+        IEnumerable<Migrations.Statement> statements,
+        Regex pattern,
+        string table
+    ) =>
+        statements
+            .Select(statement => pattern.Match(statement.Sql))
+            .Where(match => match.Success && match.Groups[1].Value.Equals(table, StringComparison.OrdinalIgnoreCase))
+            .Select(match => match.Groups[2].Value)
+            .ToImmutableSortedSet();
 
     private static IModel BuildModel()
     {
@@ -124,44 +162,39 @@ public partial class NoRecordTests
         return context.Model;
     }
 
-    private static readonly ImmutableList<string> SeedFiles =
-        ["person--0002.sql", "hat--0002.sql", "participant--0002.sql"];
-
     private const string AllZeroId = "'00000000-0000-0000-0000-000000000000'";
 
     private static bool IsMinimumTimestamp(string value) =>
         value.StartsWith("'0001-01-01", StringComparison.Ordinal);
 
-    /// <summary>The column names from the INSERT list of a seed file.</summary>
-    private static ImmutableSortedSet<string> ParseInsertedColumns(string file)
+    /// <summary>The column names from the INSERT list of a seed changeset.</summary>
+    private static ImmutableSortedSet<string> ParseInsertedColumns(string changeSet)
     {
-        var columns = ColumnList().Match(ReadSql(file));
+        var columns = ColumnList().Match(SeedSql(changeSet));
 
-        columns.Success.Should().BeTrue($"{file} should name the columns it inserts");
+        columns.Success.Should().BeTrue($"{changeSet} should name the columns it inserts");
 
-        return columns.Groups[1].Value
-            .Split(',')
-            .Select(column => column.Trim())
-            .Where(column => column.Length > 0)
-            .ToImmutableSortedSet();
+        return Split(columns.Groups[1].Value).ToImmutableSortedSet();
     }
 
-    /// <summary>The quoted values from the VALUES clause of a seed file.</summary>
-    private static ImmutableList<string> ParseInsertedValues(string file)
+    /// <summary>The quoted values from the VALUES clause of a seed changeset.</summary>
+    private static ImmutableList<string> ParseInsertedValues(string changeSet)
     {
-        var values = ValuesClause().Match(ReadSql(file));
+        var values = ValuesClause().Match(SeedSql(changeSet));
 
-        values.Success.Should().BeTrue($"{file} should hold one INSERT with a VALUES clause");
+        values.Success.Should().BeTrue($"{changeSet} should hold one INSERT with a VALUES clause");
 
-        return values.Groups[1].Value
-            .Split(',')
-            .Select(value => value.Trim())
-            .Where(value => value.Length > 0)
-            .ToImmutableList();
+        return Split(values.Groups[1].Value).ToImmutableList();
     }
 
-    private static string ReadSql(string file) =>
-        Regex.Replace(File.ReadAllText(Path.Combine(TableSqlDirectory, file)), "--.*", string.Empty);
+    private static string SeedSql(string changeSet) =>
+        Migrations.Statements.Single(statement => statement.ChangeSetId == changeSet).Sql;
+
+    private static IEnumerable<string> Split(string clause) =>
+        clause
+            .Split(',')
+            .Select(item => item.Trim())
+            .Where(item => item.Length > 0);
 
     /// <summary>The parenthesised group between the table name and the VALUES keyword.</summary>
     [GeneratedRegex(@"INSERT\s+INTO\s+\w+\s*\(([^)]*)\)\s*VALUES", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
@@ -173,4 +206,10 @@ public partial class NoRecordTests
     /// </summary>
     [GeneratedRegex(@"VALUES\s*\(([^)]*)\)", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex ValuesClause();
+
+    [GeneratedRegex(@"ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex AddedColumn();
+
+    [GeneratedRegex(@"UPDATE\s+(\w+)\s+SET\s+(\w+)", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex BackfilledColumn();
 }

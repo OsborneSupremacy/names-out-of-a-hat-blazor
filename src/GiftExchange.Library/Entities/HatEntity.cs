@@ -46,6 +46,20 @@ public class HatEntity
 
     public required DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>
+    /// The exchange this one was copied from, or the all-zero <see cref="Guid"/> if it was not
+    /// copied. That id is the sentinel hat, so "not a copy" still names a row.
+    /// </summary>
+    /// <remarks>
+    /// A self reference with no navigation, for the same reason
+    /// <see cref="ParticipantEntity.PickedRecipientParticipantId"/> has none: a navigation would
+    /// make EF emit a foreign key wherever the provider supports one, and DSQL supports none. The
+    /// two would then disagree about whether the source hat can be deleted — the test databases
+    /// would refuse it and DSQL would allow it. The provider clears this column instead, the same
+    /// way it clears a pick.
+    /// </remarks>
+    public required Guid CopiedFromHatId { get; set; }
+
     public PersonEntity Organizer { get; set; } = null!;
 
     public ICollection<ParticipantEntity> Participants { get; set; } = [];

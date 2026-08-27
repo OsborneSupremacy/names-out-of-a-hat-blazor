@@ -562,6 +562,126 @@ public class GiftExchangeProviderTests
     }
 
     /// <summary>
+    /// A copy remembers where it came from. Nothing reads this yet; it is the record a rule like
+    /// "nobody draws the same person two years running" would need, and it can only be captured at
+    /// the moment the copy is made.
+    /// </summary>
+    [Fact]
+    public async Task CopyHatAsync_RecordsTheHatItWasCopiedFrom()
+    {
+        // arrange
+        var source = await CreateHatAsync();
+        await _sut.CreateParticipantAsync(ParticipantRequestFor(source), []);
+
+        var copy = _hatDataModelFaker.Generate() with
+        {
+            OrganizerEmail = source.OrganizerEmail,
+            OrganizerName = source.OrganizerName
+        };
+
+        // act
+        var copied = await _sut.CopyHatAsync(source.HatId, copy, excludePreviousRecipients: false);
+
+        // assert
+        copied.Should().BeTrue();
+
+        await using var context = _contextFactory.CreateDbContext();
+
+        var stored = await context.Hats.SingleAsync(hat => hat.HatId == copy.HatId);
+
+        stored.CopiedFromHatId.Should().Be(source.HatId);
+    }
+
+    /// <summary>
+    /// A hat made from scratch points at the sentinel, so "not a copy" is a row rather than a null
+    /// and following the column is an inner join.
+    /// </summary>
+    [Fact]
+    public async Task CreateHatAsync_MarksTheHatAsNotACopy()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+
+        // act
+        await using var context = _contextFactory.CreateDbContext();
+
+        var provenance = await context.Hats
+            .Where(candidate => candidate.HatId == hat.HatId)
+            .Join(
+                context.Hats,
+                candidate => candidate.CopiedFromHatId,
+                source => source.HatId,
+                (candidate, source) => new { candidate.CopiedFromHatId, SourceName = source.Name })
+            .SingleAsync();
+
+        // assert: the join finds the sentinel rather than nothing.
+        provenance.CopiedFromHatId.Should().Be(Guid.Empty);
+        provenance.SourceName.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Copying a copy records the hat it came from, not the one at the head of the chain, so the
+    /// chain stays walkable one link at a time.
+    /// </summary>
+    [Fact]
+    public async Task CopyingACopy_RecordsTheImmediateSource()
+    {
+        // arrange
+        var first = await CreateHatAsync();
+
+        var second = _hatDataModelFaker.Generate() with
+        {
+            OrganizerEmail = first.OrganizerEmail, OrganizerName = first.OrganizerName
+        };
+        await _sut.CopyHatAsync(first.HatId, second, excludePreviousRecipients: false);
+
+        var third = _hatDataModelFaker.Generate() with
+        {
+            OrganizerEmail = first.OrganizerEmail, OrganizerName = first.OrganizerName
+        };
+
+        // act
+        await _sut.CopyHatAsync(second.HatId, third, excludePreviousRecipients: false);
+
+        // assert
+        await using var context = _contextFactory.CreateDbContext();
+
+        (await context.Hats.SingleAsync(hat => hat.HatId == third.HatId))
+            .CopiedFromHatId.Should().Be(second.HatId);
+    }
+
+    /// <summary>
+    /// Deleting the source would otherwise leave the copy pointing at an exchange that no longer
+    /// exists. Nothing cascades in DSQL, so the provider clears it, as it does a pick.
+    /// </summary>
+    [Fact]
+    public async Task DeletingASourceHat_LeavesItsCopyMarkedAsNotACopy()
+    {
+        // arrange
+        var source = await CreateHatAsync();
+
+        var copy = _hatDataModelFaker.Generate() with
+        {
+            OrganizerEmail = source.OrganizerEmail, OrganizerName = source.OrganizerName
+        };
+        await _sut.CopyHatAsync(source.HatId, copy, excludePreviousRecipients: false);
+
+        // act
+        await _sut.DeleteHatAsync(new DeleteHatRequest
+        {
+            HatId = source.HatId,
+            OrganizerEmail = source.OrganizerEmail
+        });
+
+        // assert
+        await using var context = _contextFactory.CreateDbContext();
+
+        (await context.Hats.AnyAsync(hat => hat.HatId == source.HatId)).Should().BeFalse();
+        (await context.Hats.SingleAsync(hat => hat.HatId == copy.HatId))
+            .CopiedFromHatId.Should().Be(Guid.Empty, "the exchange it came from is gone");
+    }
+
+    /// <summary>
     /// Participants belong to a hat. DynamoDB tolerated orphans; a relational schema does not, so
     /// the hat has to exist first.
     /// </summary>
