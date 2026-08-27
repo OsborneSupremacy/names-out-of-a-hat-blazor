@@ -11,12 +11,7 @@ resource "aws_lambda_function" "invitation-queue-handler" {
   role             = aws_iam_role.invitation-queue-handler-role.arn
 
   environment {
-    variables = merge(
-      local.common_environment_variables,
-      {
-        LIVE_MODE = true
-      }
-    )
+    variables = local.common_environment_variables
   }
 }
 

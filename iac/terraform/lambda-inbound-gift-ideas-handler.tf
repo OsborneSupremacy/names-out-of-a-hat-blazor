@@ -24,7 +24,6 @@ resource "aws_lambda_function" "inbound-gift-ideas-handler" {
       {
         INBOUND_MAIL_BUCKET = local.inbound_mail_bucket
         INBOUND_MAIL_PREFIX = local.gift_ideas_object_prefix
-        LIVE_MODE           = true
       }
     )
   }
