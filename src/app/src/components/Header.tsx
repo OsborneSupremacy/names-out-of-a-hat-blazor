@@ -5,7 +5,13 @@ import './Header.css'
 
 interface HeaderProps {
   userEmail: string
-  givenName: string
+  /**
+   * null while the name is still being loaded, '' when the user genuinely has no name yet.
+   *
+   * The distinction matters: falling back to the email initial while loading is not a placeholder,
+   * it is a different answer, and the UI visibly corrects itself once the real name arrives.
+   */
+  givenName: string | null
   onSignOut: () => void
   onNameUpdated: (name: string) => void
 }
@@ -50,14 +56,16 @@ export function Header({ userEmail, givenName, onSignOut, onNameUpdated }: Heade
             aria-label="Profile menu"
           >
             <div className="profile-icon">
-              {givenName.charAt(0).toUpperCase() || userEmail.charAt(0).toUpperCase()}
+              {givenName === null
+                ? '\u00A0'
+                : (givenName.charAt(0) || userEmail.charAt(0)).toUpperCase()}
             </div>
           </button>
 
           {isMenuOpen && (
             <div className="profile-menu">
               <div className="profile-menu-header">
-                <div className="profile-name">{givenName || 'User'}</div>
+                {givenName !== null && <div className="profile-name">{givenName || 'User'}</div>}
                 <div className="profile-email">{userEmail}</div>
               </div>
               <div className="profile-menu-divider"></div>
@@ -86,7 +94,7 @@ export function Header({ userEmail, givenName, onSignOut, onNameUpdated }: Heade
 
       {showEditName && (
         <EditNameModal
-          currentName={givenName}
+          currentName={givenName ?? ''}
           onClose={() => setShowEditName(false)}
           onSubmit={handleNameSubmit}
         />

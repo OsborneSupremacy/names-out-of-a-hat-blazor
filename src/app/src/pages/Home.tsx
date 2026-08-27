@@ -17,7 +17,8 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [organizerName, setOrganizerName] = useState('')
+  // null until the hats response arrives, so the greeting never guesses.
+  const [organizerName, setOrganizerName] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadHats() {
@@ -70,7 +71,9 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
 
       <main className="main-content">
         <div className="content-wrapper">
-          <h2>Hello {organizerName || 'there'}!</h2>
+          {/* A non-breaking space holds the line's height so the greeting does not shift the
+              page when it resolves. */}
+          <h2>{organizerName === null ? '\u00A0' : `Hello ${organizerName || 'there'}!`}</h2>
           <p>Welcome to Names Out of a Hat!</p>
 
           {loading ? (
@@ -121,7 +124,7 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
 
       {showCreateModal && (
         <CreateHatModal
-          organizerName={organizerName}
+          organizerName={organizerName ?? ''}
           organizerEmail={userEmail}
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateSubmit}

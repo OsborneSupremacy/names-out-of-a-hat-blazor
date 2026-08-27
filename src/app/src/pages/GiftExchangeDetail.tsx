@@ -397,7 +397,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     <div className="app-container">
       <Header
         userEmail={userEmail}
-        givenName={hat?.organizer.name ?? ''}
+        givenName={hat ? hat.organizer.name : null}
         onSignOut={onSignOut}
         onNameUpdated={handleNameUpdated}
       />
