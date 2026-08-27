@@ -20,6 +20,7 @@ import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
 import { InvitationsPreviewModal } from '../components/InvitationsPreviewModal'
+import { SendConfirmationModal } from '../components/SendConfirmationModal'
 import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
@@ -49,6 +50,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [showInvitationsPreview, setShowInvitationsPreview] = useState(false)
   const [invitationsPreview, setInvitationsPreview] = useState<PreviewInvitationsResponse | null>(null)
   const [isSendingInvitations, setIsSendingInvitations] = useState(false)
+  const [showSendConfirmation, setShowSendConfirmation] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
   useEffect(() => {
@@ -258,6 +260,20 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     setShowInvitationsPreview(false)
   }
 
+  // The preview's Send button no longer sends; it opens the acknowledgment step.
+  const handleProceedToSendConfirmation = async () => {
+    setShowInvitationsPreview(false)
+    setShowSendConfirmation(true)
+  }
+
+  const handleCancelSendConfirmation = () => {
+    if (isSendingInvitations) return
+
+    // Back to the preview rather than out of the flow entirely, so cancelling is not punishing.
+    setShowSendConfirmation(false)
+    setShowInvitationsPreview(true)
+  }
+
   const handleConfirmSendInvitations = async () => {
     if (!hatId || !hat) return
 
@@ -273,7 +289,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       // Reload the hat data to reflect the updated status
       const updatedHat = await getHat(userEmail, hatId)
       setHat(updatedHat)
-      setShowInvitationsPreview(false)
+      setShowSendConfirmation(false)
       setInvitationsPreview(null)
     } catch (err) {
       console.error('Error sending invitations:', err)
@@ -781,7 +797,18 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           htmlBody={invitationsPreview.htmlBody}
           isSending={isSendingInvitations}
           onBack={handleBackFromInvitationsPreview}
-          onSend={handleConfirmSendInvitations}
+          onSend={handleProceedToSendConfirmation}
+        />
+      )}
+
+      {showSendConfirmation && invitationsPreview && hat && (
+        <SendConfirmationModal
+          organizerEmail={userEmail}
+          senderIpAddress={invitationsPreview.senderIpAddress}
+          recipientCount={hat.participants.length}
+          isSending={isSendingInvitations}
+          onCancel={handleCancelSendConfirmation}
+          onConfirm={handleConfirmSendInvitations}
         />
       )}
     </div>

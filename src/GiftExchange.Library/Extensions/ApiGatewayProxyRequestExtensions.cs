@@ -33,6 +33,14 @@ public static class ApiGatewayProxyRequestExtensions
                 ? authorizedEmail?.ToString() ?? string.Empty
                 : string.Empty;
 
+        /// <summary>
+        /// The caller's address. CloudFront forwards the viewer's IP and API Gateway surfaces it
+        /// here, so this is the real client rather than an edge node — but it is whatever the
+        /// connection came from, so a VPN or proxy shows that instead.
+        /// </summary>
+        public string GetSourceIpAddress() =>
+            request.RequestContext?.Identity?.SourceIp ?? string.Empty;
+
         public Guid GetHatIdPathParameter()
         {
             string id = request.PathParameters.TryGetValue("hatId", out var idOut) ? idOut! : string.Empty;

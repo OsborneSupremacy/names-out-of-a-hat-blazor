@@ -83,6 +83,7 @@ export interface PreviewInvitationsRequest {
 export interface PreviewInvitationsResponse {
   subject: string
   htmlBody: string
+  senderIpAddress: string
 }
 
 export interface UpdateProfileRequest {

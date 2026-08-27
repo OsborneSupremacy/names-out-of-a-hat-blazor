@@ -44,7 +44,7 @@ public class EntityMappingTests
             .Where(name => name is not null)
             .ToImmutableSortedSet()!;
 
-        var created = ParseCreatedTables().Keys.ToImmutableSortedSet();
+        var created = ParseTableColumns().Keys.ToImmutableSortedSet();
 
         mapped.Should().BeSubsetOf(created, "every entity should map to a table db/tables creates");
     }
@@ -52,7 +52,7 @@ public class EntityMappingTests
     [Fact]
     public void EveryMappedColumn_ExistsInTheMigrationSql()
     {
-        var created = ParseCreatedTables();
+        var created = ParseTableColumns();
         var missing = new List<string>();
 
         foreach (var entity in BuildModel().GetEntityTypes())
@@ -75,33 +75,53 @@ public class EntityMappingTests
     }
 
     /// <summary>
-    /// Reads the CREATE TABLE statements out of db/tables, returning column names per table.
+    /// Replays the migration SQL far enough to know which columns each table ends up with.
+    ///
+    /// Files are applied in filename order, which the object--nnnn convention makes chronological,
+    /// because a column can be introduced by a later ALTER rather than the original CREATE.
     /// </summary>
-    private static Dictionary<string, ImmutableHashSet<string>> ParseCreatedTables()
+    private static Dictionary<string, ImmutableHashSet<string>> ParseTableColumns()
     {
         var tables = new Dictionary<string, ImmutableHashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var file in Directory.GetFiles(TableSqlDirectory, "*.sql"))
+        foreach (var file in Directory.GetFiles(TableSqlDirectory, "*.sql").Order(StringComparer.Ordinal))
         {
             var sql = Regex.Replace(File.ReadAllText(file), "--.*", string.Empty);
 
-            var match = Regex.Match(sql, @"CREATE\s+TABLE\s+(\w+)\s*\((.*)\)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            if (!match.Success) continue;
+            var create = Regex.Match(sql, @"CREATE\s+TABLE\s+(\w+)\s*\((.*)\)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
-            var columns = match.Groups[2].Value
-                .Split(',')
-                .Select(definition => definition.Trim())
-                .Where(definition => definition.Length > 0)
-                .Select(definition => definition.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)[0])
-                // Table-level constraints rather than columns.
-                .Where(token => !IsConstraintKeyword(token))
-                .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+            if (create.Success)
+            {
+                tables[create.Groups[1].Value] = ParseColumnNames(create.Groups[2].Value);
+                continue;
+            }
 
-            tables[match.Groups[1].Value] = columns;
+            var addColumn = Regex.Match(sql, @"ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            if (addColumn.Success && tables.TryGetValue(addColumn.Groups[1].Value, out var existing))
+            {
+                tables[addColumn.Groups[1].Value] = existing.Add(addColumn.Groups[2].Value);
+                continue;
+            }
+
+            var dropColumn = Regex.Match(sql, @"ALTER\s+TABLE\s+(\w+)\s+DROP\s+COLUMN\s+(\w+)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            if (dropColumn.Success && tables.TryGetValue(dropColumn.Groups[1].Value, out var remaining))
+                tables[dropColumn.Groups[1].Value] = remaining.Remove(dropColumn.Groups[2].Value);
         }
 
         return tables;
     }
+
+    private static ImmutableHashSet<string> ParseColumnNames(string tableBody) =>
+        tableBody
+            .Split(',')
+            .Select(definition => definition.Trim())
+            .Where(definition => definition.Length > 0)
+            .Select(definition => definition.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)[0])
+            // Table-level constraints rather than columns.
+            .Where(token => !IsConstraintKeyword(token))
+            .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
 
     private static bool IsConstraintKeyword(string token) =>
         token.Equals("PRIMARY", StringComparison.OrdinalIgnoreCase)

@@ -1,0 +1,37 @@
+.send-confirmation-lead {
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+.send-confirmation-terms {
+  margin-bottom: 1.25rem;
+  padding: 0.875rem 1rem;
+  border-left: 3px solid #d9534f;
+  background: rgba(217, 83, 79, 0.06);
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.send-confirmation-terms p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.send-confirmation-terms p:last-child {
+  margin-bottom: 0;
+}
+
+.send-confirmation-acknowledgement {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.send-confirmation-acknowledgement input {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}

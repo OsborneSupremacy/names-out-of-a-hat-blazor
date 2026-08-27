@@ -476,7 +476,11 @@ public class GiftExchangeProvider
             .ConfigureAwait(false);
     }
 
-    public async Task<DateTimeOffset> MarkInvitationsAsQueuedAsync(string organizerEmail, Guid hatId)
+    public async Task<DateTimeOffset> MarkInvitationsAsQueuedAsync(
+        string organizerEmail,
+        Guid hatId,
+        string sentFromIpAddress
+    )
     {
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
@@ -489,7 +493,8 @@ public class GiftExchangeProvider
                           && hat.Status == HatStatus.NamesAssigned)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(hat => hat.Status, HatStatus.InvitationsSent)
-                .SetProperty(hat => hat.InvitationsQueuedAt, invitationsQueuedAt))
+                .SetProperty(hat => hat.InvitationsQueuedAt, invitationsQueuedAt)
+                .SetProperty(hat => hat.InvitationsSentFromIp, sentFromIpAddress))
             .ConfigureAwait(false);
 
         if (updated == 0)

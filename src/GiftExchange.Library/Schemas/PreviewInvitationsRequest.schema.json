@@ -13,6 +13,11 @@
             "minLength": 5,
             "maxLength": 254,
             "description": "The email address of the organizer"
+        },
+        "senderIpAddress": {
+            "type": "string",
+            "maxLength": 45,
+            "description": "Ignored if sent. The handler takes this from the request context."
         }
     },
     "required": [

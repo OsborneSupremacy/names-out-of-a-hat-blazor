@@ -28,6 +28,12 @@ public class HatEntity
 
     public DateTimeOffset? InvitationsQueuedAt { get; set; }
 
+    /// <summary>
+    /// The address invitations were sent from. Null until they are sent, and never supplied by a
+    /// client — it comes from the request context, so it cannot be spoofed by the caller.
+    /// </summary>
+    public string? InvitationsSentFromIp { get; set; }
+
     public required DateTimeOffset CreatedAt { get; set; }
 
     public HatStatusEntity HatStatus { get; set; } = null!;

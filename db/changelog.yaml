@@ -198,3 +198,16 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: AWS IAM REVOKE giftexchange_user FROM '${scheduler_role_arn}'
+
+  - changeSet:
+      id: hats--0002
+      author: ben
+      comment: Origin of the send, for abuse investigation.
+      changes:
+        - sqlFile:
+            path: tables/hats--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: ALTER TABLE hats DROP COLUMN invitations_sent_from_ip

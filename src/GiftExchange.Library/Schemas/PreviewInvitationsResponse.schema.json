@@ -13,11 +13,17 @@
             "minLength": 1,
             "maxLength": 2000,
             "description": "The HTML body for the invitation preview"
+        },
+        "senderIpAddress": {
+            "type": "string",
+            "maxLength": 45,
+            "description": "The address the organizer is previewing from, shown back to them before they send."
         }
     },
     "required": [
-        "subject",
-        "htmlBody"
+        "htmlBody",
+        "senderIpAddress",
+        "subject"
     ],
     "additionalProperties": false
 }

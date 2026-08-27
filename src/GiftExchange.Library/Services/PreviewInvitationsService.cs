@@ -37,7 +37,8 @@ internal class PreviewInvitationsService : IApiGatewayHandler
         return new Result<PreviewInvitationsRequest>(new PreviewInvitationsRequest
         {
             HatId = hatId,
-            OrganizerEmail = organizerEmail
+            OrganizerEmail = organizerEmail,
+            SenderIpAddress = request.GetSourceIpAddress()
         }, HttpStatusCode.OK);
     }
 
@@ -63,7 +64,8 @@ internal class PreviewInvitationsService : IApiGatewayHandler
         var preview = new PreviewInvitationsResponse
         {
             Subject = EmailCompositionService.GetSubject(hat),
-            HtmlBody = _emailCompositionService.ComposeEmail(hat, PlaceholderParticipantName, PlaceholderPickedName)
+            HtmlBody = _emailCompositionService.ComposeEmail(hat, PlaceholderParticipantName, PlaceholderPickedName),
+            SenderIpAddress = request.SenderIpAddress
         };
 
         return new Result<PreviewInvitationsResponse>(preview, HttpStatusCode.OK);

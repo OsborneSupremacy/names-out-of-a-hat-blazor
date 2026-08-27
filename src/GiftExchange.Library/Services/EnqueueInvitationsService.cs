@@ -43,10 +43,17 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         _schedulerService = schedulerService ?? throw new ArgumentNullException(nameof(schedulerService));
     }
 
+    // The address is read from the request context here rather than being carried on the request
+    // body, so a caller cannot choose what gets recorded against their send.
     public Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context) =>
-        _adapter.AdaptAsync<SendInvitationsRequest, StatusCodeOnlyResponse>(request, ExecuteAsync);
+        _adapter.AdaptAsync<SendInvitationsRequest, StatusCodeOnlyResponse>(
+            request,
+            innerRequest => ExecuteAsync(innerRequest, request.GetSourceIpAddress()));
 
-    internal async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(SendInvitationsRequest request)
+    internal async Task<Result<StatusCodeOnlyResponse>> ExecuteAsync(
+        SendInvitationsRequest request,
+        string sentFromIpAddress
+    )
     {
         var hatPreconditionResult = await _hatPreconditionValidator
             .ValidateAsync(new HatPreconditionRequest
@@ -94,7 +101,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
             .ConfigureAwait(false);
 
         var invitationsQueuedAt = await _giftExchangeProvider
-            .MarkInvitationsAsQueuedAsync(request.OrganizerEmail, request.HatId)
+            .MarkInvitationsAsQueuedAsync(request.OrganizerEmail, request.HatId, sentFromIpAddress)
             .ConfigureAwait(false);
 
         await _schedulerService.CreateCooledOffScheduleAsync(request, invitationsQueuedAt)

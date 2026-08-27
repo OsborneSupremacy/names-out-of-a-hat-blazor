@@ -20,6 +20,7 @@ internal class HatEntityConfiguration : IEntityTypeConfiguration<HatEntity>
         builder.Property(hat => hat.AdditionalInformation).HasColumnName("additional_information").HasMaxLength(2000).IsRequired();
         builder.Property(hat => hat.PriceRange).HasColumnName("price_range").HasMaxLength(50).IsRequired();
         builder.Property(hat => hat.InvitationsQueuedAt).HasColumnName("invitations_queued_at");
+        builder.Property(hat => hat.InvitationsSentFromIp).HasColumnName("invitations_sent_from_ip").HasMaxLength(45);
         builder.Property(hat => hat.CreatedAt).HasColumnName("created_at").IsRequired();
 
         builder.HasIndex(hat => hat.OrganizerEmail).HasDatabaseName("idx_hats_organizer_email");
