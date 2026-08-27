@@ -34,6 +34,10 @@ public sealed class GiftExchangeDbContext : DbContext
     public DbSet<ParticipantEligibleRecipientEntity> ParticipantEligibleRecipients =>
         Set<ParticipantEligibleRecipientEntity>();
 
+    public DbSet<GiftIdeaEntity> GiftIdeas => Set<GiftIdeaEntity>();
+
+    public DbSet<GiftIdeaTokenEntity> GiftIdeaTokens => Set<GiftIdeaTokenEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GiftExchangeDbContext).Assembly);
 }

@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace GiftExchange.Library.Services;
 
 /// <summary>
@@ -6,6 +8,18 @@ namespace GiftExchange.Library.Services;
 [UsedImplicitly]
 internal class ContentModerationService : IContentModerationService
 {
+    /// <summary>
+    /// The largest a single text segment may be. Comprehend's own limit is 1 KB per segment, and
+    /// this sits under it so that a segment landing on the boundary is not rejected over one byte.
+    /// </summary>
+    private const int MaxSegmentBytes = 1000;
+
+    /// <summary>
+    /// The most segments Comprehend accepts in one request. Its other limit, 10 KB across the
+    /// whole list, cannot bind before this one does while <see cref="MaxSegmentBytes"/> is 1000.
+    /// </summary>
+    private const int MaxSegmentsPerRequest = 10;
+
     private readonly IAmazonComprehend _comprehendClient;
 
     private readonly ILogger<ContentModerationService> _logger;
@@ -29,6 +43,13 @@ internal class ContentModerationService : IContentModerationService
     /// <remarks>
     /// Fails closed: if the check cannot be performed, the content is rejected rather than
     /// accepted. Empty text is the one exception, since there is nothing to check.
+    ///
+    /// Text longer than Comprehend will take in one segment is split and sent as several, across
+    /// as many requests as it takes. Before that, anything over 1 KB was sent as a single segment
+    /// and came back as a <c>TextSizeLimitExceededException</c>, which the fail-closed catch below
+    /// turned into "we couldn't check it, try again in a moment" -- advice that could never come
+    /// true, however many times the organizer retried. A hat's additional information may be 2,000
+    /// characters, so that was reachable from the edit screen.
     /// </remarks>
     /// <param name="text">The text to validate</param>
     /// <param name="fieldName">The name of the field being validated (for error messages)</param>
@@ -40,21 +61,30 @@ internal class ContentModerationService : IContentModerationService
 
         try
         {
-            var request = new DetectToxicContentRequest
+            var toxicLabels = new List<ToxicContent>();
+
+            // Batched rather than capped, so that how long a caller's text may be stays the
+            // caller's decision instead of being dictated by Comprehend's request shape.
+            foreach (var batch in SplitIntoSegments(text).Chunk(MaxSegmentsPerRequest))
             {
-                LanguageCode = LanguageCode.En,
-                TextSegments = [new() { Text = text }]
-            };
+                var request = new DetectToxicContentRequest
+                {
+                    LanguageCode = LanguageCode.En,
+                    TextSegments = [.. batch.Select(segment => new TextSegment { Text = segment })]
+                };
 
-            var response = await _comprehendClient.DetectToxicContentAsync(request);
+                var response = await _comprehendClient.DetectToxicContentAsync(request);
 
-            if (response.ResultList is null || response.ResultList.Count == 0)
-                return (true, string.Empty);
+                if (response.ResultList is null)
+                    continue;
 
-            var result = response.ResultList[0];
-            var toxicLabels = result.Labels
-                .Where(label => label.Score >= _toxicityThreshold)
-                .ToList();
+                // Every segment is scored separately, and one bad passage is enough to reject the
+                // whole field, so all of them are gathered rather than only the first.
+                toxicLabels.AddRange(response.ResultList
+                    .Where(result => result.Labels is not null)
+                    .SelectMany(result => result.Labels)
+                    .Where(label => label.Score >= _toxicityThreshold));
+            }
 
             if (toxicLabels.Count <= 0)
                 return (true, string.Empty);
@@ -82,6 +112,78 @@ internal class ContentModerationService : IContentModerationService
             // perfectly fine, and telling someone their name is inappropriate when the checker was
             // simply unreachable is both wrong and unhelpful.
             return (false, $"We couldn't check the {fieldName} just now. Please try again in a moment.");
+        }
+    }
+
+    /// <summary>
+    /// Breaks text into segments that each fit inside Comprehend's per-segment limit.
+    /// </summary>
+    /// <remarks>
+    /// The limit is on UTF-8 bytes rather than characters, which is why this counts bytes as it
+    /// goes. An emoji costs four of them, and a gift exchange is one of the places people reach for
+    /// emoji, so a character count would happily pass a string well under 1,000 characters that was
+    /// well over 1,000 bytes -- the exact failure this splitting exists to prevent.
+    ///
+    /// Segments end at whitespace wherever there is any to end at, so a sentence is usually scored
+    /// whole. A run with no whitespace in it -- a long URL being the realistic case -- is cut at the
+    /// last character that fits. Toxicity is scored per segment, so where the cuts land can move a
+    /// score a little; that is accepted, because the alternative was not scoring the text at all.
+    /// </remarks>
+    internal static List<string> SplitIntoSegments(string text)
+    {
+        var segments = new List<string>();
+        var current = new StringBuilder();
+        var currentBytes = 0;
+
+        // Where the last whitespace fell within current, and what current weighed at that point.
+        var breakAt = 0;
+        var bytesAtBreak = 0;
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            var runeBytes = rune.Utf8SequenceLength;
+
+            if (currentBytes + runeBytes > MaxSegmentBytes && current.Length > 0)
+            {
+                if (breakAt > 0)
+                {
+                    Emit(segments, current.ToString(0, breakAt));
+
+                    // What followed the last whitespace is not lost, it opens the next segment.
+                    var carried = current.ToString(breakAt, current.Length - breakAt);
+                    current.Clear().Append(carried);
+                    currentBytes -= bytesAtBreak;
+                }
+                else
+                {
+                    Emit(segments, current.ToString());
+                    current.Clear();
+                    currentBytes = 0;
+                }
+
+                breakAt = 0;
+                bytesAtBreak = 0;
+            }
+
+            current.Append(rune.ToString());
+            currentBytes += runeBytes;
+
+            if (!Rune.IsWhiteSpace(rune)) continue;
+
+            breakAt = current.Length;
+            bytesAtBreak = currentBytes;
+        }
+
+        Emit(segments, current.ToString());
+
+        return segments;
+
+        // Comprehend has nothing to say about whitespace, and a segment of it would only spend a
+        // slot in the request.
+        static void Emit(List<string> into, string segment)
+        {
+            if (!string.IsNullOrWhiteSpace(segment))
+                into.Add(segment.Trim());
         }
     }
 

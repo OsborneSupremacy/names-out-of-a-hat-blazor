@@ -501,3 +501,75 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: UPDATE hat SET copied_from_hat_id = NULL
+
+  - changeSet:
+      id: gift_idea--0001
+      author: ben
+      comment: >
+        Gift ideas a participant shares with whoever drew them. Append-only, newest row wins.
+      changes:
+        - sqlFile:
+            path: tables/gift_idea--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE gift_idea
+
+  - changeSet:
+      id: idx_gift_idea_participant--0001
+      author: ben
+      comment: >
+        Both questions this table is asked start from a participant: what is their newest
+        submission, and have they made one at all. Ordered by created_at within the participant so
+        the first is an index scan rather than a sort over everything they have ever sent.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_gift_idea_participant ON gift_idea (participant_id, created_at)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_gift_idea_participant
+
+  - changeSet:
+      id: gift_idea_token--0001
+      author: ben
+      comment: >
+        The routing token issued to a participant when invitations go out, stored as a hash.
+      changes:
+        - sqlFile:
+            path: tables/gift_idea_token--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE gift_idea_token
+
+  - changeSet:
+      id: uq_gift_idea_token_hash--0001
+      author: ben
+      comment: >
+        Inbound mail knows the token and nothing else, so this is the one path that reaches a
+        participant without a hat id.
+
+        Genuinely unique, which the equivalent column on participant could not have been: this table
+        starts empty, so there is no crowd of backfilled rows sharing an empty string for a unique
+        index to reject.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_gift_idea_token_hash ON gift_idea_token (token_hash)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_gift_idea_token_hash
+
+  - changeSet:
+      id: uq_gift_idea_token_participant--0001
+      author: ben
+      comment: >
+        One live token per participant. Reissuing replaces the row rather than adding a second
+        address that still writes to the same participant.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_gift_idea_token_participant ON gift_idea_token (participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_gift_idea_token_participant

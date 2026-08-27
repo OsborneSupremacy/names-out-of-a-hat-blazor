@@ -1,0 +1,44 @@
+namespace GiftExchange.Library.Entities;
+
+/// <summary>
+/// One thing a participant sent in about what they would like, shared with the single person who
+/// drew them and with nobody else — the organizer included.
+///
+/// Rows accumulate rather than being edited. The newest one for a participant is what gets
+/// forwarded, so a second submission reads as a replacement without the first ceasing to exist:
+/// text pulled out of an email is a guess at where the quoted reply began, and a guess that goes
+/// wrong is only recoverable while what preceded it is still here.
+/// </summary>
+public class GiftIdeaEntity
+{
+    public required Guid GiftIdeaId { get; set; }
+
+    /// <summary>Who wrote it. A participant, not a person: this is said within one exchange.</summary>
+    /// <remarks>
+    /// Deliberately has no navigation property, for the reason
+    /// <see cref="ParticipantEntity.PickedRecipientParticipantId"/> and
+    /// <see cref="HatEntity.CopiedFromHatId"/> have none. EF turns a reference navigation into a
+    /// real foreign key wherever the provider supports one, and the databases this suite builds
+    /// would then refuse to delete a participant who had written something while DSQL, which the
+    /// application treats as having no foreign keys, would allow it. Cleanup lives in the provider
+    /// alongside the rest of it.
+    /// </remarks>
+    public required Guid ParticipantId { get; set; }
+
+    /// <summary>Their own words, never the application's, and never empty — an empty submission is refused on the way in.</summary>
+    public required string Ideas { get; set; }
+
+    /// <summary>
+    /// When it was sent. This is what decides which submission is newest, rather than the id, so
+    /// that the winner turns on a value the application states outright.
+    /// </summary>
+    public required DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// The SES message id this arrived in, or the empty string if it did not arrive by email. What
+    /// ties a stored submission back to the raw message, for the same reason
+    /// <see cref="HatEntity.InvitationsSentFromIp"/> is kept: a report arrives long afterwards, and
+    /// only what was written down at the time can answer it.
+    /// </summary>
+    public required string InboundMessageId { get; set; }
+}

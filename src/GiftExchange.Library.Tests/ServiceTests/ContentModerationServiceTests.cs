@@ -1,3 +1,4 @@
+using System.Text;
 using Amazon.Comprehend;
 using Microsoft.Extensions.Logging;
 using Amazon.Comprehend.Model;
@@ -101,6 +102,160 @@ public class ContentModerationServiceTests
         await _comprehend
             .DidNotReceive()
             .DetectToxicContentAsync(Arg.Any<DetectToxicContentRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ValidateContentAsync_GivenTextOverOneKilobyte_StillChecksIt()
+    {
+        // arrange: additional information may be 2,000 characters, and Comprehend takes 1 KB in a
+        // segment. This used to reach the service as one oversized segment and fail closed.
+        RespondWithScore(0.01f);
+        var text = string.Join(" ", Enumerable.Repeat("gift", 400));
+
+        // act
+        var (isValid, error) = await _sut.ValidateContentAsync(text, "additional information");
+
+        // assert
+        isValid.Should().BeTrue();
+        error.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ValidateContentAsync_GivenTextOverOneKilobyte_SendsSegmentsWithinComprehendsLimits()
+    {
+        // arrange
+        RespondWithScore(0.01f);
+
+        // act
+        await _sut.ValidateContentAsync(string.Join(" ", Enumerable.Repeat("gift", 400)), "additional information");
+
+        // assert
+        var requests = _comprehend
+            .ReceivedCalls()
+            .Select(call => call.GetArguments()[0])
+            .OfType<DetectToxicContentRequest>()
+            .ToList();
+
+        requests.Should().NotBeEmpty();
+        requests.Should().AllSatisfy(request =>
+        {
+            request.TextSegments.Should().HaveCountLessThanOrEqualTo(10);
+            request.TextSegments.Should()
+                .AllSatisfy(segment => Encoding.UTF8.GetByteCount(segment.Text).Should().BeLessThanOrEqualTo(1024));
+            Encoding.UTF8
+                .GetByteCount(string.Concat(request.TextSegments.Select(segment => segment.Text)))
+                .Should()
+                .BeLessThanOrEqualTo(10 * 1024);
+        });
+    }
+
+    [Fact]
+    public async Task ValidateContentAsync_GivenToxicContentAfterTheFirstSegment_IsRejected()
+    {
+        // arrange: scoring is per segment, so a service reading only the first result would let
+        // anything past the opening kilobyte through.
+        _comprehend
+            .DetectToxicContentAsync(Arg.Any<DetectToxicContentRequest>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => new DetectToxicContentResponse
+            {
+                ResultList =
+                [
+                    .. callInfo.Arg<DetectToxicContentRequest>().TextSegments
+                        .Select((_, index) => new ToxicLabels
+                        {
+                            Labels =
+                            [
+                                new ToxicContent
+                                {
+                                    Name = ToxicContentType.PROFANITY,
+                                    Score = index == 0 ? 0.01f : 0.99f
+                                }
+                            ]
+                        })
+                ]
+            });
+
+        // act
+        var (isValid, error) = await _sut.ValidateContentAsync(
+            string.Join(" ", Enumerable.Repeat("gift", 400)),
+            "additional information");
+
+        // assert
+        isValid.Should().BeFalse();
+        error.Should().Contain("inappropriate content");
+    }
+
+    [Fact]
+    public async Task ValidateContentAsync_GivenMoreSegmentsThanOneRequestTakes_SendsSeveralRequests()
+    {
+        // arrange: 10 segments per request is Comprehend's limit, and how much text a caller may
+        // submit should not be decided by it.
+        RespondWithScore(0.01f);
+
+        // act
+        await _sut.ValidateContentAsync(string.Join(" ", Enumerable.Repeat("gift", 4000)), "gift ideas");
+
+        // assert
+        _comprehend
+            .ReceivedCalls()
+            .Count(call => call.GetArguments()[0] is DetectToxicContentRequest)
+            .Should()
+            .BeGreaterThan(1);
+    }
+
+    [Fact]
+    public void SplitIntoSegments_GivenMultiByteCharacters_MeasuresBytesNotCharacters()
+    {
+        // arrange: an emoji is one character but four UTF-8 bytes. Counting characters would put
+        // roughly four times the limit into a segment.
+        var text = string.Join(" ", Enumerable.Repeat("🎁", 2000));
+
+        // act
+        var segments = ContentModerationService.SplitIntoSegments(text);
+
+        // assert
+        segments.Should()
+            .AllSatisfy(segment => Encoding.UTF8.GetByteCount(segment).Should().BeLessThanOrEqualTo(1000));
+    }
+
+    [Fact]
+    public void SplitIntoSegments_GivenAnUnbrokenRunLongerThanASegment_CutsItRatherThanOverflowing()
+    {
+        // arrange: a wishlist URL is the realistic way to get a very long run with no whitespace.
+        var text = $"https://example.com/{new string('a', 3000)}";
+
+        // act
+        var segments = ContentModerationService.SplitIntoSegments(text);
+
+        // assert
+        segments.Should().HaveCountGreaterThan(1);
+        segments.Should()
+            .AllSatisfy(segment => Encoding.UTF8.GetByteCount(segment).Should().BeLessThanOrEqualTo(1000));
+    }
+
+    [Fact]
+    public void SplitIntoSegments_LosesNoText()
+    {
+        // arrange
+        const string text = "A cast iron skillet, a book about bread, and a scarf in any colour but beige.";
+
+        // act
+        var segments = ContentModerationService.SplitIntoSegments(text);
+
+        // assert: segments are trimmed at the joins, so the words are what is compared.
+        string.Join(" ", segments).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Should()
+            .BeEquivalentTo(text.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public void SplitIntoSegments_GivenTextThatFitsInOneSegment_ReturnsItWhole()
+    {
+        // act
+        var segments = ContentModerationService.SplitIntoSegments("Family Christmas");
+
+        // assert
+        segments.Should().ContainSingle().Which.Should().Be("Family Christmas");
     }
 
     private void RespondWithScore(float score) =>
