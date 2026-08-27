@@ -17,7 +17,14 @@
 
 .signin-card h1 {
   margin: 0 0 1.5rem;
-  font-size: 1.5rem;
+  font-size: 0;
+  line-height: 0;
+}
+
+.signin-logo {
+  display: inline-block;
+  width: min(11rem, 55%);
+  height: auto;
 }
 
 .signin-intro {

@@ -78,6 +78,7 @@ internal class RequestMagicLinkService : IApiGatewayHandler
                 {
                     Html = new Content(
                         $"""
+                         {EmailBranding.Masthead()}<br /><br />
                          Click below to sign in to Names Out Of A Hat.<br /><br />
                          <a href="{link}"><b>🎩 Sign in 🎩</b></a><br /><br />
                          This link works once and expires in 15 minutes.<br /><br />

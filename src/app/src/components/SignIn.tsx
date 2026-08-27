@@ -33,7 +33,15 @@ export function SignIn() {
   return (
     <div className="signin-container">
       <div className="signin-card">
-        <h1>🎩 Names Out of a Hat</h1>
+        <h1>
+          <img
+            className="signin-logo"
+            src="/logo-square.png"
+            alt="Names Out of a Hat"
+            width={512}
+            height={512}
+          />
+        </h1>
 
         {sent ? (
           <div className="signin-sent">

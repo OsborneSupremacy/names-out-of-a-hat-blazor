@@ -278,8 +278,11 @@ public class GiftIdeaEmailCompositionService
          """;
 
     private static string Wrap(IEnumerable<string> lines) =>
-        string.Join(
+        EmailBranding.Masthead()
+        + "<br /><br />"
+        + string.Join(
             "<br /><br />",
             lines.Where(line => !string.IsNullOrWhiteSpace(line)))
-        + """<br /><br /><a href="https://namesoutofahat.com"><b>🎩 Names Out Of A Hat 🎩</b></a>""";
+        + "<br /><br />"
+        + EmailBranding.SignOff();
 }

@@ -15,6 +15,7 @@ public class EmailCompositionService
 
         var lines = new List<string>
         {
+            EmailBranding.Masthead(),
             $"Dear {HttpUtility.HtmlEncode(participant)},",
             GetGreeting(hat, organizerName, organizerEmail),
             "The person whose name was picked out of a hat for you is:",
@@ -39,7 +40,7 @@ public class EmailCompositionService
         lines.AddRange([
             $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
             "<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>",
-            """<a href="https://namesoutofahat.com"><b>🎩 Names Out Of A Hat 🎩</b></a>""",
+            EmailBranding.SignOff(),
             BuildSmallPrint(organizerEmail)
         ]);
 

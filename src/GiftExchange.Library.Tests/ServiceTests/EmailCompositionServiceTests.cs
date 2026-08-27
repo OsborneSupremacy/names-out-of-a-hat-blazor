@@ -73,10 +73,37 @@ public class EmailCompositionServiceTests
         // What makes the payloads inert is the escaped angle brackets, not the absence of the
         // words: "onerror=" survives as harmless text once "<img" cannot open a tag.
         body.Should().NotContain("<script>");
-        body.Should().NotContain("<img");
+
+        // This used to read NotContain("<img"), which worked only while invitations carried no
+        // images at all. The masthead is now a real one, so the same guarantee has to be stated as
+        // a count: an injected tag would open a second.
+        body.Split("<img").Length.Should().Be(
+            2,
+            "the branding masthead is the only <img> an invitation is allowed to carry");
+
         body.Should().Contain("&lt;script&gt;");
         body.Should().Contain("&lt;img src=x onerror=alert(1)&gt;");
         body.Should().Contain("Ampersand &amp; Co");
+    }
+
+    [Fact]
+    public void ComposeEmail_OpensWithTheBrandingMasthead()
+    {
+        // act
+        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
+
+        // assert
+        body.Should().StartWith("<a href=\"https://namesoutofahat.com\"><img");
+        body.Should().Contain("src=\"https://namesoutofahat.com/logo-horizontal.png\"");
+
+        // Most clients block remote images until asked, so the alt text is what the majority of
+        // recipients actually read. It has to say the product name on its own.
+        body.Should().Contain("alt=\"\U0001F3A9 Names Out Of A Hat \U0001F3A9\"");
+
+        // Outlook lays out from the attributes rather than the CSS, so dropping them collapses the
+        // space the masthead should occupy.
+        body.Should().Contain("width=\"260\"");
+        body.Should().Contain("height=\"87\"");
     }
 
     [Fact]

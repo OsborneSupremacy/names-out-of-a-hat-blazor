@@ -46,6 +46,13 @@ export function AuthCallback({ onSignedIn }: AuthCallbackProps) {
 
   return (
     <div className="auth-callback">
+      <img
+        className="auth-callback-logo"
+        src="/logo-horizontal.png"
+        alt="Names Out of a Hat"
+        width={960}
+        height={323}
+      />
       {error ? (
         <div className="auth-callback-card">
           <h2>Sign-in failed</h2>

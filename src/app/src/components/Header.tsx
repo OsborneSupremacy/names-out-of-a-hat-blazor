@@ -46,7 +46,15 @@ export function Header({ userEmail, givenName, onSignOut, onNameUpdated }: Heade
     <header className="app-header">
       <div className="header-content">
         <div className="app-title">
-          <h1>Names Out of a Hat</h1>
+          <h1>
+            <img
+              className="app-logo"
+              src="/logo-horizontal.png"
+              alt="Names Out of a Hat"
+              width={960}
+              height={323}
+            />
+          </h1>
         </div>
 
         <div className="profile-section" ref={menuRef}>

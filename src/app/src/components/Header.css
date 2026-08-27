@@ -17,10 +17,22 @@
 }
 
 .app-title h1 {
+  /* The wordmark is the heading; the <h1> only carries it for the accessibility tree. */
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
+  font-size: 0;
+  line-height: 0;
+}
+
+.app-logo {
+  display: block;
+  height: 2.75rem;
+  width: auto;
+}
+
+@media (max-width: 600px) {
+  .app-logo {
+    height: 2rem;
+  }
 }
 
 .profile-section {
@@ -120,8 +132,9 @@
     border-bottom-color: #374151;
   }
 
-  .app-title h1 {
-    color: #f9fafb;
+  /* The wordmark's navy outline all but disappears against the dark header. */
+  .app-logo {
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.4));
   }
 
   .profile-menu {
