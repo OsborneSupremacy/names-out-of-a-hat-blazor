@@ -57,6 +57,14 @@ public class HatEntity
     /// two would then disagree about whether the source hat can be deleted — the test databases
     /// would refuse it and DSQL would allow it. The provider clears this column instead, the same
     /// way it clears a pick.
+    ///
+    /// Non-nullable here and nullable in the database, which is the one place those two disagree.
+    /// The column was added to a table that already had rows, and DSQL rejects both halves of the
+    /// usual remedy: it will not take a default, and it will not accept ALTER COLUMN ... SET NOT
+    /// NULL afterwards. So this property is the guarantee — every write states a value, and a row
+    /// carrying NULL could only come from outside the application. EF would throw reading one,
+    /// which is the right outcome: it means something bypassed the only thing keeping the column
+    /// filled.
     /// </remarks>
     public required Guid CopiedFromHatId { get; set; }
 

@@ -128,6 +128,25 @@ public partial class EntityMappingTests
     }
 
     /// <summary>
+    /// Columns the database is unable to declare NOT NULL, and the application therefore keeps
+    /// filled on its own.
+    ///
+    /// DSQL rejects ALTER COLUMN ... SET NOT NULL, and will not add a column with a default, so a
+    /// column introduced after its table already held rows can never be tightened. Listing one here
+    /// is a deliberate statement that the application owns the invariant — the same arrangement as
+    /// the foreign keys DSQL cannot enforce either — not an oversight.
+    ///
+    /// Only a column added by a later ALTER can qualify. A column present in a CREATE TABLE has no
+    /// excuse, and none belongs here.
+    /// </summary>
+    private static readonly ImmutableHashSet<string> ColumnsDsqlCannotConstrain =
+    [
+        // Added by hat--0003. HatEntity.CopiedFromHatId is non-nullable, which is what actually
+        // keeps it filled.
+        "hat.copied_from_hat_id"
+    ];
+
+    /// <summary>
     /// Nothing is nullable. Absence is spelled with a value instead — the all-zero UUID, the
     /// minimum timestamp, the empty string — so reading a row never means asking whether a column
     /// is there.
@@ -142,7 +161,24 @@ public partial class EntityMappingTests
                   && !column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase)
             select $"{table.Key}.{column.Key}";
 
-        nullable.Should().BeEmpty();
+        nullable.Should().BeSubsetOf(ColumnsDsqlCannotConstrain);
+    }
+
+    /// <summary>
+    /// An entry that names a column the migrations do declare NOT NULL is stale, and would quietly
+    /// excuse the next column to take its place.
+    /// </summary>
+    [Fact]
+    public void EveryDocumentedNullableColumn_IsStillNullable()
+    {
+        var nullable =
+            from table in ParseTables()
+            from column in table.Value
+            where !column.Value.Contains("NOT NULL", StringComparison.OrdinalIgnoreCase)
+                  && !column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase)
+            select $"{table.Key}.{column.Key}";
+
+        ColumnsDsqlCannotConstrain.Should().BeSubsetOf(nullable);
     }
 
     /// <summary>
@@ -222,22 +258,7 @@ public partial class EntityMappingTests
             var dropColumn = Regex.Match(sql, @"ALTER\s+TABLE\s+(\w+)\s+DROP\s+COLUMN\s+(\w+)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
             if (dropColumn.Success && tables.TryGetValue(dropColumn.Groups[1].Value, out var remaining))
-            {
                 tables[dropColumn.Groups[1].Value] = remaining.Remove(dropColumn.Groups[2].Value);
-                continue;
-            }
-
-            // A column that already holds rows cannot be added as NOT NULL in one statement, and
-            // this schema has no defaults for it to borrow, so it arrives nullable and is tightened
-            // afterwards. Folding that back into the definition is what lets the rules above read
-            // the column's settled state rather than its first draft.
-            var setNotNull = Regex.Match(sql, @"ALTER\s+TABLE\s+(\w+)\s+ALTER\s+COLUMN\s+(\w+)\s+SET\s+NOT\s+NULL", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-
-            if (setNotNull.Success
-                && tables.TryGetValue(setNotNull.Groups[1].Value, out var tightened)
-                && tightened.TryGetValue(setNotNull.Groups[2].Value, out var definition))
-                tables[setNotNull.Groups[1].Value] =
-                    tightened.SetItem(setNotNull.Groups[2].Value, $"{definition} NOT NULL");
         }
 
         return tables;

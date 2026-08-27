@@ -5,6 +5,10 @@
 #   * Secondary indexes require CREATE INDEX ASYNC. They are one-liners, so they sit inline
 #     here rather than in files.
 #   * No foreign keys, so referential cleanup on delete lives in the application.
+#   * ALTER TABLE ... ALTER COLUMN ... SET NOT NULL is rejected outright, so a column added to a
+#     table that already exists can never be made NOT NULL. Combined with having no defaults to
+#     add it with, that means such a column stays nullable in the database and the application is
+#     what keeps it filled -- the same division of labour as the missing foreign keys.
 #
 # Files are named <object>--<nnnn>.sql so every change to an object sorts together. When
 # this file gets long, move the settled changesets into an archive changelog.
@@ -460,8 +464,8 @@ databaseChangeLog:
         - sql:
             sql: DELETE FROM participant WHERE participant_id = '00000000-0000-0000-0000-000000000000'
 
-  # Three changesets for one column. It cannot be added as NOT NULL in one step: the table already
-  # holds rows, and this schema has no defaults for a new column to borrow.
+  # Two changesets for one column: add it, then fill in the rows that already exist. There is no
+  # third making it NOT NULL -- see the note on hat--0003.
   - changeSet:
       id: hat--0003
       author: ben
@@ -470,8 +474,13 @@ databaseChangeLog:
         sentinel hat, so "not a copy" still names a row and a query following this column can inner
         join rather than outer.
 
-        Arrives nullable and is tightened in hat--0005, once hat--0004 has filled it in. Groundwork
-        for eligibility that spans years; nothing reads it yet.
+        Stays nullable, which the rest of the schema is not. DSQL rejects ALTER COLUMN ... SET NOT
+        NULL, and a column cannot be added as NOT NULL to a table that already holds rows without a
+        default to fill them -- and this schema has none. hat--0004 fills in the rows that existed;
+        the application supplies a value for every row written after that. Nothing here can enforce
+        it, exactly as nothing here can enforce a foreign key.
+
+        Groundwork for eligibility that spans years; nothing reads it yet.
       changes:
         - sql:
             sql: ALTER TABLE hat ADD COLUMN copied_from_hat_id UUID
@@ -492,14 +501,3 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: UPDATE hat SET copied_from_hat_id = NULL
-
-  - changeSet:
-      id: hat--0005
-      author: ben
-      comment: Now that every row has a value, the column takes the rule the rest of the schema follows.
-      changes:
-        - sql:
-            sql: ALTER TABLE hat ALTER COLUMN copied_from_hat_id SET NOT NULL
-      rollback:
-        - sql:
-            sql: ALTER TABLE hat ALTER COLUMN copied_from_hat_id DROP NOT NULL
