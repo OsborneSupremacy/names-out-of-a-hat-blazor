@@ -6,6 +6,7 @@ using Amazon.SimpleEmail;
 using Amazon.SimpleSystemsManagement;
 using Amazon.AuroraDsql.Npgsql;
 using GiftExchange.Library.Interceptors;
+using Amazon.S3;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
 
@@ -32,6 +33,7 @@ internal static class ServiceProviderBuilder
                 .AddAWSService<IAmazonSQS>()
                 .AddAWSService<IAmazonScheduler>()
                 .AddAWSService<IAmazonComprehend>()
+                .AddAWSService<IAmazonS3>()
                 .AddAWSService<IAmazonSimpleSystemsManagement>()
                 .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>() // AddAWSService fails for SES
                 .AddSingleton<DsqlDataSource>(_ => DsqlDataSourceProvider.Create())
@@ -118,6 +120,11 @@ internal static class ServiceProviderBuilder
 
                 .AddSingleton<ValidationService>() // registered separately for direct use
                 .AddSingleton<EmailCompositionService>()
+                .AddSingleton<GiftIdeaEmailCompositionService>()
+                .AddSingleton<GiftIdeaContentPolicy>()
+                .AddSingleton<InboundEmailParser>()
+                .AddSingleton<IReplyThrottleProvider, ReplyThrottleProvider>()
+                .AddSingleton<InboundGiftIdeasService>()
                 .AddSingleton<InvitationQueueHandlerService>()
                 .AddSingleton<ISchedulerService, SchedulerService>()
             ;
