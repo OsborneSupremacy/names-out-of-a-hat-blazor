@@ -1,0 +1,66 @@
+name: Deploy Email Infrastructure
+
+# By hand, never on push. These are the records that decide whether mail for namesoutofahat.com
+# arrives at all, they change perhaps twice a year, and a mistake in them fails silently — nothing
+# errors, mail simply stops. The same reasoning deploy-database.yml is dispatch-only.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  # Unchanged from the names-out-of-a-hat-ses repository this configuration came from. Every
+  # identity and record it manages is already recorded under this key, so Terraform adopts them
+  # rather than proposing to build a second copy of live DNS.
+  TFSTATE_BUCKET: bro-tfstate
+  TFSTATE_KEY: giftexchange/email
+
+jobs:
+  apply:
+    name: Apply email Terraform
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: email/terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ env.TFSTATE_BUCKET }}" \
+            -backend-config="key=${{ env.TFSTATE_KEY }}" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      # Printed before applying, so the run log records what changed to DNS that day. When mail
+      # stops working a fortnight later, this is the page worth reading first.
+      - name: Show plan
+        run: terraform show -no-color tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
