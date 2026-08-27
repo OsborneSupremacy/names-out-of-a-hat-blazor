@@ -74,11 +74,20 @@ public class UpdateProfileTests
         stored.Organizer.Name.Should().Be(hat.OrganizerName);
     }
 
+    /// <summary>
+    /// A name belongs to the person, not to a membership, so changing it is felt everywhere they
+    /// appear — including exchanges somebody else organizes.
+    ///
+    /// This used to assert the opposite: the rename was applied hat by hat, and deliberately
+    /// skipped hats the renamer did not own, because a name was stored once per hat and the copies
+    /// could disagree. There are no copies now. Bob is one row, and there is no version of him that
+    /// could stay behind in Alice's exchange.
+    /// </summary>
     [Fact]
-    public async Task UpdateProfile_LeavesTheirParticipantRowInSomebodyElsesHatAlone()
+    public async Task UpdateProfile_RenamesThemEverywhereTheyAppear()
     {
         // arrange: Bob is a participant in Alice's exchange, and organizes one of his own.
-        var bobEmail = new Bogus.Person().Email;
+        var bobEmail = FakeValues.Email(new Bogus.Faker());
 
         var alicesHat = await CreateHatWithOrganizerAsync();
 
@@ -101,11 +110,13 @@ public class UpdateProfileTests
         var (_, bobs) = await _provider.GetHatAsync(bobEmail, bobsHat.HatId);
         bobs.Organizer.Name.Should().Be("Bob Renamed");
 
-        // Alice's exchange is her data. Renaming himself must not reach into it.
         var (_, alices) = await _provider.GetHatAsync(alicesHat.OrganizerEmail, alicesHat.HatId);
         alices.Participants
             .Single(participant => participant.Person.Email == bobEmail)
-            .Person.Name.Should().Be("Bob Original");
+            .Person.Name.Should().Be("Bob Renamed");
+
+        // Alice is a different person, so nothing about her moved.
+        alices.Organizer.Name.Should().Be(alicesHat.OrganizerName);
     }
 
     private Task<APIGatewayProxyResponse> UpdateNameAsync(string organizerEmail, string name) =>
@@ -116,8 +127,8 @@ public class UpdateProfileTests
             _context);
 
     /// <summary>
-    /// Mirrors CreateHatService: the organizer is a participant in their own exchange, which is
-    /// why their name lives in two tables.
+    /// Mirrors CreateHatService: the organizer is a participant in their own exchange. Both rows
+    /// point at the same person, so the name they are shown by is stored once.
     /// </summary>
     private async Task<HatDataModel> CreateHatWithOrganizerAsync(string? organizerEmail = null)
     {

@@ -253,14 +253,32 @@ public class GiftExchangeProviderTests
 
         await using var context = contextFactory.CreateDbContext();
 
+        var first = new PersonEntity
+        {
+            PersonId = Guid.CreateVersion7(), Name = "First", Email = $"first.{hat.HatId}@example.com"
+        };
+
+        var second = new PersonEntity
+        {
+            PersonId = Guid.CreateVersion7(), Name = "Second", Email = $"second.{hat.HatId}@example.com"
+        };
+
+        context.Persons.AddRange(first, second);
+
         context.Participants.AddRange(
             new ParticipantEntity
             {
-                Id = Guid.CreateVersion7(), HatId = hat.HatId, Name = "First", Email = "first@example.com"
+                ParticipantId = Guid.CreateVersion7(),
+                HatId = hat.HatId,
+                PersonId = first.PersonId,
+                PickedRecipientParticipantId = Guid.Empty
             },
             new ParticipantEntity
             {
-                Id = Guid.CreateVersion7(), HatId = hat.HatId, Name = "Second", Email = "second@example.com"
+                ParticipantId = Guid.CreateVersion7(),
+                HatId = hat.HatId,
+                PersonId = second.PersonId,
+                PickedRecipientParticipantId = Guid.Empty
             });
 
         // act
@@ -318,6 +336,229 @@ public class GiftExchangeProviderTests
 
         // assert
         isolationLevel.Should().Be("repeatable read");
+    }
+
+    /// <summary>
+    /// Person is one row per email address for the whole application, so the same address in two
+    /// different exchanges is the same person — not a copy of a name in each.
+    /// </summary>
+    [Fact]
+    public async Task TheSameEmail_InTwoHats_IsOnePerson()
+    {
+        // arrange
+        var hatOne = await CreateHatAsync();
+        var hatTwo = await CreateHatAsync();
+
+        var shared = _addParticipantRequestFaker.Generate();
+
+        // act
+        await _sut.CreateParticipantAsync(ParticipantRequestFor(hatOne, shared), []);
+        await _sut.CreateParticipantAsync(ParticipantRequestFor(hatTwo, shared), []);
+
+        // assert
+        await using var context = _contextFactory.CreateDbContext();
+
+        var personIds = await context.Participants
+            .Where(participant => participant.Person.Email == shared.Email)
+            .Select(participant => participant.PersonId)
+            .ToListAsync();
+
+        personIds.Should().HaveCount(2, "they are in two exchanges");
+        personIds.Distinct().Should().ContainSingle("but they are one person");
+    }
+
+    /// <summary>
+    /// Two requests can both find nobody at an address and both try to write them. The unique index
+    /// on person.email lets one through; the other has to read back what the winner wrote rather
+    /// than fail, or creating two exchanges at once would lose one of them.
+    /// </summary>
+    [Fact]
+    public async Task TwoHatsCreatedAtOnce_ForAnUnknownOrganizer_BothSucceed()
+    {
+        // arrange: one organizer nobody has seen before, so both writes race to introduce them.
+        var first = _hatDataModelFaker.Generate();
+        var second = _hatDataModelFaker.Generate() with
+        {
+            OrganizerEmail = first.OrganizerEmail,
+            OrganizerName = first.OrganizerName
+        };
+
+        // act
+        var created = await Task.WhenAll(_sut.CreateHatAsync(first), _sut.CreateHatAsync(second));
+
+        // assert
+        created.Should().AllBeEquivalentTo(true);
+
+        var (organizerName, hats) = await _sut.GetHatsAsync(first.OrganizerEmail);
+
+        organizerName.Should().Be(first.OrganizerName);
+        hats.Select(hat => hat.HatId).Should().BeEquivalentTo([first.HatId, second.HatId]);
+    }
+
+    /// <summary>
+    /// The sentinel rows are seeded into every database built from the model, so an id that is not
+    /// set resolves to a row rather than to nothing.
+    /// </summary>
+    [Fact]
+    public async Task TheSentinelRows_ExistAndAreEmpty()
+    {
+        await using var context = _contextFactory.CreateDbContext();
+
+        var person = await context.Persons.SingleAsync(candidate => candidate.PersonId == Guid.Empty);
+        var hat = await context.Hats.SingleAsync(candidate => candidate.HatId == Guid.Empty);
+
+        person.Name.Should().BeEmpty();
+        person.Email.Should().BeEmpty();
+
+        hat.Name.Should().BeEmpty();
+        hat.Status.Should().BeEmpty();
+        hat.OrganizerPersonId.Should().Be(Guid.Empty, "the sentinel hat is organized by the sentinel person");
+
+        var participant = await context.Participants
+            .SingleAsync(candidate => candidate.ParticipantId == Guid.Empty);
+
+        participant.HatId.Should().Be(Guid.Empty);
+        participant.PersonId.Should().Be(Guid.Empty);
+        participant.PickedRecipientParticipantId.Should().Be(Guid.Empty, "the sentinel participant draws itself");
+    }
+
+    /// <summary>
+    /// The reason the sentinel participant is worth having: every pick, drawn or not, now names a
+    /// row, so following one is an inner join rather than something that has to tolerate a miss.
+    /// </summary>
+    [Fact]
+    public async Task EveryPick_ResolvesToAParticipantRow_EvenBeforeTheHatIsShaken()
+    {
+        // arrange: nobody has drawn yet, so both picks are the all-zero id.
+        var hat = await CreateHatAsync();
+        await _sut.CreateParticipantAsync(ParticipantRequestFor(hat), []);
+        await _sut.CreateParticipantAsync(ParticipantRequestFor(hat), []);
+
+        await using var context = _contextFactory.CreateDbContext();
+
+        // act: an inner join from every participant in the hat to whoever they drew.
+        var resolved = await context.Participants
+            .Where(participant => participant.HatId == hat.HatId)
+            .Join(
+                context.Participants,
+                participant => participant.PickedRecipientParticipantId,
+                pick => pick.ParticipantId,
+                (participant, pick) => new { participant.ParticipantId, PickName = pick.Person.Name })
+            .ToListAsync();
+
+        // assert: two rows, not zero — the join found the sentinel for each undrawn pick.
+        resolved.Should().HaveCount(2);
+        resolved.Should().AllSatisfy(row => row.PickName.Should().BeEmpty());
+    }
+
+    /// <summary>
+    /// Deleting a hat used to scope only its final statement to the organizer, so a request naming
+    /// somebody else's hat stripped its participants and eligibility while leaving the hat itself.
+    /// Nothing upstream checks ownership — DeleteHatService passes the request straight through.
+    /// </summary>
+    [Fact]
+    public async Task DeletingAHatYouDoNotOwn_LeavesItAndItsParticipantsAlone()
+    {
+        // arrange
+        var victim = await CreateHatAsync();
+        await _sut.CreateParticipantAsync(ParticipantRequestFor(victim), []);
+
+        var attacker = await CreateHatAsync();
+
+        // act: the attacker's own session, pointed at a hat that is not theirs.
+        await _sut.DeleteHatAsync(new DeleteHatRequest
+        {
+            HatId = victim.HatId,
+            OrganizerEmail = attacker.OrganizerEmail
+        });
+
+        // assert
+        var (exists, stored) = await _sut.GetHatAsync(victim.OrganizerEmail, victim.HatId);
+
+        exists.Should().BeTrue("the hat is not theirs to delete");
+        stored.Participants.Should().ContainSingle("nor are its participants");
+    }
+
+    /// <summary>
+    /// The same guard protects the sentinel rows, which the all-zero hat id would otherwise reach.
+    /// </summary>
+    [Fact]
+    public async Task DeletingTheAllZeroHatId_LeavesTheSentinelParticipantAlone()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+
+        // act
+        await _sut.DeleteHatAsync(new DeleteHatRequest
+        {
+            HatId = Guid.Empty,
+            OrganizerEmail = hat.OrganizerEmail
+        });
+
+        // assert
+        await using var context = _contextFactory.CreateDbContext();
+
+        (await context.Participants.AnyAsync(candidate => candidate.ParticipantId == Guid.Empty))
+            .Should().BeTrue();
+        (await context.Hats.AnyAsync(candidate => candidate.HatId == Guid.Empty))
+            .Should().BeTrue();
+    }
+
+    /// <summary>
+    /// A hat whose organizer is a real person, joined to that person, is an inner join that still
+    /// finds them — the sentinel sits alongside real rows without being one of them.
+    /// </summary>
+    [Fact]
+    public async Task TheSentinelHat_IsNotReturnedAmongARealOrganizersHats()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+
+        // act
+        var (_, hats) = await _sut.GetHatsAsync(hat.OrganizerEmail);
+
+        // assert
+        hats.Select(metadata => metadata.HatId).Should().NotContain(Guid.Empty);
+        hats.Select(metadata => metadata.HatId).Should().Contain(hat.HatId);
+    }
+
+    /// <summary>
+    /// The sentinel person holds the empty address, so an empty one has to be refused rather than
+    /// looked up: it would match, and its hats are the sentinel hat.
+    /// </summary>
+    [Fact]
+    public async Task AnEmptyOrganizerEmail_DoesNotReachTheSentinelHat()
+    {
+        var (organizerName, hats) = await _sut.GetHatsAsync(string.Empty);
+
+        organizerName.Should().BeEmpty();
+        hats.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TheSentinelHat_IsNotReadableAsAHat()
+    {
+        var (exists, _) = await _sut.GetHatAsync("anyone@example.com", Guid.Empty);
+
+        exists.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// The sentinel is a mutable row like any other, so the one address that would match it is
+    /// refused before a rename can reach it.
+    /// </summary>
+    [Fact]
+    public async Task RenamingTheEmptyAddress_IsRefusedRatherThanRenamingTheSentinel()
+    {
+        var rename = async () => await _sut.UpdateOrganizerNameAsync(string.Empty, "Not The Sentinel");
+
+        await rename.Should().ThrowAsync<ArgumentException>();
+
+        await using var context = _contextFactory.CreateDbContext();
+
+        var person = await context.Persons.SingleAsync(candidate => candidate.PersonId == Guid.Empty);
+
+        person.Name.Should().BeEmpty();
     }
 
     /// <summary>

@@ -5,29 +5,28 @@ internal class ParticipantEligibleRecipientEntityConfiguration
 {
     public void Configure(EntityTypeBuilder<ParticipantEligibleRecipientEntity> builder)
     {
-        builder.ToTable("participant_eligible_recipients");
+        builder.ToTable("participant_eligible_recipient");
 
-        builder.HasKey(row => row.ParticipantEligibleRecipientsId);
+        builder.HasKey(row => row.ParticipantEligibleRecipientId);
 
         builder
-            .Property(row => row.ParticipantEligibleRecipientsId)
-            .HasColumnName("participant_eligible_recipients_id")
+            .Property(row => row.ParticipantEligibleRecipientId)
+            .HasColumnName("participant_eligible_recipient_id")
             .ValueGeneratedNever();
 
         builder.Property(row => row.ParticipantId).HasColumnName("participant_id").IsRequired();
         builder.Property(row => row.EligibleParticipantId).HasColumnName("eligible_participant_id").IsRequired();
 
-        // Restores what the old composite primary key guaranteed: a participant cannot be made
-        // eligible for the same recipient twice. Duplicates would inflate the eligibility counts
-        // EligibilityValidationService reads.
+        // A participant cannot be made eligible for the same recipient twice. Duplicates would
+        // inflate the eligibility counts EligibilityValidationService reads.
         builder
             .HasIndex(row => new { row.ParticipantId, row.EligibleParticipantId })
-            .HasDatabaseName("uq_eligible_recipients_participant_eligible")
+            .HasDatabaseName("uq_participant_eligible_recipient")
             .IsUnique();
 
         builder
             .HasIndex(row => row.EligibleParticipantId)
-            .HasDatabaseName("idx_eligible_recipients_eligible_participant");
+            .HasDatabaseName("idx_participant_eligible_recipient_eligible");
 
         // Two relationships to the same table, so both need their navigations stated explicitly
         // or EF cannot work out which foreign key belongs to which end.

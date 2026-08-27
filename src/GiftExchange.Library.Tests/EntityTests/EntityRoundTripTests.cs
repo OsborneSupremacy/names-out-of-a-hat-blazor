@@ -36,39 +36,58 @@ public class EntityRoundTripTests : IDisposable
     public async Task Entities_WithRequiredMembers_RoundTripThroughEfCore()
     {
         var hatId = Guid.CreateVersion7();
-        var organizerId = Guid.CreateVersion7();
-        var participantId = Guid.CreateVersion7();
+        var organizerPersonId = Guid.CreateVersion7();
+        var otherPersonId = Guid.CreateVersion7();
+        var organizerParticipantId = Guid.CreateVersion7();
+        var otherParticipantId = Guid.CreateVersion7();
 
         await using (var context = CreateContext())
         {
-            context.HatStatuses.Add(new HatStatusEntity { Status = HatStatus.InProgress });
+            context.Persons.AddRange(
+                new PersonEntity
+                {
+                    PersonId = organizerPersonId, Name = "Organizer", Email = "organizer@example.com"
+                },
+                new PersonEntity
+                {
+                    PersonId = otherPersonId, Name = "Someone Else", Email = "someone@example.com"
+                });
 
             context.Hats.Add(new HatEntity
             {
-                Id = hatId,
-                OrganizerEmail = "organizer@example.com",
-                OrganizerName = "Organizer",
+                HatId = hatId,
+                OrganizerPersonId = organizerPersonId,
                 Name = "Family Christmas",
                 NameNormalized = "family christmas",
                 Status = HatStatus.InProgress,
+                AdditionalInformation = string.Empty,
+                PriceRange = string.Empty,
+                InvitationsQueuedAt = DateTimeOffset.MinValue,
+                InvitationsSentFromIp = string.Empty,
                 CreatedAt = DateTimeOffset.UtcNow
             });
 
             context.Participants.AddRange(
                 new ParticipantEntity
                 {
-                    Id = organizerId, HatId = hatId, Name = "Organizer", Email = "organizer@example.com"
+                    ParticipantId = organizerParticipantId,
+                    HatId = hatId,
+                    PersonId = organizerPersonId,
+                    PickedRecipientParticipantId = Guid.Empty
                 },
                 new ParticipantEntity
                 {
-                    Id = participantId, HatId = hatId, Name = "Someone Else", Email = "someone@example.com"
+                    ParticipantId = otherParticipantId,
+                    HatId = hatId,
+                    PersonId = otherPersonId,
+                    PickedRecipientParticipantId = Guid.Empty
                 });
 
             context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
             {
-                ParticipantEligibleRecipientsId = Guid.CreateVersion7(),
-                ParticipantId = organizerId,
-                EligibleParticipantId = participantId
+                ParticipantEligibleRecipientId = Guid.CreateVersion7(),
+                ParticipantId = organizerParticipantId,
+                EligibleParticipantId = otherParticipantId
             });
 
             await context.SaveChangesAsync();
@@ -78,43 +97,99 @@ public class EntityRoundTripTests : IDisposable
         await using (var context = CreateContext())
         {
             var hat = await context.Hats
-                .Include(h => h.Participants)
-                .ThenInclude(p => p.EligibleRecipients)
-                .SingleAsync(h => h.Id == hatId);
+                .Include(h => h.Organizer)
+                .Include(h => h.Participants).ThenInclude(p => p.Person)
+                .Include(h => h.Participants).ThenInclude(p => p.EligibleRecipients)
+                .SingleAsync(h => h.HatId == hatId);
 
             hat.Name.Should().Be("Family Christmas");
-            hat.InvitationsQueuedAt.Should().BeNull();
+            hat.Organizer.Name.Should().Be("Organizer");
+            // Nothing is null, so "not queued" is a value like any other.
+            hat.InvitationsQueuedAt.Should().Be(DateTimeOffset.MinValue);
+            hat.InvitationsSentFromIp.Should().BeEmpty();
             hat.Participants.Should().HaveCount(2);
-            hat.Participants.Single(p => p.Id == organizerId).EligibleRecipients.Should().ContainSingle();
+            hat.Participants
+                .Single(p => p.ParticipantId == organizerParticipantId)
+                .EligibleRecipients.Should().ContainSingle();
         }
     }
 
+    /// <summary>
+    /// The organizer is a participant like anyone else, and both roles resolve to the same row in
+    /// person rather than to two copies of a name.
+    /// </summary>
     [Fact]
-    public async Task PickedRecipient_ResolvesAsASelfReference()
+    public async Task Organizer_AndTheirParticipantRow_ShareOnePerson()
+    {
+        var hatId = Guid.CreateVersion7();
+        var personId = Guid.CreateVersion7();
+        var participantId = Guid.CreateVersion7();
+
+        await using (var context = CreateContext())
+        {
+            context.Persons.Add(new PersonEntity
+            {
+                PersonId = personId, Name = "Organizer", Email = "organizer@example.com"
+            });
+            context.Hats.Add(NewHat(hatId, personId, "Shared Person Hat", HatStatus.InProgress));
+            context.Participants.Add(new ParticipantEntity
+            {
+                ParticipantId = participantId,
+                HatId = hatId,
+                PersonId = personId,
+                PickedRecipientParticipantId = Guid.Empty
+            });
+
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = CreateContext())
+        {
+            var person = await context.Persons
+                .Include(p => p.OrganizedHats)
+                .Include(p => p.Participations)
+                .SingleAsync(p => p.PersonId == personId);
+
+            person.OrganizedHats.Should().ContainSingle().Which.HatId.Should().Be(hatId);
+            person.Participations.Should().ContainSingle().Which.ParticipantId.Should().Be(participantId);
+        }
+    }
+
+    /// <summary>
+    /// A pick is a participant id with no navigation behind it, so it is stored and read as a plain
+    /// value. Resolving it to a name is the provider's job, against the rest of the hat.
+    /// </summary>
+    [Fact]
+    public async Task PickedRecipient_IsStoredAsAParticipantId()
     {
         var hatId = Guid.CreateVersion7();
         var giverId = Guid.CreateVersion7();
         var receiverId = Guid.CreateVersion7();
+        var giverPersonId = Guid.CreateVersion7();
+        var receiverPersonId = Guid.CreateVersion7();
 
         await using (var context = CreateContext())
         {
-            context.HatStatuses.Add(new HatStatusEntity { Status = HatStatus.NamesAssigned });
-            context.Hats.Add(new HatEntity
-            {
-                Id = hatId,
-                OrganizerEmail = "organizer@example.com",
-                OrganizerName = "Organizer",
-                Name = "Shaken Hat",
-                NameNormalized = "shaken hat",
-                Status = HatStatus.NamesAssigned,
-                CreatedAt = DateTimeOffset.UtcNow
-            });
+            context.Persons.AddRange(
+                new PersonEntity { PersonId = giverPersonId, Name = "Giver", Email = "giver@example.com" },
+                new PersonEntity { PersonId = receiverPersonId, Name = "Receiver", Email = "receiver@example.com" });
+
+            context.Hats.Add(NewHat(hatId, giverPersonId, "Shaken Hat", HatStatus.NamesAssigned));
+
             context.Participants.AddRange(
-                new ParticipantEntity { Id = receiverId, HatId = hatId, Name = "Receiver", Email = "receiver@example.com" },
                 new ParticipantEntity
                 {
-                    Id = giverId, HatId = hatId, Name = "Giver", Email = "giver@example.com",
-                    PickedRecipientId = receiverId
+                    ParticipantId = receiverId,
+                    HatId = hatId,
+                    PersonId = receiverPersonId,
+                    PickedRecipientParticipantId = Guid.Empty
+                },
+                new ParticipantEntity
+                {
+                    ParticipantId = giverId,
+                    HatId = hatId,
+                    PersonId = giverPersonId,
+                    PickedRecipientParticipantId = receiverId
                 });
 
             await context.SaveChangesAsync();
@@ -122,12 +197,56 @@ public class EntityRoundTripTests : IDisposable
 
         await using (var context = CreateContext())
         {
-            var giver = await context.Participants
-                .Include(p => p.PickedRecipient)
-                .SingleAsync(p => p.Id == giverId);
+            var participants = await context.Participants
+                .Include(p => p.Person)
+                .Where(p => p.HatId == hatId)
+                .ToListAsync();
 
-            giver.PickedRecipient.Should().NotBeNull();
-            giver.PickedRecipient!.Name.Should().Be("Receiver");
+            var giver = participants.Single(p => p.ParticipantId == giverId);
+
+            giver.PickedRecipientParticipantId.Should().Be(receiverId);
+            participants
+                .Single(p => p.ParticipantId == giver.PickedRecipientParticipantId)
+                .Person.Name.Should().Be("Receiver");
+        }
+    }
+
+    /// <summary>
+    /// The all-zero id points at nobody, which is what an unshaken hat looks like. It has to be
+    /// storable, which is exactly why picked_recipient_participant_id carries no foreign key.
+    /// </summary>
+    [Fact]
+    public async Task ParticipantWithNoPick_StoresTheAllZeroId()
+    {
+        var hatId = Guid.CreateVersion7();
+        var personId = Guid.CreateVersion7();
+        var participantId = Guid.CreateVersion7();
+
+        await using (var context = CreateContext())
+        {
+            context.Persons.Add(new PersonEntity
+            {
+                PersonId = personId, Name = "Undrawn", Email = "undrawn@example.com"
+            });
+            context.Hats.Add(NewHat(hatId, personId, "Unshaken Hat", HatStatus.InProgress));
+            context.Participants.Add(new ParticipantEntity
+            {
+                ParticipantId = participantId,
+                HatId = hatId,
+                PersonId = personId,
+                PickedRecipientParticipantId = Guid.Empty
+            });
+
+            var save = async () => await context.SaveChangesAsync();
+
+            await save.Should().NotThrowAsync();
+        }
+
+        await using (var context = CreateContext())
+        {
+            var participant = await context.Participants.SingleAsync(p => p.ParticipantId == participantId);
+
+            participant.PickedRecipientParticipantId.Should().Be(Guid.Empty);
         }
     }
 
@@ -135,23 +254,16 @@ public class EntityRoundTripTests : IDisposable
     public async Task TrackedEntity_CanBeMutatedAndSaved()
     {
         var hatId = Guid.CreateVersion7();
+        var personId = Guid.CreateVersion7();
 
         await using (var context = CreateContext())
         {
-            context.HatStatuses.AddRange(
-                new HatStatusEntity { Status = HatStatus.InProgress },
-                new HatStatusEntity { Status = HatStatus.Closed });
-
-            context.Hats.Add(new HatEntity
+            context.Persons.Add(new PersonEntity
             {
-                Id = hatId,
-                OrganizerEmail = "organizer@example.com",
-                OrganizerName = "Organizer",
-                Name = "Mutable Hat",
-                NameNormalized = "mutable hat",
-                Status = HatStatus.InProgress,
-                CreatedAt = DateTimeOffset.UtcNow
+                PersonId = personId, Name = "Organizer", Email = "organizer@example.com"
             });
+            context.Hats.Add(NewHat(hatId, personId, "Mutable Hat", HatStatus.InProgress));
+
             await context.SaveChangesAsync();
         }
 
@@ -159,19 +271,39 @@ public class EntityRoundTripTests : IDisposable
         // mutate, and save. Init-only properties would not compile here.
         await using (var context = CreateContext())
         {
-            var hat = await context.Hats.SingleAsync(h => h.Id == hatId);
+            var hat = await context.Hats.SingleAsync(h => h.HatId == hatId);
             hat.Status = HatStatus.Closed;
             hat.InvitationsQueuedAt = DateTimeOffset.UtcNow;
+            hat.InvitationsSentFromIp = "203.0.113.7";
             await context.SaveChangesAsync();
         }
 
         await using (var context = CreateContext())
         {
-            var hat = await context.Hats.SingleAsync(h => h.Id == hatId);
+            var hat = await context.Hats.SingleAsync(h => h.HatId == hatId);
             hat.Status.Should().Be(HatStatus.Closed);
-            hat.InvitationsQueuedAt.Should().NotBeNull();
+            hat.InvitationsQueuedAt.Should().NotBe(DateTimeOffset.MinValue);
+            hat.InvitationsSentFromIp.Should().Be("203.0.113.7");
         }
     }
+
+    /// <summary>
+    /// Every field is stated, because the table has no defaults to fall back on.
+    /// </summary>
+    private static HatEntity NewHat(Guid hatId, Guid organizerPersonId, string name, string status) =>
+        new()
+        {
+            HatId = hatId,
+            OrganizerPersonId = organizerPersonId,
+            Name = name,
+            NameNormalized = name.ToLowerInvariant(),
+            Status = status,
+            AdditionalInformation = string.Empty,
+            PriceRange = string.Empty,
+            InvitationsQueuedAt = DateTimeOffset.MinValue,
+            InvitationsSentFromIp = string.Empty,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
 
     public void Dispose() => _connection.Dispose();
 }

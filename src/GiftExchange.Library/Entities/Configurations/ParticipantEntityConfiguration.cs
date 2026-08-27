@@ -4,20 +4,27 @@ internal class ParticipantEntityConfiguration : IEntityTypeConfiguration<Partici
 {
     public void Configure(EntityTypeBuilder<ParticipantEntity> builder)
     {
-        builder.ToTable("participants");
+        builder.ToTable("participant");
 
-        builder.HasKey(participant => participant.Id);
-        builder.Property(participant => participant.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.HasKey(participant => participant.ParticipantId);
+        builder.Property(participant => participant.ParticipantId).HasColumnName("participant_id").ValueGeneratedNever();
 
         builder.Property(participant => participant.HatId).HasColumnName("hat_id").IsRequired();
-        builder.Property(participant => participant.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
-        builder.Property(participant => participant.Email).HasColumnName("email").HasMaxLength(254).IsRequired();
-        builder.Property(participant => participant.PickedRecipientId).HasColumnName("picked_recipient_id");
+        builder.Property(participant => participant.PersonId).HasColumnName("person_id").IsRequired();
 
-        // Deliberately not unique on name: two participants in one hat may share a display name.
+        // Mapped as a plain column with no relationship behind it. See the remarks on the property:
+        // a navigation would make EF emit a foreign key, and the all-zero sentinel that stands for
+        // "not drawn yet" would fail it.
         builder
-            .HasIndex(participant => new { participant.HatId, participant.Email })
-            .HasDatabaseName("uq_participants_hat_email")
+            .Property(participant => participant.PickedRecipientParticipantId)
+            .HasColumnName("picked_recipient_participant_id")
+            .IsRequired();
+
+        // One row per person per hat. Nothing here constrains display names — those live on person,
+        // and it is AddParticipantService that refuses a name already taken within the hat.
+        builder
+            .HasIndex(participant => new { participant.HatId, participant.PersonId })
+            .HasDatabaseName("uq_participant_hat_person")
             .IsUnique();
 
         builder
@@ -26,12 +33,14 @@ internal class ParticipantEntityConfiguration : IEntityTypeConfiguration<Partici
             .HasForeignKey(participant => participant.HatId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        // Self reference. DSQL cannot cascade, so removing a participant means clearing anyone
-        // who drew them explicitly.
         builder
-            .HasOne(participant => participant.PickedRecipient)
-            .WithMany()
-            .HasForeignKey(participant => participant.PickedRecipientId)
+            .HasOne(participant => participant.Person)
+            .WithMany(person => person.Participations)
+            .HasForeignKey(participant => participant.PersonId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // The row meaning "not taking part". It belongs to the sentinel hat and the sentinel
+        // person, both of which EF seeds first because those two ends are real relationships.
+        builder.HasData(NoRecord.Participant());
     }
 }

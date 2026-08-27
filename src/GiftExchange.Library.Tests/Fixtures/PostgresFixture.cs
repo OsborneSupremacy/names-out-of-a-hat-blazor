@@ -1,5 +1,4 @@
 using GiftExchange.Library.Contexts;
-using GiftExchange.Library.Entities;
 using GiftExchange.Library.Interceptors;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Testcontainers.PostgreSql;
@@ -34,14 +33,11 @@ public class PostgresFixture : IAsyncLifetime
     {
         await _container.StartAsync();
 
+        // EnsureCreated builds the whole schema from the EF model. There is no reference data to
+        // seed alongside it: hat.status is a plain string column, checked against
+        // GiftExchange.Library.Models.HatStatuses by the application rather than by a table.
         await using var context = CreateContextFactory().CreateDbContext();
         await context.Database.EnsureCreatedAsync();
-
-        // Liquibase seeds these in production. EnsureCreated builds the schema from the model but
-        // not the reference data, and Postgres — unlike DSQL — really does enforce the foreign key
-        // from hats.status, so every status has to exist before a hat can be written.
-        context.HatStatuses.AddRange(HatStatuses.All.Select(status => new HatStatusEntity { Status = status }));
-        await context.SaveChangesAsync();
     }
 
     public async Task DisposeAsync() => await _container.DisposeAsync();

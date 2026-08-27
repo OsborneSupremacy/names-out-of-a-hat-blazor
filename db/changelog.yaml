@@ -211,3 +211,251 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: ALTER TABLE hats DROP COLUMN invitations_sent_from_ip
+
+  # ---------------------------------------------------------------------------------------------
+  # Rebuild. Person became a first class table, which every other table now points at, and the
+  # nullable columns and defaults went away with the old shape. The changesets below drop the
+  # original tables outright: there was no data worth migrating, and a rewrite is easier to read
+  # afterwards than a column-by-column reshaping would have been.
+  #
+  # The drops come first so that a database already carrying the old tables is left with only the
+  # new ones. An environment created from scratch runs them against tables the earlier changesets
+  # in this file have just created, so they succeed there too.
+  # ---------------------------------------------------------------------------------------------
+
+  - changeSet:
+      id: participant_eligible_recipients--0002
+      author: ben
+      comment: Dropped first, since it is what the other two tables were joined through.
+      changes:
+        - sqlFile:
+            path: tables/participant_eligible_recipients--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: CREATE TABLE participant_eligible_recipients (participant_eligible_recipients_id UUID PRIMARY KEY, participant_id UUID NOT NULL, eligible_participant_id UUID NOT NULL)
+
+  - changeSet:
+      id: participants--0002
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/participants--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: CREATE TABLE participants (id UUID PRIMARY KEY, hat_id UUID NOT NULL, name VARCHAR(100) NOT NULL, email VARCHAR(254) NOT NULL, picked_recipient_id UUID)
+
+  - changeSet:
+      id: hats--0003
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/hats--0003.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: CREATE TABLE hats (id UUID PRIMARY KEY, organizer_email VARCHAR(254) NOT NULL, organizer_name VARCHAR(100) NOT NULL, name VARCHAR(50) NOT NULL, name_normalized VARCHAR(50) NOT NULL, status VARCHAR(30) NOT NULL, additional_information VARCHAR(2000) NOT NULL DEFAULT '', price_range VARCHAR(50) NOT NULL DEFAULT '', invitations_queued_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL, invitations_sent_from_ip VARCHAR(45))
+
+  - changeSet:
+      id: hat_status--0003
+      author: ben
+      comment: >
+        The reference table goes too. It never constrained anything -- DSQL has no foreign keys --
+        and HatStatuses in the library is the list the application actually checks against.
+      changes:
+        - sqlFile:
+            path: tables/hat_status--0003.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: CREATE TABLE hat_status (status VARCHAR(30) PRIMARY KEY)
+
+  - changeSet:
+      id: person--0001
+      author: ben
+      comment: One row per email address, for organizers and participants alike.
+      changes:
+        - sqlFile:
+            path: tables/person--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE person
+
+  - changeSet:
+      id: hat--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/hat--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE hat
+
+  - changeSet:
+      id: participant--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/participant--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE participant
+
+  - changeSet:
+      id: participant_eligible_recipient--0001
+      author: ben
+      changes:
+        - sqlFile:
+            path: tables/participant_eligible_recipient--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE participant_eligible_recipient
+
+  - changeSet:
+      id: uq_person_email--0001
+      author: ben
+      comment: >
+        Email is the identity of a person, so this is the index that makes the table a directory
+        rather than a list. Every lookup starts here: the session carries an email address, not an
+        id.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_person_email ON person (email)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_person_email
+
+  - changeSet:
+      id: idx_hat_organizer_person--0001
+      author: ben
+      comment: Backs "list my gift exchanges", the only unqualified read in the application.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_hat_organizer_person ON hat (organizer_person_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_hat_organizer_person
+
+  - changeSet:
+      id: uq_hat_organizer_name--0001
+      author: ben
+      comment: One gift exchange name per organizer, compared case-insensitively.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_hat_organizer_name ON hat (organizer_person_id, name_normalized)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_hat_organizer_name
+
+  - changeSet:
+      id: uq_participant_hat_person--0001
+      author: ben
+      comment: >
+        One row per person per hat. This replaces the old index on (hat_id, email): the address is
+        no longer stored here, and a person id says the same thing more directly. Deliberately no
+        equivalent on name, which is not stored here either -- two participants may still share a
+        display name, and the application is what refuses to let that happen.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_participant_hat_person ON participant (hat_id, person_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_participant_hat_person
+
+  - changeSet:
+      id: uq_participant_eligible_recipient--0001
+      author: ben
+      comment: >
+        A participant cannot be made eligible for the same recipient twice. Duplicate rows would
+        inflate the eligibility counts EligibilityValidationService relies on. The leading column
+        also covers lookups by participant_id.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_participant_eligible_recipient ON participant_eligible_recipient (participant_id, eligible_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_participant_eligible_recipient
+
+  - changeSet:
+      id: idx_participant_eligible_recipient_eligible--0001
+      author: ben
+      comment: >
+        Covers the reverse direction, which is what removing a participant needs. Lookups by
+        participant_id are served by uq_participant_eligible_recipient above.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_participant_eligible_recipient_eligible ON participant_eligible_recipient (eligible_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_participant_eligible_recipient_eligible
+
+  - changeSet:
+      id: giftexchange_user--0006
+      author: ben
+      comment: >
+        CRUD on the rebuilt tables. The grants in --0002 and --0003 disappeared along with the
+        tables they named, so this replaces both rather than adding to them.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0006.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON person, hat, participant, participant_eligible_recipient FROM giftexchange_user
+
+  - changeSet:
+      id: person--0002
+      author: ben
+      comment: >
+        The row meaning "nobody", so that an unset person id points at something real. Applied
+        before hat--0002, which references it.
+      changes:
+        - sqlFile:
+            path: tables/person--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DELETE FROM person WHERE person_id = '00000000-0000-0000-0000-000000000000'
+
+  - changeSet:
+      id: hat--0002
+      author: ben
+      comment: The row meaning "no gift exchange". Its organizer is the sentinel person.
+      changes:
+        - sqlFile:
+            path: tables/hat--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DELETE FROM hat WHERE hat_id = '00000000-0000-0000-0000-000000000000'
+
+  - changeSet:
+      id: participant--0002
+      author: ben
+      comment: >
+        The row meaning "not taking part", so that a pick can be followed with an inner join. It
+        belongs to the two sentinels above and draws itself.
+      changes:
+        - sqlFile:
+            path: tables/participant--0002.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DELETE FROM participant WHERE participant_id = '00000000-0000-0000-0000-000000000000'

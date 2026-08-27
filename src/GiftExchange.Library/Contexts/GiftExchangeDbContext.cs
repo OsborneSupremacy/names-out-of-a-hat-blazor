@@ -1,6 +1,15 @@
 namespace GiftExchange.Library.Contexts;
 
-public class GiftExchangeDbContext : DbContext
+/// <summary>
+/// Sealed on purpose. The constructor reads <see cref="DbContext.Database"/>, which is virtual, and
+/// a derived class could in principle override it and be handed an instance whose own constructor
+/// has not run yet. Sealing rules that out, which is why no suppression is needed here.
+///
+/// Nothing about the setting below can move out of the constructor to avoid the call:
+/// AutoSavepointsEnabled lives on DatabaseFacade and has no equivalent on DbContextOptionsBuilder,
+/// so there is no OnConfiguring to state it in.
+/// </summary>
+public sealed class GiftExchangeDbContext : DbContext
 {
     public GiftExchangeDbContext(DbContextOptions<GiftExchangeDbContext> options) : base(options)
     {
@@ -16,9 +25,9 @@ public class GiftExchangeDbContext : DbContext
         Database.AutoSavepointsEnabled = false;
     }
 
-    public DbSet<HatEntity> Hats => Set<HatEntity>();
+    public DbSet<PersonEntity> Persons => Set<PersonEntity>();
 
-    public DbSet<HatStatusEntity> HatStatuses => Set<HatStatusEntity>();
+    public DbSet<HatEntity> Hats => Set<HatEntity>();
 
     public DbSet<ParticipantEntity> Participants => Set<ParticipantEntity>();
 
