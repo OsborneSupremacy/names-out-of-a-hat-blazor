@@ -59,16 +59,10 @@ public class EmailCompositionService
     /// the exchange actually came from rather than only a display name somebody chose.
     /// </summary>
     private static string GetGreeting(Hat hat, string organizerName, string organizerEmail) =>
-        string.IsNullOrWhiteSpace(hat.Name)
-            ? $"{organizerName} ({organizerEmail}) has added you to a gift exchange!"
-            : $"{organizerName} ({organizerEmail}) has added you to {HttpUtility.HtmlEncode(GetQualifiedName(hat.Name))}!";
+        $"{organizerName} ({organizerEmail}) has added you to {HttpUtility.HtmlEncode(GiftExchangeNaming.Describe(hat.Name))}!";
 
     public static string GetSubject(Hat hat) =>
-        string.IsNullOrWhiteSpace(hat.Name)
-            ? $"{hat.Organizer.Name} has added you to a gift exchange!"
-            // GetQualifiedName already supplies the article. This line used to add one as well,
-            // which produced "added you to the the Family Christmas!".
-            : $"{hat.Organizer.Name} has added you to {GetQualifiedName(hat.Name)}!";
+        $"{hat.Organizer.Name} has added you to {GiftExchangeNaming.Describe(hat.Name)}!";
 
     /// <summary>
     /// The footer every invitation carries: who it came from, what this service checks, and what it
@@ -92,7 +86,4 @@ public class EmailCompositionService
          Beyond those checks, the gift exchange name, the participant names and any additional information are the organizer's own words, and namesoutofahat.com is not responsible for them.
          </small>
          """;
-
-    private static string GetQualifiedName(string name) =>
-        name.StartsWith("the ", StringComparison.OrdinalIgnoreCase) ? name : $"the {name}";
 }

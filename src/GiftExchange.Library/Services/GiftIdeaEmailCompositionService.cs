@@ -1,4 +1,4 @@
-using System.Web;
+﻿using System.Web;
 
 namespace GiftExchange.Library.Services;
 
@@ -27,7 +27,7 @@ public class GiftIdeaEmailCompositionService
         $"{senderName} shared gift ideas with you";
 
     public static string AskSubject(string hatName) =>
-        $"What would you like for {GetQualifiedName(hatName)}?";
+        $"What would you like for {GiftExchangeNaming.Describe(hatName)}?";
 
     public static string AskThrottledSubject => "You've already asked recently";
 
@@ -141,7 +141,7 @@ public class GiftIdeaEmailCompositionService
     /// </remarks>
     public string ComposeForward(string senderName, string hatName, string ideas) =>
         Wrap([
-            $"<b>{HttpUtility.HtmlEncode(senderName)}</b>, whose name you picked in {HttpUtility.HtmlEncode(GetQualifiedName(hatName))}, shared some gift ideas with you:",
+            $"<b>{HttpUtility.HtmlEncode(senderName)}</b>, whose name you picked in {HttpUtility.HtmlEncode(GiftExchangeNaming.Describe(hatName))}, shared some gift ideas with you:",
             Quote(ideas),
             "<i>You're the only person seeing this. Please don't reply to this email — your reply would reveal that you have their name.</i>",
             BuildLinkDisclaimer()
@@ -171,7 +171,7 @@ public class GiftIdeaEmailCompositionService
     /// </remarks>
     public string ComposeAsk(string hatName, string giftIdeasToken) =>
         Wrap([
-            $"Someone in {HttpUtility.HtmlEncode(GetQualifiedName(hatName))} would like to know what you'd like.",
+            $"Someone in {HttpUtility.HtmlEncode(GiftExchangeNaming.Describe(hatName))} would like to know what you'd like.",
             "They picked your name, and they're hoping for a hint. You can share as much or as little as you like.",
             BuildShareGiftIdeasBlock(giftIdeasToken),
             "<i>We won't tell you who asked, and we won't tell them we passed the message on.</i>"
@@ -282,9 +282,4 @@ public class GiftIdeaEmailCompositionService
             "<br /><br />",
             lines.Where(line => !string.IsNullOrWhiteSpace(line)))
         + """<br /><br /><a href="https://namesoutofahat.com"><b>🎩 Names Out Of A Hat 🎩</b></a>""";
-
-    private static string GetQualifiedName(string name) =>
-        string.IsNullOrWhiteSpace(name)
-            ? "your gift exchange"
-            : name.StartsWith("the ", StringComparison.OrdinalIgnoreCase) ? name : $"the {name}";
 }

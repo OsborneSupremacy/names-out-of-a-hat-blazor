@@ -1,4 +1,4 @@
-namespace GiftExchange.Library.Tests.ServiceTests;
+﻿namespace GiftExchange.Library.Tests.ServiceTests;
 
 public class EmailCompositionServiceTests
 {
@@ -11,27 +11,38 @@ public class EmailCompositionServiceTests
         var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
 
         // assert
-        body.Should().Contain("Ben (ben@example.com) has added you to the Family Christmas!");
+        body.Should().Contain("Ben (ben@example.com) has added you to the gift exchange, Family Christmas!");
     }
 
-    [Fact]
-    public void GetSubject_DoesNotDoubleTheArticle()
+    [Theory]
+    // A name that does read as a noun phrase, which is the easy case.
+    [InlineData("Family Christmas", "Ben has added you to the gift exchange, Family Christmas!")]
+    // And one that does not. "added you to the Christmas On August 27!" was the version of this
+    // line that made the phrasing worth changing.
+    [InlineData("Christmas On August 27", "Ben has added you to the gift exchange, Christmas On August 27!")]
+    // A name carrying its own article no longer needs handling of its own: nothing is prepended to
+    // the name at all, so there is no second article to avoid.
+    [InlineData("The Osborne Exchange", "Ben has added you to the gift exchange, The Osborne Exchange!")]
+    public void GetSubject_NamesTheExchangeWithoutBuildingTheSentenceAroundItsName(
+        string hatName,
+        string expected)
     {
         // act
-        var subject = EmailCompositionService.GetSubject(HatFor("Ben", "ben@example.com", "Family Christmas"));
-
-        // assert: this read "added you to the the Family Christmas!" before.
-        subject.Should().Be("Ben has added you to the Family Christmas!");
-    }
-
-    [Fact]
-    public void GetSubject_DoesNotAddASecondArticleToANameThatHasOne()
-    {
-        // act
-        var subject = EmailCompositionService.GetSubject(HatFor("Ben", "ben@example.com", "The Osborne Exchange"));
+        var subject = EmailCompositionService.GetSubject(HatFor("Ben", "ben@example.com", hatName));
 
         // assert
-        subject.Should().Be("Ben has added you to The Osborne Exchange!");
+        subject.Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetSubject_GivenNoName_StillReads()
+    {
+        // act
+        var subject = EmailCompositionService.GetSubject(HatFor("Ben", "ben@example.com", string.Empty));
+
+        // assert: the validators require a name, so this is the defensive branch rather than a
+        // shape anything sends today.
+        subject.Should().Be("Ben has added you to the gift exchange!");
     }
 
     [Fact]
