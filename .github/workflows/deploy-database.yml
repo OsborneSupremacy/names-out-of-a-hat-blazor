@@ -62,6 +62,7 @@ jobs:
           account_id=$(aws sts get-caller-identity --query Account --output text)
           echo "APP_ROLE_ARN=arn:aws:iam::${account_id}:role/giftexchange-app-exec-role" >> "$GITHUB_ENV"
           echo "SCHEDULER_ROLE_ARN=arn:aws:iam::${account_id}:role/giftexchange-cooled-off-scheduler-handler-lambda-role" >> "$GITHUB_ENV"
+          echo "INBOUND_MAIL_ROLE_ARN=arn:aws:iam::${account_id}:role/giftexchange-inbound-gift-ideas-handler-lambda-role" >> "$GITHUB_ENV"
 
       # Liquibase is a Java application. GitHub-hosted runners already have a JRE; a
       # self-hosted runner would need actions/setup-java before this step.
@@ -72,7 +73,7 @@ jobs:
           edition: 'oss'
 
       - name: Validate changelog
-        run: liquibase validate --changelog-file=db/changelog.yaml -Dapp_role_arn="$APP_ROLE_ARN" -Dscheduler_role_arn="$SCHEDULER_ROLE_ARN"
+        run: liquibase validate --changelog-file=db/changelog.yaml -Dapp_role_arn="$APP_ROLE_ARN" -Dscheduler_role_arn="$SCHEDULER_ROLE_ARN" -Dinbound_mail_role_arn="$INBOUND_MAIL_ROLE_ARN"
 
       - name: Apply changelog
-        run: liquibase update --changelog-file=db/changelog.yaml -Dapp_role_arn="$APP_ROLE_ARN" -Dscheduler_role_arn="$SCHEDULER_ROLE_ARN"
+        run: liquibase update --changelog-file=db/changelog.yaml -Dapp_role_arn="$APP_ROLE_ARN" -Dscheduler_role_arn="$SCHEDULER_ROLE_ARN" -Dinbound_mail_role_arn="$INBOUND_MAIL_ROLE_ARN"

@@ -573,3 +573,33 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: DROP INDEX uq_gift_idea_token_participant
+
+  - changeSet:
+      id: giftexchange_user--0007
+      author: ben
+      comment: >
+        CRUD on the gift ideas tables. A separate changeset rather than an addition to --0006,
+        whose checksum covers the tables it named when it ran.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0007.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON gift_idea, gift_idea_token FROM giftexchange_user
+
+  - changeSet:
+      id: giftexchange_user--0008
+      author: ben
+      comment: >
+        The inbound mail Lambda connects as this role too. Its IAM role has dsql:DbConnect, which
+        only permits opening a connection; this decides which database role it opens one as.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0008.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: AWS IAM REVOKE giftexchange_user FROM '${inbound_mail_role_arn}'
