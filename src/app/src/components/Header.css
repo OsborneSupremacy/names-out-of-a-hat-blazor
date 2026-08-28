@@ -23,6 +23,21 @@
   line-height: 0;
 }
 
+/*
+  Block, so the h1's font-size: 0 has no inline box to collapse around, and so the link's clickable
+  area is the wordmark rather than the wordmark plus a stray line box beneath it.
+*/
+.app-logo-link {
+  display: block;
+}
+
+/* It is now focusable, so it needs to say so. */
+.app-logo-link:focus-visible {
+  outline: 2px solid #2f5d8a;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
 .app-logo {
   display: block;
   height: 2.75rem;
@@ -135,6 +150,11 @@
   /* The wordmark's navy outline all but disappears against the dark header. */
   .app-logo {
     filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.4));
+  }
+
+  /* And so would a navy focus ring. */
+  .app-logo-link:focus-visible {
+    outline-color: #9ec5e8;
   }
 
   .profile-menu {

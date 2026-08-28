@@ -1,15 +1,22 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import { Header } from './Header'
 
-function renderHeader(givenName: string | null) {
+/**
+ * Wrapped in a router because the wordmark is a Link, which throws outside one. MemoryRouter rather
+ * than BrowserRouter so the tests do not touch window.history.
+ */
+function renderHeader(givenName: string | null, initialPath = '/') {
   render(
-    <Header
-      userEmail="osborne.ben@gmail.com"
-      givenName={givenName}
-      onSignOut={vi.fn()}
-      onNameUpdated={vi.fn()}
-    />
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Header
+        userEmail="osborne.ben@gmail.com"
+        givenName={givenName}
+        onSignOut={vi.fn()}
+        onNameUpdated={vi.fn()}
+      />
+    </MemoryRouter>
   )
 }
 
@@ -32,5 +39,19 @@ describe('Header', () => {
     renderHeader('')
 
     expect(screen.getByLabelText('Profile menu')).toHaveTextContent('O')
+  })
+
+  it('points the wordmark at the home page', () => {
+    renderHeader('Ben')
+
+    expect(screen.getByRole('link', { name: 'Names Out of a Hat' })).toHaveAttribute('href', '/')
+  })
+
+  // Deliberate: a masthead that is a link on every page except one is a masthead that moves out
+  // from under the keyboard.
+  it('leaves the wordmark a link on the home page itself', () => {
+    renderHeader('Ben', '/')
+
+    expect(screen.getByRole('link', { name: 'Names Out of a Hat' })).toBeInTheDocument()
   })
 })

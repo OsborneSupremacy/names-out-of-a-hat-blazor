@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { updateProfile } from '../api'
 import { EditNameModal } from './EditNameModal'
 import './Header.css'
@@ -47,13 +48,24 @@ export function Header({ userEmail, givenName, onSignOut, onNameUpdated }: Heade
       <div className="header-content">
         <div className="app-title">
           <h1>
-            <img
-              className="app-logo"
-              src="/logo-horizontal.png"
-              alt="Names Out of a Hat"
-              width={960}
-              height={323}
-            />
+            {/*
+              A router Link rather than an <a href="/">: a plain anchor reloads the whole bundle
+              and throws away the session state held in App, which is the difference between
+              returning home and starting the app again.
+
+              It stays a link on the home page itself, where it goes nowhere. Making it conditional
+              would mean the one element every page shares is sometimes focusable and sometimes not,
+              and somebody tabbing through would find it missing without being told why.
+            */}
+            <Link to="/" className="app-logo-link">
+              <img
+                className="app-logo"
+                src="/logo-horizontal.png"
+                alt="Names Out of a Hat"
+                width={960}
+                height={323}
+              />
+            </Link>
           </h1>
         </div>
 

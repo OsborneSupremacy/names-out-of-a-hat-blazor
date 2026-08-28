@@ -7,14 +7,19 @@ namespace GiftExchange.Library.Services;
 /// The pages somebody sees after clicking the Ask button in their invitation.
 /// </summary>
 /// <remarks>
-/// Self-contained HTML with inline styles and no scripts, images or external references. Partly
-/// because there is no front end to serve these from and adding one for four short pages would be a
-/// poor trade, and partly because a page reached from an email link is fetched by scanners and
-/// proxies before any person sees it — the fewer things it asks the network for, the fewer ways
-/// that goes wrong.
+/// Hand-written HTML with inline styles and no scripts, because there is no front end to serve
+/// these from and adding one for four short pages would be a poor trade.
 ///
 /// No script also means the form has to work as a form: checkboxes with the same name, posted to
 /// the same address that rendered them. Nothing here needs anything more.
+///
+/// The one thing these pages do ask the network for is the wordmark, which is worth the exception:
+/// somebody arriving here has followed a link out of an email and is about to be asked to trust the
+/// page with an action, and a page that does not look like the product it claims to be is a poor
+/// thing to ask that of. It is a single image, served from the site these pages belong to, and
+/// nothing depends on it arriving — <see cref="Branding.LogoAltText"/> stands in when it does not.
+/// A scanner fetching this page ahead of the reader may fetch the image too, which costs nothing:
+/// the GET has no side effects, which is the whole reason the Ask is split across two endpoints.
 /// </remarks>
 [UsedImplicitly]
 public class AskPageComposer
@@ -243,7 +248,7 @@ public class AskPageComposer
          </head>
          <body style="margin:0;padding:24px;background-color:#faf8f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#222222;line-height:1.5;">
            <div style="max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:8px;padding:32px;">
-             <p style="margin:0 0 24px;font-size:20px;"><b>🎩 Names Out Of A Hat 🎩</b></p>
+             <a href="{Branding.SiteUrl}" style="display:inline-block;margin:0 0 24px;"><img src="{Branding.LogoUrl}" alt="{Branding.LogoAltText}" width="260" height="87" style="display:block;border:0;max-width:100%;height:auto;" /></a>
              <h1 style="margin:0 0 16px;font-size:24px;">{HttpUtility.HtmlEncode(heading)}</h1>
              {body}
            </div>

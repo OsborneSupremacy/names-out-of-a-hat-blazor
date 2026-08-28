@@ -9,19 +9,10 @@ namespace GiftExchange.Library.Services;
 /// </remarks>
 internal static class EmailBranding
 {
-    private const string SiteUrl = "https://namesoutofahat.com";
-
-    /// <summary>
-    /// Served from the front end's public root, so the deployed site is what hosts it.
-    /// </summary>
-    private const string LogoUrl = $"{SiteUrl}/logo-horizontal.png";
-
     /// <summary>The wordmark at the top of an email, linking back to the site.</summary>
     /// <remarks>
-    /// The alt text is the sign-off's wording rather than a bare product name, because most mail
-    /// clients block remote images until the reader asks for them and the alt text is what the
-    /// majority of recipients will actually see. Written that way, a blocked image degrades to the
-    /// same linked line the emails used to open with instead of to a broken-image placeholder.
+    /// See <see cref="Branding.LogoAltText"/> for why the alt text is worded the way it is; in this
+    /// medium it is what most recipients actually see.
     ///
     /// The dimensions are given as attributes as well as CSS: Outlook lays out with the Word engine
     /// and honours the attributes, so leaving them off collapses the space the image should occupy.
@@ -31,10 +22,10 @@ internal static class EmailBranding
     /// </remarks>
     internal static string Masthead() =>
         $"""
-         <a href="{SiteUrl}"><img src="{LogoUrl}" alt="🎩 Names Out Of A Hat 🎩" width="260" height="87" style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;" /></a>
+         <a href="{Branding.SiteUrl}"><img src="{Branding.LogoUrl}" alt="{Branding.LogoAltText}" width="260" height="87" style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;" /></a>
          """;
 
     /// <summary>The text link every email closes on.</summary>
     internal static string SignOff() =>
-        $"""<a href="{SiteUrl}"><b>🎩 Names Out Of A Hat 🎩</b></a>""";
+        $"""<a href="{Branding.SiteUrl}"><b>{Branding.LogoAltText}</b></a>""";
 }
