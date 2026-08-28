@@ -1,4 +1,4 @@
-namespace GiftExchange.Library.Services;
+﻿namespace GiftExchange.Library.Services;
 
 /// <summary>
 /// How an exchange is referred to in anything a participant reads.
@@ -20,4 +20,30 @@ internal static class GiftExchangeNaming
     /// </summary>
     internal static string Describe(string name) =>
         string.IsNullOrWhiteSpace(name) ? "the gift exchange" : $"the gift exchange, {name.Trim()}";
+
+    /// <summary>
+    /// The exchange named part-way through a sentence, with the aside closed off so that the
+    /// sentence can carry on past it.
+    /// </summary>
+    /// <remarks>
+    /// The closing comma belongs to the aside rather than to the sentence, so it appears only when
+    /// there is an aside — "the gift exchange, Family Christmas, is over" against "the gift
+    /// exchange is over" for an exchange nobody named. Callers that finish on the name want
+    /// <see cref="Describe"/> instead, which leaves the punctuation to them.
+    /// </remarks>
+    internal static string DescribeMidSentence(string name) =>
+        string.IsNullOrWhiteSpace(name) ? Describe(name) : $"{Describe(name)},";
+
+    /// <summary>
+    /// The same again, capitalised to open a sentence or a subject line.
+    /// </summary>
+    /// <remarks>
+    /// Only the leading article is capitalised. The organizer's own name for the exchange is left
+    /// exactly as they typed it, which matters for the ones that start lower case on purpose.
+    /// </remarks>
+    internal static string DescribeToOpenASentence(string name)
+    {
+        var described = DescribeMidSentence(name);
+        return char.ToUpperInvariant(described[0]) + described[1..];
+    }
 }

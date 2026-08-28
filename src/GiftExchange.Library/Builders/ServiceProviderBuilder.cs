@@ -126,11 +126,13 @@ internal static class ServiceProviderBuilder
 
                 .AddSingleton<ValidationService>() // registered separately for direct use
                 .AddSingleton<EmailCompositionService>()
+                .AddSingleton<CompletionEmailCompositionService>()
                 .AddSingleton<GiftIdeaEmailCompositionService>()
                 .AddSingleton<GiftIdeaContentPolicy>()
                 .AddSingleton<InboundEmailParser>()
                 .AddSingleton<IReplyThrottleProvider, ReplyThrottleProvider>()
                 .AddSingleton<AutomaticEmailSender>()
+                .AddSingleton<IEmailQueue, EmailQueue>()
                 .AddSingleton<AskPageComposer>()
                 .AddSingleton<InboundGiftIdeasService>()
                 .AddSingleton<InvitationQueueHandlerService>()

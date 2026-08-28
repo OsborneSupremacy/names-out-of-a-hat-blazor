@@ -1,0 +1,94 @@
+﻿using System.Web;
+
+namespace GiftExchange.Library.Services;
+
+/// <summary>
+/// The message every participant receives once the organizer says the exchange has happened.
+/// </summary>
+/// <remarks>
+/// The one email this application sends that keeps nothing back. Every other message is written
+/// around the fact that a participant must not learn who drew whom; this one goes out only after
+/// the organizer has confirmed the exchange is over and the picks are theirs to reveal, so the
+/// whole draw is in it, for the record.
+///
+/// It is also the last thing anybody in the exchange hears from us, so it says who it came from and
+/// how to reach them rather than ending on the list.
+/// </remarks>
+[UsedImplicitly]
+public class CompletionEmailCompositionService
+{
+    /// <summary>
+    /// Plain text, unlike the body: a subject is not HTML and encoding it would show the entities.
+    /// </summary>
+    public static string GetSubject(Hat hat) =>
+        $"{GiftExchangeNaming.DescribeToOpenASentence(hat.Name)} has finished";
+
+    public string ComposeEmail(Hat hat, string participant)
+    {
+        var organizerName = HttpUtility.HtmlEncode(hat.Organizer.Name);
+        var organizerEmail = HttpUtility.HtmlEncode(hat.Organizer.Email);
+
+        var lines = new List<string>
+        {
+            EmailBranding.Masthead(),
+            $"Dear {HttpUtility.HtmlEncode(participant)},",
+            $"{organizerName} ({organizerEmail}) has let us know that {HttpUtility.HtmlEncode(GiftExchangeNaming.DescribeMidSentence(hat.Name))} is over.",
+            "We hope everybody came away with something they liked."
+        };
+
+        // Defensive rather than a shape anything sends: an exchange cannot reach this point without
+        // having been shaken. An exchange with no draw to show still gets the rest of the email.
+        var draw = BuildDraw(hat);
+
+        if (!string.IsNullOrEmpty(draw))
+        {
+            lines.Add("Here's who picked whose name, for the record:");
+            lines.Add(draw);
+        }
+
+        lines.AddRange([
+            $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
+            EmailBranding.SignOff(),
+            BuildSmallPrint(organizerEmail)
+        ]);
+
+        return string.Join("<br /><br />", lines) + "<br /><br />";
+    }
+
+    /// <summary>
+    /// The whole draw, one participant per line.
+    /// </summary>
+    /// <remarks>
+    /// The emoji sits against the picked name, the same way round as in the invitation, so somebody
+    /// reading this next to the invitation they were sent sees the same person marked the same way.
+    /// </remarks>
+    private static string BuildDraw(Hat hat)
+    {
+        var rows = hat.Participants
+            .Where(participant => !string.IsNullOrWhiteSpace(participant.PickedRecipient))
+            .Select(participant =>
+                $"{HttpUtility.HtmlEncode(participant.Person.Name)} &rarr; {participant.PickedRecipient.GetPersonEmojiFor()} <b>{HttpUtility.HtmlEncode(participant.PickedRecipient)}</b>")
+            .ToList();
+
+        return rows.Count == 0
+            ? string.Empty
+            : $"""
+               <div style="border-left:3px solid #cccccc;padding-left:12px;color:#333333;">
+               {string.Join("<br />", rows)}
+               </div>
+               """;
+    }
+
+    /// <summary>
+    /// Shorter than the invitation's. Nothing here is the organizer's own words except the names
+    /// they entered, and the disclaimer that footer carries has already been made once.
+    /// </summary>
+    private static string BuildSmallPrint(string organizerEmail) =>
+        $"""
+         <small style="color:#666666;">
+         This email was sent on behalf of {organizerEmail} through <a href="https://namesoutofahat.com">namesoutofahat.com</a>, a free app for running gift exchanges where names are drawn at random.
+         <br /><br />
+         Nobody reads replies to this address, so please contact the organizer directly if you need to.
+         </small>
+         """;
+}

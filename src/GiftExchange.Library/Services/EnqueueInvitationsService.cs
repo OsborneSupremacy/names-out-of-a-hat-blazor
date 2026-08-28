@@ -1,7 +1,4 @@
-﻿using Amazon.SQS;
-using Amazon.SQS.Model;
-
-namespace GiftExchange.Library.Services;
+﻿namespace GiftExchange.Library.Services;
 
 [UsedImplicitly]
 internal class EnqueueInvitationsService : IApiGatewayHandler
@@ -10,15 +7,11 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
 
     private readonly ApiGatewayAdapter _adapter;
 
-    private readonly JsonService _jsonService;
-
     private readonly EmailCompositionService _emailCompositionService;
 
-    private readonly IAmazonSQS _sqsClient;
+    private readonly IEmailQueue _emailQueue;
 
     private readonly ISchedulerService _schedulerService;
-
-    private readonly string _queueUrl;
 
     private readonly HatPreconditionValidator _hatPreconditionValidator;
 
@@ -26,20 +19,17 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         GiftExchangeProvider giftExchangeProvider,
         ApiGatewayAdapter adapter,
         HatPreconditionValidator hatPreconditionValidator,
-        JsonService jsonService,
         EmailCompositionService emailCompositionService,
-        IAmazonSQS sqsClient,
+        IEmailQueue emailQueue,
         ISchedulerService schedulerService
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
-        _jsonService = jsonService ?? throw new ArgumentNullException(nameof(jsonService));
         _emailCompositionService =
             emailCompositionService ?? throw new ArgumentNullException(nameof(emailCompositionService));
-        _sqsClient = sqsClient ?? throw new ArgumentNullException(nameof(sqsClient));
-        _queueUrl = EnvReader.GetStringValue("INVITATIONS_QUEUE_URL");
+        _emailQueue = emailQueue ?? throw new ArgumentNullException(nameof(emailQueue));
         _schedulerService = schedulerService ?? throw new ArgumentNullException(nameof(schedulerService));
     }
 
@@ -79,7 +69,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
             .IssueGiftIdeaTokensAsync(request.HatId)
             .ConfigureAwait(false);
 
-        var sqsTasks = new List<Task>();
+        var enqueueTasks = new List<Task>();
 
         foreach(var participant in hat.Participants)
         {
@@ -98,18 +88,10 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
                 Subject = EmailCompositionService.GetSubject(hat)
             };
 
-            var jsonInvitation = _jsonService.SerializeDefault(invitation);
-
-            var sqsRequest = new SendMessageRequest
-            {
-                QueueUrl = _queueUrl,
-                MessageBody = jsonInvitation
-            };
-
-            sqsTasks.Add(_sqsClient.SendMessageAsync(sqsRequest));
+            enqueueTasks.Add(_emailQueue.EnqueueAsync(invitation));
         }
 
-        await Task.WhenAll(sqsTasks)
+        await Task.WhenAll(enqueueTasks)
             .ConfigureAwait(false);
 
         var invitationsQueuedAt = await _giftExchangeProvider

@@ -335,7 +335,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     if (!hatId || !hat) return
 
     const confirmed = window.confirm(
-      'Reveal who everybody drew? This shows the picked name for every participant and cannot be undone, so only do it once the gift exchange has actually happened.'
+      'Reveal who everybody drew? Every participant will be emailed to say the gift exchange has finished, along with who picked whose name. This cannot be undone, so only do it once the gift exchange has actually happened.'
     )
     if (!confirmed) return
 
@@ -581,14 +581,18 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     >
                       {isClosing ? 'Revealing...' : 'Reveal Picked Names'}
                     </button>
-                    <p className="action-hint">Show who everybody drew. Do this once the gift exchange has actually happened — it cannot be undone.</p>
+                    <p className="action-hint">
+                      Show who everybody drew. Every participant is emailed to say the gift exchange has finished, with
+                      the full list of who picked whose name. Do this once the gift exchange has actually happened — it
+                      cannot be undone.
+                    </p>
                   </div>
                 )}
 
                 {hat.status === 'CLOSED' && (
                   <div className="action-container">
                     <p className="action-complete">The picks are revealed</p>
-                    <p className="action-hint">See below for the names everyone was assigned.</p>
+                    <p className="action-hint">Everyone has been emailed the full list. See below for the names everyone was assigned.</p>
                     <button
                       className="action-button copy-hat-button"
                       onClick={() => setShowCopyModal(true)}
