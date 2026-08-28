@@ -165,6 +165,68 @@ public class SchemaDriftTests
         }
     }
 
+    /// <summary>
+    /// A name in "required" that the same subschema never declares as a property is invisible to
+    /// the property comparison above, which reads "properties" and nothing else. Combined with
+    /// "additionalProperties": false it is worse than cosmetic: the subschema forbids the very
+    /// name it demands, so nothing can satisfy it. API Gateway does not enforce response models,
+    /// so such a schema fails silently there and only bites whoever generates a client from it.
+    /// </summary>
+    [Fact]
+    public void EverySchemaFile_RequiresOnlyPropertiesItDeclares()
+    {
+        var offences = new List<string>();
+
+        foreach (var file in Directory.GetFiles(SchemaDirectory, "*.schema.json"))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(file));
+            InspectRequired(document.RootElement, "(root)", Path.GetFileName(file)!, offences);
+        }
+
+        offences.Should().BeEmpty();
+    }
+
+    private static void InspectRequired(JsonElement schema, string location, string fileName, List<string> offences)
+    {
+        if (schema.ValueKind is not JsonValueKind.Object)
+            return;
+
+        var hasProperties = schema.TryGetProperty("properties", out var properties)
+                            && properties.ValueKind is JsonValueKind.Object;
+
+        if (schema.TryGetProperty("required", out var required) && required.ValueKind is JsonValueKind.Array)
+        {
+            var declared = hasProperties
+                ? properties.EnumerateObject().Select(property => property.Name).ToImmutableHashSet()
+                : ImmutableHashSet<string>.Empty;
+
+            foreach (var name in required.EnumerateArray()
+                         .Where(entry => entry.ValueKind is JsonValueKind.String)
+                         .Select(entry => entry.GetString()!)
+                         .Where(name => !declared.Contains(name)))
+            {
+                offences.Add($"{fileName}: {location} requires '{name}', which it does not declare as a property");
+            }
+        }
+
+        // Descend only through keywords whose values are themselves schemas. Walking blindly would
+        // read a property literally named "required" or "properties" as a keyword of its parent.
+        if (hasProperties)
+        {
+            foreach (var property in properties.EnumerateObject())
+                InspectRequired(property.Value, $"{location}/{property.Name}", fileName, offences);
+        }
+
+        if (schema.TryGetProperty("definitions", out var definitions) && definitions.ValueKind is JsonValueKind.Object)
+        {
+            foreach (var definition in definitions.EnumerateObject())
+                InspectRequired(definition.Value, $"definitions/{definition.Name}", fileName, offences);
+        }
+
+        if (schema.TryGetProperty("items", out var items))
+            InspectRequired(items, $"{location}/items", fileName, offences);
+    }
+
     [Fact]
     public void EverySchemaFile_IsValidJson()
     {

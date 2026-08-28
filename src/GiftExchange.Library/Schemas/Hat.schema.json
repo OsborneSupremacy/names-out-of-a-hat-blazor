@@ -109,7 +109,6 @@
       "required": [
         "pickedRecipient",
         "person",
-        "invitationSent",
         "eligibleRecipients",
         "deliveryStatus",
         "deliveryDetail"
