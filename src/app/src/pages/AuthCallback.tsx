@@ -31,8 +31,14 @@ function readToken(hash: string): string {
  * A click is the cheapest thing a person does that an automated fetch does not. It is not proof of
  * a person — a sandbox driving a browser can synthesise input, and event.isTrusted does not
  * separate that from a real click — so this narrows the problem rather than closing it. The way to
- * close it is a code that never appears in a link at all, and that is the next step if this is not
- * enough.
+ * close it is a code that never appears in a link at all.
+ *
+ * Confirmed against Proofpoint in August 2026: a link left untouched through delivery-time scanning
+ * was still live when its owner clicked it, so that gateway renders this page without pressing
+ * anything on it. That is one vendor's configuration on one day rather than a guarantee, and it is
+ * the whole reason the typed-code fallback has not been built. If corporate sign-ins start failing
+ * again, that is the thing to build, not a second permitted use of the token — a use count trades
+ * away the single-use property to chase an unbounded number of scanner fetches.
  *
  * This is the same shape as the Ask flow, where the emailed link renders a form and only a person
  * can submit it.
