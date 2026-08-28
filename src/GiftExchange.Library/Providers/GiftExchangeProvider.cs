@@ -28,6 +28,9 @@ public class GiftExchangeProvider
     /// <summary>One person per email address, for the whole application.</summary>
     private const string PersonEmailIndex = "uq_person_email";
 
+    /// <summary>One delivery row per SES message id.</summary>
+    private const string DeliveryMessageIndex = "uq_participant_email_delivery_message";
+
     private readonly IDbContextFactory<GiftExchangeDbContext> _contextFactory;
 
     private readonly ILogger<GiftExchangeProvider> _logger;
@@ -269,6 +272,8 @@ public class GiftExchangeProvider
         if (hat is null)
             return (false, Hats.Empty);
 
+        var deliveries = await LatestDeliveriesAsync(context, hat.Participants).ConfigureAwait(false);
+
         return (true, new Hat
         {
             Id = hat.HatId,
@@ -277,9 +282,47 @@ public class GiftExchangeProvider
             AdditionalInformation = hat.AdditionalInformation,
             PriceRange = hat.PriceRange,
             Organizer = new Person { Name = hat.Organizer.Name, Email = hat.Organizer.Email },
-            Participants = ToDomain(hat.Participants),
+            Participants = ToDomain(hat.Participants, deliveries),
             InvitationsQueuedDate = hat.InvitationsQueuedAt
         });
+    }
+
+    /// <summary>
+    /// The most recent thing SES said about each of these participants, for the organizer's view.
+    /// </summary>
+    /// <remarks>
+    /// The most recent of any type, rather than the invitation's. The question an organizer is
+    /// asking is always "did the last thing I sent them arrive", and an invitation that bounced
+    /// stays visible anyway, because the completion email to the same broken address bounces too.
+    ///
+    /// Newest is picked here rather than in the query. Grouping and taking a maximum per group is
+    /// exactly the shape that turns into a lateral join or a window function, neither of which is
+    /// worth betting on against DSQL, and the row count is one hat's participants times the two
+    /// messages an exchange sends — small enough that the choice does not matter.
+    /// </remarks>
+    private static async Task<Dictionary<Guid, ParticipantEmailDeliveryEntity>> LatestDeliveriesAsync(
+        GiftExchangeDbContext context,
+        ICollection<ParticipantEntity> participants
+    )
+    {
+        var participantIds = participants
+            .Select(participant => participant.ParticipantId)
+            .ToList();
+
+        if (participantIds.Count == 0)
+            return [];
+
+        var rows = await context.ParticipantEmailDeliveries
+            .AsNoTracking()
+            .Where(delivery => participantIds.Contains(delivery.ParticipantId))
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return rows
+            .GroupBy(delivery => delivery.ParticipantId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.MaxBy(delivery => delivery.OccurredAt)!);
     }
 
     public async Task EditHatAsync(EditHatRequest request)
@@ -351,6 +394,14 @@ public class GiftExchangeProvider
 
             await context.GiftIdeaTokens
                 .Where(token => participantIds.Contains(token.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // What SES said about the mail sent to these participants. It is a record about an
+            // exchange that is being removed, and no longer answers any question once the addresses
+            // it describes are gone.
+            await context.ParticipantEmailDeliveries
+                .Where(delivery => participantIds.Contains(delivery.ParticipantId))
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 
@@ -460,6 +511,141 @@ public class GiftExchangeProvider
         }).ConfigureAwait(false);
 
         return issued.ToImmutable();
+    }
+
+    /// <summary>
+    /// The participant id behind each address in a hat, so that an outbound message can be tagged
+    /// with who it is going to.
+    /// </summary>
+    /// <remarks>
+    /// Keyed by address because that is what the sending path already has: both callers iterate the
+    /// hat's participants, and a domain <see cref="Participant"/> carries a person and not an id.
+    /// Adding the id to that record would put a storage key into the API contract, which this class
+    /// exists to keep out of it, so the lookup is made once per send rather than the record widened
+    /// for everybody.
+    ///
+    /// Addresses are unique across the application, so they are unique within a hat.
+    /// </remarks>
+    public async Task<ImmutableDictionary<string, Guid>> GetParticipantIdsByEmailAsync(Guid hatId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var participants = await context.Participants
+            .AsNoTracking()
+            .Where(participant => participant.HatId == hatId)
+            .Select(participant => new { participant.ParticipantId, participant.Person.Email })
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return participants.ToImmutableDictionary(
+            participant => participant.Email,
+            participant => participant.ParticipantId,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Records what SES said about one message, creating the row if this is the first thing heard
+    /// about it and moving it forwards if it is not.
+    /// </summary>
+    /// <remarks>
+    /// Forwards only. Neither SES nor SNS orders what it publishes, so a Delivery can be handed to
+    /// us after the Send it followed; a row that simply took the latest event to arrive would flap
+    /// between statuses for no reason visible in the data. <see cref="DeliveryStatuses.RankOf"/>
+    /// decides what counts as forwards, and an event that does not get further is dropped.
+    ///
+    /// The read and the write are in one transaction so that two events for the same message
+    /// arriving at once collide rather than interleave: DSQL aborts one of them as a serialization
+    /// failure, and the execution strategy behind <see cref="InTransactionAsync"/> replays it
+    /// against what the winner wrote. The one case that leaves is two first-events racing to insert,
+    /// which is a unique violation rather than a conflict, so it is retried here by hand.
+    /// </remarks>
+    /// <returns>Whether anything was written.</returns>
+    public async Task<bool> RecordDeliveryEventAsync(ParticipantEmailDelivery delivery)
+    {
+        if (delivery.ParticipantId == Guid.Empty || string.IsNullOrWhiteSpace(delivery.SesMessageId))
+        {
+            _logger.LogWarning(
+                "Ignoring a delivery event with no participant or no message id. Status was {Status}.",
+                delivery.Status);
+            return false;
+        }
+
+        // Two attempts, not more. The second runs only when a concurrent insert won the race, and
+        // by then the row exists — so the retry takes the update path and cannot lose again.
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                return await TryRecordDeliveryEventAsync(delivery).ConfigureAwait(false);
+            }
+            catch (DbUpdateException exception) when (IsUniqueViolationOf(exception, DeliveryMessageIndex))
+            {
+                _logger.LogInformation(
+                    "Another event inserted the row for message {MessageId} first. Re-reading it.",
+                    delivery.SesMessageId);
+            }
+        }
+
+        _logger.LogError(
+            "Gave up recording a {Status} event for message {MessageId}.",
+            delivery.Status,
+            delivery.SesMessageId);
+
+        return false;
+    }
+
+    private async Task<bool> TryRecordDeliveryEventAsync(ParticipantEmailDelivery delivery)
+    {
+        var written = false;
+
+        await InTransactionAsync(async context =>
+        {
+            // InTransactionAsync replays the whole delegate on a fresh context, so the result has
+            // to be reset rather than accumulated -- the same reason IssueGiftIdeaTokensAsync
+            // clears its builder.
+            written = false;
+
+            var existing = await context.ParticipantEmailDeliveries
+                .SingleOrDefaultAsync(row => row.SesMessageId == delivery.SesMessageId)
+                .ConfigureAwait(false);
+
+            if (existing is null)
+            {
+                context.ParticipantEmailDeliveries.Add(new ParticipantEmailDeliveryEntity
+                {
+                    ParticipantEmailDeliveryId = Guid.CreateVersion7(),
+                    ParticipantId = delivery.ParticipantId,
+                    MessageType = delivery.MessageType,
+                    SesMessageId = delivery.SesMessageId,
+                    Status = delivery.Status,
+                    Detail = delivery.Detail,
+                    OccurredAt = delivery.OccurredAt,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+
+                await context.SaveChangesAsync().ConfigureAwait(false);
+                written = true;
+                return;
+            }
+
+            if (DeliveryStatuses.RankOf(delivery.Status) < DeliveryStatuses.RankOf(existing.Status))
+                return;
+
+            existing.Status = delivery.Status;
+            existing.Detail = delivery.Detail;
+            existing.OccurredAt = delivery.OccurredAt;
+            existing.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // The type is only ever written here, never corrected, so a row first created by an
+            // event that carried no type tag is finished by the next one that does.
+            if (existing.MessageType == EmailMessageType.Unspecified)
+                existing.MessageType = delivery.MessageType;
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+            written = true;
+        }).ConfigureAwait(false);
+
+        return written;
     }
 
     /// <summary>
@@ -967,6 +1153,9 @@ public class GiftExchangeProvider
         {
             PickedRecipient = string.Empty,
             Person = new Person { Name = request.Name, Email = request.Email },
+            // Nothing has been sent to somebody who was added a moment ago.
+            DeliveryStatus = Models.DeliveryStatus.Unknown,
+            DeliveryDetail = string.Empty,
             EligibleRecipients = existingParticipants
                 .Select(existing => existing.Person.Name)
                 .ToImmutableList()
@@ -1116,6 +1305,15 @@ public class GiftExchangeProvider
 
             await context.GiftIdeaTokens
                 .Where(token => token.ParticipantId == participantId)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // What SES said about the mail sent to them. An organizer who removes somebody and adds
+            // them back has a new participant, and starting that one with the delivery history of a
+            // person who is no longer in the exchange would be a claim about a message never sent
+            // to them.
+            await context.ParticipantEmailDeliveries
+                .Where(delivery => delivery.ParticipantId == participantId)
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 
@@ -1404,12 +1602,24 @@ public class GiftExchangeProvider
             .ConfigureAwait(false);
     }
 
-    private static ImmutableList<Participant> ToDomain(ICollection<ParticipantEntity> participants)
+    /// <summary>
+    /// No delivery information. What the reads that do not ask for it get -- every participant
+    /// comes back with an empty status, which reads as "nothing heard" and never as "not delivered".
+    /// </summary>
+    private static readonly Dictionary<Guid, ParticipantEmailDeliveryEntity> NoDeliveries = [];
+
+    private static ImmutableList<Participant> ToDomain(ICollection<ParticipantEntity> participants) =>
+        ToDomain(participants, NoDeliveries);
+
+    private static ImmutableList<Participant> ToDomain(
+        ICollection<ParticipantEntity> participants,
+        IReadOnlyDictionary<Guid, ParticipantEmailDeliveryEntity> deliveries
+    )
     {
         var namesByParticipantId = NamesByParticipantId(participants);
 
         return participants
-            .Select(participant => ToDomain(participant, namesByParticipantId))
+            .Select(participant => ToDomain(participant, namesByParticipantId, deliveries))
             .ToImmutableList();
     }
 
@@ -1428,7 +1638,20 @@ public class GiftExchangeProvider
         ParticipantEntity participant,
         IReadOnlyDictionary<Guid, string> namesByParticipantId
     ) =>
-        new()
+        ToDomain(participant, namesByParticipantId, NoDeliveries);
+
+    private static Participant ToDomain(
+        ParticipantEntity participant,
+        IReadOnlyDictionary<Guid, string> namesByParticipantId,
+        IReadOnlyDictionary<Guid, ParticipantEmailDeliveryEntity> deliveries
+    )
+    {
+        // No row is the ordinary state before anything has been sent, and it stays the state for a
+        // while after: SES publishes asynchronously. It reads as "nothing heard", never as "not
+        // delivered" -- see the remarks on DeliveryStatus.
+        var delivery = deliveries.GetValueOrDefault(participant.ParticipantId);
+
+        return new Participant
         {
             // Guid.Empty is in no hat, so an undrawn participant falls through to the empty name
             // without being asked about separately.
@@ -1438,8 +1661,11 @@ public class GiftExchangeProvider
             Person = new Person { Name = participant.Person.Name, Email = participant.Person.Email },
             EligibleRecipients = participant.EligibleRecipients
                 .Select(row => row.EligibleParticipant.Person.Name)
-                .ToImmutableList()
+                .ToImmutableList(),
+            DeliveryStatus = delivery?.Status ?? Models.DeliveryStatus.Unknown,
+            DeliveryDetail = delivery?.Detail ?? string.Empty
         };
+    }
 
     private static string Normalize(string value) => value.TrimNullSafe().ToLowerInvariant();
 

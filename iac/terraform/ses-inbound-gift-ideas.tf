@@ -1,9 +1,10 @@
 # The receipt rules that act on inbound gift ideas mail.
 #
-# Only the rules live here. The ideas.namesoutofahat.com identity and its DNS are in the
-# names-out-of-a-hat-ses repository, alongside the rest of this domain's email configuration, and
-# reach this state through the terraform_remote_state in data.tf. What keeps these two rules here
-# is that both invoke a Lambda defined in this repository.
+# Only the rules live here. The ideas.namesoutofahat.com identity and its DNS are in email/terraform,
+# alongside the rest of this domain's email configuration, and reach this state through the
+# terraform_remote_state in data.tf -- a separate root with its own state, so the split survives
+# both of them being in this repository. What keeps these two rules here is that both invoke a
+# Lambda defined in iac/.
 #
 # Neither rule creates or activates a rule set. ses-inbox-ruleset-main is provisioned in the
 # ahzborn-aws repository, one region permits a single active set, and something is already handling

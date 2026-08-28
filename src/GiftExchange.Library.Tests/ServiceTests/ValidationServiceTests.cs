@@ -45,13 +45,17 @@ public class ValidationServiceTests
                 {
                     PickedRecipient = string.Empty,
                     Person = _personFaker.Generate(),
-                    EligibleRecipients = []
+                    EligibleRecipients = [],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = _personFaker.Generate(),
-                    EligibleRecipients = []
+                    EligibleRecipients = [],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -84,19 +88,25 @@ public class ValidationServiceTests
                 {
                     PickedRecipient = string.Empty,
                     Person = people[0],
-                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                    EligibleRecipients = [ people[1].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[1],
-                    EligibleRecipients = [ people[0].Name, people[2].Name ]
+                    EligibleRecipients = [ people[0].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[2],
-                    EligibleRecipients = []
+                    EligibleRecipients = [],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -129,25 +139,33 @@ public class ValidationServiceTests
                 {
                     PickedRecipient = string.Empty,
                     Person = people[0],
-                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                    EligibleRecipients = [ people[1].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[1],
-                    EligibleRecipients = [ people[0].Name, people[2].Name ]
+                    EligibleRecipients = [ people[0].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[2],
-                    EligibleRecipients = [ people[0].Name, people[1].Name ]
+                    EligibleRecipients = [ people[0].Name, people[1].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[3],
-                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                    EligibleRecipients = [ people[1].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -180,25 +198,33 @@ public class ValidationServiceTests
                 {
                     PickedRecipient = string.Empty,
                     Person = people[0],
-                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                    EligibleRecipients = [ people[1].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[1],
-                    EligibleRecipients = [ people[0].Name, people[3].Name ]
+                    EligibleRecipients = [ people[0].Name, people[3].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[2],
-                    EligibleRecipients = [ people[0].Name, people[3].Name ]
+                    EligibleRecipients = [ people[0].Name, people[3].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[3],
-                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                    EligibleRecipients = [ people[1].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -230,25 +256,33 @@ public class ValidationServiceTests
                 {
                     PickedRecipient = string.Empty,
                     Person = people[0],
-                    EligibleRecipients = [ people[1].Name, people[2].Name ]
+                    EligibleRecipients = [ people[1].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[1],
-                    EligibleRecipients = [ people[0].Name, people[3].Name ]
+                    EligibleRecipients = [ people[0].Name, people[3].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[2],
-                    EligibleRecipients = [ people[0].Name, people[1].Name ]
+                    EligibleRecipients = [ people[0].Name, people[1].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 },
                 new Participant
                 {
                     PickedRecipient = string.Empty,
                     Person = people[3],
-                    EligibleRecipients = [ people[0].Name, people[2].Name ]
+                    EligibleRecipients = [ people[0].Name, people[2].Name ],
+                    DeliveryStatus = DeliveryStatus.Unknown,
+                    DeliveryDetail = string.Empty
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue

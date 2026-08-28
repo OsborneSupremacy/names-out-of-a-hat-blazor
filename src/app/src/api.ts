@@ -113,6 +113,13 @@ export interface Participant {
   }
   pickedRecipient: string
   eligibleRecipients: string[]
+  /**
+   * How far the last email sent to this participant is known to have got. Empty means nothing has
+   * been heard, which is not the same as not delivered — see deliveryStatus.ts.
+   */
+  deliveryStatus: string
+  /** Why, for the statuses that have a why. Written by a remote mail server, so never trusted as markup. */
+  deliveryDetail: string
 }
 
 export interface Hat {

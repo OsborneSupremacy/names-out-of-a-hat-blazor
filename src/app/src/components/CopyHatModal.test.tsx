@@ -13,6 +13,10 @@ function participant(
     person: { name, email: `${name.toLowerCase()}@example.com` },
     pickedRecipient,
     eligibleRecipients,
+    // Nothing heard. Copying a hat has nothing to do with what was delivered from the one it came
+    // from, so these stay empty here.
+    deliveryStatus: '',
+    deliveryDetail: '',
   }
 }
 

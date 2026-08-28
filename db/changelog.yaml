@@ -753,3 +753,84 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON gift_idea_ask, contributed_gift_idea FROM giftexchange_user
+
+  - changeSet:
+      id: participant_email_delivery--0001
+      author: ben
+      comment: >
+        What SES said happened to each participant email. Nothing recorded any of this before: a
+        send that was accepted and then bounced looked exactly like one that arrived, so an address
+        with a typo in it silently left somebody out of the exchange.
+
+        Keyed on the SES message id rather than the participant, because that is the identifier the
+        send and the events share, and because the invitation and the completion email are two
+        different messages to the same person.
+      changes:
+        - sqlFile:
+            path: tables/participant_email_delivery--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE participant_email_delivery
+
+  - changeSet:
+      id: uq_participant_email_delivery_message--0001
+      author: ben
+      comment: >
+        The lookup every event makes, and the key both writers upsert on. An event knows the message
+        id and the tags that were on the send, and nothing else.
+
+        Unique, like uq_gift_idea_token_hash: the table starts empty, so there is no crowd of
+        backfilled rows for a unique index to reject.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_participant_email_delivery_message ON participant_email_delivery (ses_message_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_participant_email_delivery_message
+
+  - changeSet:
+      id: idx_participant_email_delivery_participant--0001
+      author: ben
+      comment: >
+        Both of the other questions this table is asked: the newest row for each participant, which
+        is what the organizer's view shows, and the sweep that removes them in DeleteParticipantAsync
+        and DeleteHatAsync. Ordered by occurred_at because "newest" is decided by what SES said, not
+        by the id.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_participant_email_delivery_participant ON participant_email_delivery (participant_id, occurred_at)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_participant_email_delivery_participant
+
+  - changeSet:
+      id: giftexchange_user--0010
+      author: ben
+      comment: >
+        CRUD on participant_email_delivery. The delivery event function writes it and the API
+        function reads it, and both connect as this role, so one grant covers both.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0010.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON participant_email_delivery FROM giftexchange_user
+
+  - changeSet:
+      id: giftexchange_user--0011
+      author: ben
+      comment: >
+        Lets the delivery event function connect as giftexchange_user. The counterpart of --0008,
+        for the second function that reaches DSQL without going through the API.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0011.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: AWS IAM REVOKE giftexchange_user FROM '${delivery_events_role_arn}'

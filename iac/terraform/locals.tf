@@ -1,6 +1,11 @@
 locals {
   cooled_off_scheduler_group_name = "giftexchange-cooled-off"
 
+  # The topic SES publishes delivery events to. Declared in email/terraform alongside the rest of
+  # this domain's sending configuration, and reached the same way the inbound rules reach the
+  # receipt rule set name.
+  delivery_events_topic_arn = data.terraform_remote_state.email.outputs.delivery_events_topic_arn
+
   common_environment_variables = {
     "TABLE_NAME"                    = aws_dynamodb_table.giftexchange.name,
     "INVITATIONS_QUEUE_URL"         = aws_sqs_queue.invitations-queue.url,
@@ -20,6 +25,12 @@ locals {
     # and the connector always uses verify-full, so connecting via giftexchange-db.namesoutofahat.com
     # would fail hostname verification.
     "DSQL_ENDPOINT" = "${aws_dsql_cluster.giftexchange_dsql_cluster.identifier}.dsql.${data.aws_region.current.region}.on.aws"
+    # Named on every participant send, and the only thing that makes SES report what became of it.
+    # Common rather than per-function for the reason LIVE_MODE is: a variable that has to be
+    # remembered separately for each function is one that will eventually be forgotten for one of
+    # them, and forgetting this one fails silently -- the mail still sends, and nothing is heard
+    # back about it ever again.
+    "SES_CONFIGURATION_SET" = data.terraform_remote_state.email.outputs.ses_configuration_set_name
   }
   publish_zip_path = "../../src/GiftExchange.Library/bin/GiftExchange.Library.zip"
 }

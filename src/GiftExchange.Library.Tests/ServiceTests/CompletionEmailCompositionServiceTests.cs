@@ -159,6 +159,8 @@ public class CompletionEmailCompositionServiceTests
         {
             Person = new Person { Name = name, Email = email },
             PickedRecipient = pickedRecipient,
-            EligibleRecipients = []
+            EligibleRecipients = [],
+            DeliveryStatus = DeliveryStatus.Unknown,
+            DeliveryDetail = string.Empty
         };
 }

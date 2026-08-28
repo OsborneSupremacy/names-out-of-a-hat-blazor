@@ -136,6 +136,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<AskPageComposer>()
                 .AddSingleton<InboundGiftIdeasService>()
                 .AddSingleton<InvitationQueueHandlerService>()
+                .AddSingleton<DeliveryEventsService>()
                 .AddSingleton<ISchedulerService, SchedulerService>()
             ;
     }

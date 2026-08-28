@@ -89,12 +89,20 @@ internal class CloseHatService : IApiGatewayHandler
             hat.Participants.Count,
             request.HatId);
 
+        // As in EnqueueInvitationsService: the id the send is tagged with, so that what SES says
+        // about this message lands on the right participant.
+        var participantIds = await _giftExchangeProvider
+            .GetParticipantIdsByEmailAsync(request.HatId)
+            .ConfigureAwait(false);
+
         await Task.WhenAll(hat.Participants.Select(participant =>
                 _emailQueue.EnqueueAsync(new GiftExchangeEmailRequest
                 {
                     HatId = request.HatId,
                     OrganizerEmail = request.OrganizerEmail,
                     RecipientEmail = participant.Person.Email,
+                    ParticipantId = participantIds.GetValueOrDefault(participant.Person.Email, Guid.Empty),
+                    MessageType = EmailMessageType.Completion,
                     Subject = CompletionEmailCompositionService.GetSubject(hat),
                     HtmlBody = _completionEmailCompositionService.ComposeEmail(hat, participant.Person.Name)
                 })))

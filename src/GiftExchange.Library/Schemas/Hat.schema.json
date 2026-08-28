@@ -1,110 +1,120 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-        "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The unique identifier of the hat"
-        },
-        "name": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 50,
-            "description": "The name of the gift exchange"
-        },
-        "status": {
-            "type": "string",
-            "description": "The current status of the gift exchange"
-        },
-        "additionalInformation": {
-            "type": "string",
-            "maxLength": 2000,
-            "description": "Additional details about the gift exchange"
-        },
-        "priceRange": {
-            "type": "string",
-            "maxLength": 50,
-            "description": "The suggested price range for gifts"
-        },
-        "organizer": {
-            "$ref": "#/definitions/person",
-            "description": "The organizer of the gift exchange"
-        },
-        "participants": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/participant"
-            },
-            "description": "The list of participants in the gift exchange"
-        },
-        "invitationsQueuedDate": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When invitations were queued for sending"
-        }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The unique identifier of the hat"
     },
-    "required": [
-        "id",
-        "name",
-        "status",
-        "additionalInformation",
-        "priceRange",
-        "organizer",
-        "participants",
-        "invitationsQueuedDate"
-    ],
-    "additionalProperties": false,
-    "definitions": {
-        "person": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "minLength": 2,
-                    "maxLength": 100,
-                    "description": "The name of the person"
-                },
-                "email": {
-                    "type": "string",
-                    "format": "email",
-                    "minLength": 5,
-                    "maxLength": 254,
-                    "description": "The email address of the person"
-                }
-            },
-            "required": [
-                "name",
-                "email"
-            ],
-            "additionalProperties": false
-        },
-        "participant": {
-            "type": "object",
-            "properties": {
-                "pickedRecipient": {
-                    "type": "string",
-                    "description": "The name of the person this participant will give a gift to"
-                },
-                "person": {
-                    "$ref": "#/definitions/person",
-                    "description": "The person who is participating"
-                },
-                "eligibleRecipients": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "description": "The list of potential recipients for this participant"
-                }
-            },
-            "required": [
-                "pickedRecipient",
-                "person",
-                "invitationSent",
-                "eligibleRecipients"
-            ],
-            "additionalProperties": false
-        }
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 50,
+      "description": "The name of the gift exchange"
+    },
+    "status": {
+      "type": "string",
+      "description": "The current status of the gift exchange"
+    },
+    "additionalInformation": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Additional details about the gift exchange"
+    },
+    "priceRange": {
+      "type": "string",
+      "maxLength": 50,
+      "description": "The suggested price range for gifts"
+    },
+    "organizer": {
+      "$ref": "#/definitions/person",
+      "description": "The organizer of the gift exchange"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/participant"
+      },
+      "description": "The list of participants in the gift exchange"
+    },
+    "invitationsQueuedDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When invitations were queued for sending"
     }
+  },
+  "required": [
+    "id",
+    "name",
+    "status",
+    "additionalInformation",
+    "priceRange",
+    "organizer",
+    "participants",
+    "invitationsQueuedDate"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "person": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "The name of the person"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 254,
+          "description": "The email address of the person"
+        }
+      },
+      "required": [
+        "name",
+        "email"
+      ],
+      "additionalProperties": false
+    },
+    "participant": {
+      "type": "object",
+      "properties": {
+        "pickedRecipient": {
+          "type": "string",
+          "description": "The name of the person this participant will give a gift to"
+        },
+        "person": {
+          "$ref": "#/definitions/person",
+          "description": "The person who is participating"
+        },
+        "eligibleRecipients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The list of potential recipients for this participant"
+        },
+        "deliveryStatus": {
+          "type": "string",
+          "description": "How far the last email sent to this participant is known to have got: SENT, DELIVERED, DELAYED, BOUNCED, COMPLAINED, REJECTED or FAILED. Empty when nothing has been heard yet, which is not the same as not delivered."
+        },
+        "deliveryDetail": {
+          "type": "string",
+          "description": "Why, for the statuses that have a why: the bounce subtype and the receiving server's diagnostic. Empty otherwise. Written by a remote mail server, so it is neither moderated nor trusted."
+        }
+      },
+      "required": [
+        "pickedRecipient",
+        "person",
+        "invitationSent",
+        "eligibleRecipients",
+        "deliveryStatus",
+        "deliveryDetail"
+      ],
+      "additionalProperties": false
+    }
+  }
 }

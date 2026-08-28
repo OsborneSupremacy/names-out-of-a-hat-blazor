@@ -69,6 +69,13 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
             .IssueGiftIdeaTokensAsync(request.HatId)
             .ConfigureAwait(false);
 
+        // Who each address belongs to within this hat, so the send can be tagged with it and what
+        // SES reports afterwards can be matched to a participant. Read here rather than carried on
+        // the domain record, which identifies people by name and address and not by id.
+        var participantIds = await _giftExchangeProvider
+            .GetParticipantIdsByEmailAsync(request.HatId)
+            .ConfigureAwait(false);
+
         var enqueueTasks = new List<Task>();
 
         foreach(var participant in hat.Participants)
@@ -85,6 +92,11 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
                 HtmlBody = _emailCompositionService
                     .ComposeEmail(hat, participant.Person.Name, participant.PickedRecipient, giftIdeasToken),
                 RecipientEmail = participant.Person.Email,
+                // An address with no id against it still gets its invitation, exactly as one with
+                // no token does. What it loses is the delivery status, which is the lesser harm --
+                // and nothing should reach this, since these ids were read from the same hat.
+                ParticipantId = participantIds.GetValueOrDefault(participant.Person.Email, Guid.Empty),
+                MessageType = EmailMessageType.Invitation,
                 Subject = EmailCompositionService.GetSubject(hat)
             };
 

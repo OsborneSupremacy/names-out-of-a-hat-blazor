@@ -1092,3 +1092,41 @@
     border-top-color: #374151;
   }
 }
+
+/* What SES said happened to each participant's email.
+ *
+ * Only shown once invitations have gone out, because before that there is nothing to say. The
+ * neutral tone covers both "sent, waiting" and "nothing heard yet", and it is deliberately not a
+ * warning colour: an organizer should read it as the page not knowing, rather than as the
+ * participant not having received anything. */
+.delivery-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.delivery-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.delivery-status-good {
+  color: #1a7f4b;
+}
+
+.delivery-status-neutral {
+  color: #666666;
+  font-weight: 500;
+}
+
+.delivery-status-bad {
+  color: #b3261e;
+}
+
+/* The receiving server's own sentence. Small and quiet, but present: it is the part that says
+ * whether the address is wrong or the mailbox was merely full. */
+.delivery-detail {
+  font-size: 0.75rem;
+  color: #666666;
+  word-break: break-word;
+}

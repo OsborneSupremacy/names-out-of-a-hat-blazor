@@ -17,12 +17,22 @@
         "type": "string"
       },
       "description": "The names this participant is allowed to draw."
+    },
+    "deliveryStatus": {
+      "type": "string",
+      "description": "How far the last email sent to this participant is known to have got: SENT, DELIVERED, DELAYED, BOUNCED, COMPLAINED, REJECTED or FAILED. Empty when nothing has been heard yet, which is not the same as not delivered."
+    },
+    "deliveryDetail": {
+      "type": "string",
+      "description": "Why, for the statuses that have a why: the bounce subtype and the receiving server's diagnostic. Empty otherwise. Written by a remote mail server, so it is neither moderated nor trusted."
     }
   },
   "required": [
     "pickedRecipient",
     "person",
-    "eligibleRecipients"
+    "eligibleRecipients",
+    "deliveryStatus",
+    "deliveryDetail"
   ],
   "additionalProperties": false,
   "definitions": {

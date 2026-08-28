@@ -55,7 +55,7 @@ resource "aws_iam_role_policy" "inbound-gift-ideas-handler-policy" {
     Statement = [
       {
         # Read only, and only the gift ideas prefix of the shared inbound mail bucket. That
-        # bucket belongs to the SES repository and also holds everything arriving at
+        # bucket belongs to the email/terraform state and also holds everything arriving at
         # mail.namesoutofahat.com; there is no reason for this function to read any of that, so the
         # grant stops at its own prefix.
         #

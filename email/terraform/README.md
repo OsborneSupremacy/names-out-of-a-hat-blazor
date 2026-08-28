@@ -36,6 +36,11 @@ mail vanishing, and a change to them deserves somebody deciding to make it.
   `donotreply@mail.namesoutofahat.com`. Its SPF and DMARC records say exactly that.
 - `route53.tf` — verification, DKIM, MX, SPF and DMARC records for `mail.`, plus the DMARC report
   authorization the apex record needs.
+- `ses-delivery-events.tf` — the configuration set every outbound participant email names on the
+  send, and the SNS topic SES publishes what became of it to. Without a configuration set on the
+  request SES reports nothing at all, so this is what makes a bounced invitation distinguishable
+  from a delivered one. No open or click tracking: both work by rewriting the message, and neither
+  reports what it appears to.
 - `s3.tf`, `sns.tf` — where received mail is archived and announced.
 
 The receipt **rule set** these rules attach to, `ses-inbox-ruleset-main`, is not here. It is

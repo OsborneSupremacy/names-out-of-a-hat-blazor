@@ -35,3 +35,17 @@ output "ses_receipt_rule_set_name" {
   description = "SES receipt rule set the inbound rules belong to"
   value       = aws_ses_receipt_rule.store_emails.rule_set_name
 }
+
+# The configuration set every outbound participant email names on the send. Without it on the
+# request SES publishes nothing, so this output is the whole subscription.
+output "ses_configuration_set_name" {
+  description = "SES configuration set that publishes delivery events for outbound mail"
+  value       = aws_sesv2_configuration_set.outbound.configuration_set_name
+}
+
+# Subscribed to by a queue in the application state, which is where the function that reads these
+# events lives.
+output "delivery_events_topic_arn" {
+  description = "ARN of the SNS topic SES publishes delivery events to"
+  value       = aws_sns_topic.delivery_events.arn
+}

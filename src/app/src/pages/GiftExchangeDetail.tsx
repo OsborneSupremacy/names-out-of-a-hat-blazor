@@ -17,6 +17,7 @@ import {
   PreviewInvitationsResponse,
 } from '../api'
 import { HAT_STATUS_STEPS, formatHatStatus } from '../hatStatus'
+import { deliveryTone, formatDeliveryStatus, showsDeliveryDetail } from '../deliveryStatus'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -661,6 +662,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                         <tr>
                           <th>Name</th>
                           <th>Picked Recipient</th>
+                          <th>Email</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -674,6 +676,21 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                             </td>
                             <td>
                               <strong>{participant.pickedRecipient || 'Not assigned'}</strong>
+                            </td>
+                            <td>
+                              <div className="delivery-cell">
+                                <span
+                                  className={`delivery-status delivery-status-${deliveryTone(participant.deliveryStatus)}`}
+                                >
+                                  {formatDeliveryStatus(participant.deliveryStatus)}
+                                </span>
+                                {showsDeliveryDetail(participant.deliveryStatus, participant.deliveryDetail) && (
+                                  // Rendered as text, never as markup. This sentence was written by
+                                  // whichever mail server refused the message and has passed through
+                                  // no moderation of any kind.
+                                  <span className="delivery-detail">{participant.deliveryDetail}</span>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}

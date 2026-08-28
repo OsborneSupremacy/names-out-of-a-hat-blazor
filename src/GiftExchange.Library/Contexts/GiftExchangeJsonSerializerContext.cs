@@ -40,6 +40,10 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(RedeemMagicLinkResponse))]
 [JsonSerializable(typeof(RemoveParticipantRequest))]
 [JsonSerializable(typeof(SendInvitationsRequest))]
+// What SNS delivers to the delivery events queue. Deserialized by DeliveryEventsService rather
+// than by the Lambda serializer -- the event this function is invoked with is an SQSEvent, and
+// this is the shape of one record's body inside it.
+[JsonSerializable(typeof(SesDeliveryEvent))]
 // The assembly-level LambdaSerializer applies to every handler, so each entry point's event type
 // has to be here. LambdaHandlerSerializationTests keeps that honest.
 [JsonSerializable(typeof(SQSEvent))]
