@@ -1,4 +1,3 @@
-using System.Web;
 using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 
@@ -65,7 +64,16 @@ internal class RequestMagicLinkService : IApiGatewayHandler
         // this design goes ahead.
         var recipient = _liveMode ? request.Email : TestRecipient;
 
-        var link = $"{SignInUrl}?token={HttpUtility.UrlEncode(token)}";
+        // In the fragment rather than the query string. A fragment is never sent to a server, so the
+        // token stays out of CloudFront and API Gateway access logs and out of any Referer header
+        // the sign-in page might emit — one fewer place a live token comes to rest. The page reads
+        // it back out with JavaScript, which is where it was always headed anyway.
+        //
+        // Uri.EscapeDataString rather than HttpUtility.UrlEncode: the latter spells a space as '+',
+        // which is a form-encoding convention that nothing decoding a fragment honours. A base64url
+        // token has neither spaces nor anything else needing escaping, so this is about the call
+        // being the right one rather than about the tokens we issue today.
+        var link = $"{SignInUrl}#token={Uri.EscapeDataString(token)}";
 
         var sendRequest = new SendEmailRequest
         {
