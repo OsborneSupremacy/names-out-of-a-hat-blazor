@@ -52,7 +52,7 @@ public class AskForGiftIdeasServiceTests
 
         _provider = serviceProvider.GetRequiredService<GiftExchangeProvider>();
 
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<TimeSpan>())
+        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>())
             .Returns((true, DateTimeOffset.MinValue));
 
         _ses.When(ses => ses.SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>()))
@@ -75,7 +75,7 @@ public class AskForGiftIdeasServiceTests
     }
 
     [Fact]
-    public async Task Get_ShowsAConfirmationAndSendsNothing()
+    public async Task Get_ListsEveryoneElseAndSendsNothing()
     {
         // arrange
         var exchange = await SeedAsync();
@@ -86,11 +86,46 @@ public class AskForGiftIdeasServiceTests
         // assert: the whole reason this is two endpoints. A mail scanner following the link in an
         // invitation gets this page, and nobody is emailed on the participant's behalf.
         response.StatusCode.Should().Be(200);
-        response.Body.Should().Contain("Yes, ask Beta");
         response.Body.Should().Contain("<form method=\"post\"");
 
+        // Their own pick, and the one other person in the exchange. Not themselves.
+        response.Body.Should().Contain(exchange.BetaId.ToString());
+        response.Body.Should().Contain(exchange.GammaId.ToString());
+        response.Body.Should().NotContain(exchange.AlphaId.ToString());
+
         await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
-        await _throttle.DidNotReceive().TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<TimeSpan>());
+        await _throttle.DidNotReceive()
+            .TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>());
+    }
+
+    [Fact]
+    public async Task Get_TicksTheirOwnPickAndNobodyElse()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        var response = await _sut.FunctionHandler(Request("GET", exchange.AlphaToken), new FakeLambdaContext());
+
+        // assert: asking the person whose name you drew is the ordinary case, so submitting the
+        // form untouched does that and nothing more.
+        response.Body.Should().Contain($"value=\"{exchange.BetaId}\" checked");
+        response.Body.Should().Contain($"value=\"{exchange.GammaId}\" style");
+    }
+
+    [Fact]
+    public async Task Get_GivenASmallExchange_SaysTheAskerMayBeIdentified()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        var response = await _sut.FunctionHandler(Request("GET", exchange.AlphaToken), new FakeLambdaContext());
+
+        // assert: three people, so whoever Alpha asks knows it was not them and not Beta, which
+        // leaves exactly Alpha. Saying so here is the only honest place — the asker is the one
+        // person who can weigh it, and telling the helper would hand them the deduction.
+        response.Body.Should().Contain("work out that it was you");
     }
 
     [Fact]
@@ -100,7 +135,8 @@ public class AskForGiftIdeasServiceTests
         var exchange = await SeedAsync();
 
         // act
-        var response = await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert
         response.Body.Should().Contain("We've asked Beta");
@@ -117,7 +153,8 @@ public class AskForGiftIdeasServiceTests
         var exchange = await SeedAsync();
 
         // act
-        await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert: the promise the button makes. In an exchange this small, naming the asker names
         // the one person holding this recipient's name.
@@ -136,7 +173,8 @@ public class AskForGiftIdeasServiceTests
         var exchange = await SeedAsync();
 
         // act
-        await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert: the point of the email. It carries the same SHARE GIFT IDEAS block the invitation
         // does, addressed to a token issued for them.
@@ -162,7 +200,8 @@ public class AskForGiftIdeasServiceTests
         var exchange = await SeedAsync();
 
         // act
-        await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert: the address in Beta's invitation still resolves to Beta.
         var (found, route) = await _provider.FindGiftIdeaRouteAsync(SecretToken.Hash(exchange.BetaToken));
@@ -176,12 +215,15 @@ public class AskForGiftIdeasServiceTests
     {
         // arrange
         var askedOn = new DateTimeOffset(2026, 8, 3, 9, 0, 0, TimeSpan.Zero);
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<TimeSpan>()).Returns((false, askedOn));
+
+        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>())
+            .Returns((false, askedOn));
 
         var exchange = await SeedAsync();
 
         // act
-        var response = await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert: the person being asked hears nothing at all; the asker gets the date, because the
         // likeliest reader is somebody who does not remember asking.
@@ -196,13 +238,14 @@ public class AskForGiftIdeasServiceTests
     public async Task Post_GivenTheThrottleRefuses_IssuesNoTokenAndAsksNobody()
     {
         // arrange
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<TimeSpan>())
+        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>())
             .Returns((false, DateTimeOffset.UtcNow.AddDays(-2)));
 
         var exchange = await SeedAsync();
 
         // act
-        await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert
         SentMessages().Should().AllSatisfy(message =>
@@ -222,7 +265,8 @@ public class AskForGiftIdeasServiceTests
         await _provider.UpdateHatStatusAsync(exchange.OrganizerEmail, exchange.HatId, HatStatus.Closed);
 
         // act
-        var response = await _sut.FunctionHandler(Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId), new FakeLambdaContext());
 
         // assert
         response.Body.Should().Contain("the link may have expired");
@@ -239,12 +283,217 @@ public class AskForGiftIdeasServiceTests
 
         // act
         var response = await _sut.FunctionHandler(
-            Request(method, SecretToken.Create()), new FakeLambdaContext());
+            Request(method, SecretToken.Create(), Guid.CreateVersion7()), new FakeLambdaContext());
 
         // assert: indistinguishable on purpose. Somebody holding a guessed token would otherwise
         // learn from the difference whether it named a real participant.
         response.StatusCode.Should().Be(200);
         response.Body.Should().Contain("the link may have expired");
+        await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Post_GivenSomebodyOtherThanTheirPick_AsksThemAboutThePick()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act: Alpha drew Beta, and would rather not tip Beta off, so asks Gamma instead.
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.GammaId), new FakeLambdaContext());
+
+        // assert
+        response.Body.Should().Contain("We've asked Gamma");
+
+        var ask = SentMessages().Single();
+
+        ask.To.Mailboxes.Single().Address.Should().Be(exchange.GammaEmail);
+
+        // The subject of the ask is named, because a request for ideas that does not say who they
+        // are for cannot be answered.
+        ask.Subject.Should().Contain("Beta");
+        ask.HtmlBody.Should().Contain("SHARE GIFT IDEAS FOR BETA");
+
+        // The asker is not, which is the whole promise.
+        ask.Subject.Should().NotContain("Alpha");
+        ask.HtmlBody.Should().NotContain("Alpha");
+        ask.HtmlBody.Should().NotContain(exchange.AlphaEmail);
+    }
+
+    [Fact]
+    public async Task Post_GivenSomebodyOtherThanTheirPick_RecordsWhoAskedWhoAboutWhom()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.GammaId), new FakeLambdaContext());
+
+        // assert: all three roles, because the reply has to be checked against Gamma, filed against
+        // Beta and delivered to Alpha, and a token naming one participant could say none of that.
+        await using var context = _contextFactory.CreateDbContext();
+
+        var ask = await context.GiftIdeaAsks.SingleAsync(row => row.AskerParticipantId == exchange.AlphaId);
+
+        ask.AskerParticipantId.Should().Be(exchange.AlphaId);
+        ask.HelperParticipantId.Should().Be(exchange.GammaId);
+        ask.SubjectParticipantId.Should().Be(exchange.BetaId);
+    }
+
+    [Fact]
+    public async Task Post_GivenSomebodyOtherThanTheirPick_IssuesNoTokenAgainstThemselves()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.GammaId), new FakeLambdaContext());
+
+        // assert: what Gamma is being asked for is ideas about Beta, not about Gamma. An extra
+        // gift_idea_token here would file their answer as their own wishes and forward it to
+        // whoever drew them.
+        await using var context = _contextFactory.CreateDbContext();
+
+        (await context.GiftIdeaTokens.CountAsync(token => token.ParticipantId == exchange.GammaId))
+            .Should().Be(1, "only the token issued with their invitation");
+    }
+
+    [Fact]
+    public async Task Post_AsksEverybodyChosen()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId, exchange.GammaId), new FakeLambdaContext());
+
+        // assert: the point of the feature. One round, two different emails, one address each.
+        var sent = SentMessages();
+
+        sent.Select(message => message.To.Mailboxes.Single().Address)
+            .Should().BeEquivalentTo([exchange.BetaEmail, exchange.GammaEmail]);
+
+        response.Body.Should().Contain("Beta").And.Contain("Gamma");
+    }
+
+    [Fact]
+    public async Task Post_GivenSomeAlreadyAsked_AsksTheRestAndWritesToTheAsker()
+    {
+        // arrange
+        var askedOn = new DateTimeOffset(2026, 8, 3, 9, 0, 0, TimeSpan.Zero);
+        var exchange = await SeedAsync();
+
+        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), exchange.GammaId, Arg.Any<TimeSpan>())
+            .Returns((false, askedOn));
+
+        // act
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId, exchange.GammaId), new FakeLambdaContext());
+
+        // assert: one refusal does not cost the others. A per-asker limit would have sent nothing.
+        var sent = SentMessages();
+
+        sent.Should().HaveCount(2);
+        sent.Should().Contain(message => message.To.Mailboxes.Single().Address == exchange.BetaEmail);
+
+        // The second is the summary, to the asker, naming what did not happen and when.
+        var summary = sent.Single(message => message.To.Mailboxes.Single().Address == exchange.AlphaEmail);
+
+        summary.HtmlBody.Should().Contain("Gamma").And.Contain("3 August 2026");
+        response.Body.Should().Contain("3 August 2026");
+    }
+
+    [Fact]
+    public async Task Post_GivenEverythingWorked_WritesNoSummary()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.BetaId, exchange.GammaId), new FakeLambdaContext());
+
+        // assert: the outcome is already on the page in front of them, so a round that went through
+        // as asked produces no mail to the asker at all.
+        SentMessages().Should().NotContain(message =>
+            message.To.Mailboxes.Single().Address == exchange.AlphaEmail);
+    }
+
+    [Fact]
+    public async Task Post_GivenNobodyChosen_ShowsTheListAgainAndSendsNothing()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken), new FakeLambdaContext());
+
+        // assert: ticking nobody is a slip, and the useful answer to a slip is the form again.
+        response.Body.Should().Contain("Choose at least one person to ask.");
+        response.Body.Should().Contain("<form method=\"post\"");
+
+        await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Post_GivenTheirOwnId_AsksNobody()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+
+        // act
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, exchange.AlphaId), new FakeLambdaContext());
+
+        // assert: the form never offers this, but a form is only ever a suggestion to a browser.
+        response.Body.Should().Contain("Choose at least one person to ask.");
+
+        await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Post_GivenSomebodyFromAnotherExchange_AsksNobody()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+        var stranger = await SeedAsync();
+
+        // act
+        var response = await _sut.FunctionHandler(
+            Request("POST", exchange.AlphaToken, stranger.GammaId), new FakeLambdaContext());
+
+        // assert: an edited form must not become a way to mail somebody in an exchange the sender
+        // has nothing to do with. Membership is checked against the database, not against the page
+        // this application happened to render.
+        response.Body.Should().Contain("Choose at least one person to ask.");
+
+        await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("GET")]
+    [InlineData("POST")]
+    public async Task GivenAnAskToken_IsNotItselfAnAskLink(string method)
+    {
+        // arrange: the address Gamma was given to answer Alpha's question about Beta.
+        var exchange = await SeedAsync();
+
+        var askToken = await _provider.IssueGiftIdeaAskAsync(
+            exchange.AlphaId, exchange.GammaId, exchange.BetaId);
+
+        // act
+        var response = await _sut.FunctionHandler(
+            Request(method, askToken, exchange.BetaId), new FakeLambdaContext());
+
+        // assert: it writes back, and that is all it does. Treating it as an ask link would let
+        // whoever holds it start rounds of their own from somebody else's arrangement, and the
+        // subject of those rounds would be a pick that is not theirs.
+        response.Body.Should().Contain("the link may have expired");
+
         await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -262,18 +511,29 @@ public class AskForGiftIdeasServiceTests
         response.Headers["Content-Type"].Should().Be("text/html; charset=utf-8");
     }
 
-    private static APIGatewayProxyRequest Request(string method, string token) =>
+    /// <summary>
+    /// A request to /ask/{token}, with the chosen participants posted as the unscripted form on the
+    /// page posts them: one repeated field, url-encoded.
+    /// </summary>
+    private static APIGatewayProxyRequest Request(string method, string token, params Guid[] chosen) =>
         new()
         {
             HttpMethod = method,
             Resource = "/ask/{token}",
-            PathParameters = new Dictionary<string, string> { ["token"] = token }
+            PathParameters = new Dictionary<string, string> { ["token"] = token },
+            Body = string.Join("&", chosen.Select(id => $"who={id}"))
         };
 
     private ImmutableList<MimeMessage> SentMessages() =>
         [.. _sent.Select(raw => MimeMessage.Load(new MemoryStream(raw)))];
 
     /// <summary>Alpha drew Beta, Beta drew Gamma, Gamma drew Alpha, with tokens issued.</summary>
+    /// <remarks>
+    /// Three people, which is the smallest exchange that can run and the one where asking somebody
+    /// other than your own pick gives the asker away completely. Kept deliberately: the tests that
+    /// matter most here are about what is and is not said, and this is the shape that punishes a
+    /// slip.
+    /// </remarks>
     private async Task<SeededExchange> SeedAsync()
     {
         var hat = _hatFaker.Generate();
@@ -292,13 +552,22 @@ public class AskForGiftIdeasServiceTests
 
         await using var context = _contextFactory.CreateDbContext();
 
-        var betaId = await context.Participants
-            .Where(participant => participant.HatId == hat.HatId && participant.Person.Email == beta)
-            .Select(participant => participant.ParticipantId)
-            .SingleAsync();
+        var ids = await context.Participants
+            .Where(participant => participant.HatId == hat.HatId)
+            .Select(participant => new { participant.ParticipantId, participant.Person.Email })
+            .ToDictionaryAsync(row => row.Email, row => row.ParticipantId);
 
         return new SeededExchange(
-            hat.HatId, hat.OrganizerEmail, alpha, tokens[alpha], betaId, beta, tokens[beta]);
+            hat.HatId,
+            hat.OrganizerEmail,
+            ids[alpha],
+            alpha,
+            tokens[alpha],
+            ids[beta],
+            beta,
+            tokens[beta],
+            ids[gamma],
+            gamma);
     }
 
     private async Task<string> AddAsync(HatDataModel hat, string name)
@@ -316,10 +585,13 @@ public class AskForGiftIdeasServiceTests
     private sealed record SeededExchange(
         Guid HatId,
         string OrganizerEmail,
+        Guid AlphaId,
         string AlphaEmail,
         string AlphaToken,
         Guid BetaId,
         string BetaEmail,
-        string BetaToken
+        string BetaToken,
+        Guid GammaId,
+        string GammaEmail
     );
 }

@@ -84,6 +84,7 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
     /// <inheritdoc />
     public async Task<(bool reserved, DateTimeOffset previouslyAskedAt)> TryReserveAskSlotAsync(
         Guid askerParticipantId,
+        Guid targetParticipantId,
         TimeSpan window
     )
     {
@@ -95,7 +96,9 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
             TableName = _tableName,
             Item = new Dictionary<string, AttributeValue>
             {
-                ["PK"] = new() { S = $"ASKTHROTTLE#{askerParticipantId}" },
+                // Both ids, so that asking a second person is a separate slot from asking the
+                // first. See the remarks on IReplyThrottleProvider.TryReserveAskSlotAsync.
+                ["PK"] = new() { S = $"ASKTHROTTLE#{askerParticipantId}#{targetParticipantId}" },
                 ["SK"] = new() { S = "ASKTHROTTLE" },
                 ["AskedAt"] = new() { N = now.ToUnixTimeSeconds().ToString() },
                 ["ExpiresAt"] = new() { N = expiresAt.ToString() },

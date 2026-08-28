@@ -392,6 +392,117 @@ public class InboundGiftIdeasServiceTests
         await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task ProcessRecordAsync_GivenAContribution_SendsItToTheAskerAndNotToTheirOwnGiver()
+    {
+        // arrange: Alpha drew Beta and asked Gamma what Beta might like.
+        var exchange = await SeedAsync();
+        var ask = await GammaAskedAboutBetaAsync(exchange);
+
+        GivenTheMessageIs(exchange, "Beta has been after a stand mixer.", exchange.GammaEmail, token: ask.Token);
+
+        // act
+        var outcome = await _sut.ProcessRecordAsync(
+            RecordFor(exchange, token: ask.Token, source: exchange.GammaEmail));
+
+        // assert: the whole point of the routing. Beta drew Gamma, so anything Gamma writes about
+        // themselves goes to Beta — but this is not about Gamma, and sending it to Beta would hand
+        // Beta a list of the gifts somebody is planning to buy them.
+        outcome.Should().Be(GiftIdeaSubmissionOutcome.Shared);
+
+        var forward = SentMessages()
+            .Single(message => message.To.Mailboxes.Single().Address == exchange.AlphaEmail);
+
+        forward.Subject.Should().Contain("Gamma").And.Contain("Beta");
+        forward.HtmlBody.Should().Contain("stand mixer");
+
+        SentTo().Should().BeEquivalentTo([exchange.AlphaEmail, exchange.GammaEmail]);
+    }
+
+    [Fact]
+    public async Task ProcessRecordAsync_GivenAContribution_StoresItApartFromTheirOwnWishes()
+    {
+        // arrange
+        var exchange = await SeedAsync();
+        var ask = await GammaAskedAboutBetaAsync(exchange);
+
+        GivenTheMessageIs(exchange, "Beta has been after a stand mixer.", exchange.GammaEmail, token: ask.Token);
+
+        // act
+        await _sut.ProcessRecordAsync(RecordFor(exchange, token: ask.Token, source: exchange.GammaEmail));
+
+        // assert: filed against the ask, not against Gamma. A row in gift_idea would be Gamma
+        // saying what Gamma wants, and would be forwarded as such the moment anybody read it back.
+        await using var context = _contextFactory.CreateDbContext();
+
+        var stored = await context.ContributedGiftIdeas
+            .Where(contribution => contribution.GiftIdeaAskId == ask.AskId)
+            .ToListAsync();
+
+        stored.Should().ContainSingle().Which.Ideas.Should().Be("Beta has been after a stand mixer.");
+
+        (await context.GiftIdeas.AnyAsync(row => row.ParticipantId == exchange.GammaId))
+            .Should().BeFalse("a suggestion about somebody else is not a wish of their own");
+    }
+
+    [Fact]
+    public async Task ProcessRecordAsync_GivenAContributionFromSomebodyElse_DropsItInSilence()
+    {
+        // arrange: the ask was addressed to Gamma, and Beta is writing on it.
+        var exchange = await SeedAsync();
+        var ask = await GammaAskedAboutBetaAsync(exchange);
+
+        GivenTheMessageIs(exchange, "Ideas!", exchange.AlphaEmail, token: ask.Token);
+
+        // act
+        var outcome = await _sut.ProcessRecordAsync(
+            RecordFor(exchange, token: ask.Token, source: exchange.AlphaEmail));
+
+        // assert: an ask address travels in an inbox and can be forwarded, so the token alone is a
+        // weaker claim than it looks. Pairing it with the helper's own address is what makes it
+        // hold — and the reply is silence, because nothing here has established who wrote in.
+        outcome.Should().Be(GiftIdeaSubmissionOutcome.DroppedSenderMismatch);
+
+        SentTo().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ProcessRecordAsync_GivenAContributionNamingTheHelpersOwnPick_RefusesIt()
+    {
+        // arrange: Gamma drew Alpha, and Alpha is who this contribution is about to be sent to.
+        var exchange = await SeedAsync();
+        var ask = await GammaAskedAboutBetaAsync(exchange);
+
+        GivenTheMessageIs(
+            exchange, "Beta likes what Alpha likes.", exchange.GammaEmail, token: ask.Token);
+
+        // act
+        var outcome = await _sut.ProcessRecordAsync(
+            RecordFor(exchange, token: ask.Token, source: exchange.GammaEmail));
+
+        // assert: the check still guards the sender's own pick rather than the subject, and on this
+        // path that is doing more work than usual — the person it would leak to is the very person
+        // the message is being forwarded to.
+        outcome.Should().Be(GiftIdeaSubmissionOutcome.RejectedWouldRevealTheirPick);
+
+        SentTo().Should().BeEquivalentTo([exchange.GammaEmail]);
+    }
+
+    /// <summary>Alpha, who drew Beta, asks Gamma what Beta might like.</summary>
+    private async Task<(Guid AskId, string Token)> GammaAskedAboutBetaAsync(SeededExchange exchange)
+    {
+        var token = await _provider.IssueGiftIdeaAskAsync(exchange.AlphaId, exchange.GammaId, exchange.BetaId);
+
+        await using var context = _contextFactory.CreateDbContext();
+
+        var askId = await context.GiftIdeaAsks
+            .Where(ask => ask.TokenHash == SecretToken.Hash(token))
+            .Select(ask => ask.GiftIdeaAskId)
+            .SingleAsync();
+
+        return (askId, token);
+    }
+
     private async Task ShouldHaveStoredNothing(SeededExchange exchange)
     {
         await using var context = _contextFactory.CreateDbContext();
@@ -421,12 +532,20 @@ public class InboundGiftIdeasServiceTests
 
         await using var context = _contextFactory.CreateDbContext();
 
-        var alphaId = await context.Participants
-            .Where(participant => participant.HatId == hat.HatId && participant.Person.Email == alpha)
-            .Select(participant => participant.ParticipantId)
-            .SingleAsync();
+        var ids = await context.Participants
+            .Where(participant => participant.HatId == hat.HatId)
+            .Select(participant => new { participant.ParticipantId, participant.Person.Email })
+            .ToDictionaryAsync(row => row.Email, row => row.ParticipantId);
 
-        return new SeededExchange(hat.HatId, hat.OrganizerEmail, alphaId, alpha, gamma, tokens[alpha]);
+        return new SeededExchange(
+            hat.HatId,
+            hat.OrganizerEmail,
+            ids[alpha],
+            alpha,
+            ids[beta],
+            ids[gamma],
+            gamma,
+            tokens[alpha]);
     }
 
     private async Task<string> AddAsync(HatDataModel hat, string name)
@@ -445,7 +564,8 @@ public class InboundGiftIdeasServiceTests
         SeededExchange exchange,
         string body,
         string? from = null,
-        bool autoSubmitted = false
+        bool autoSubmitted = false,
+        string? token = null
     )
     {
         var message = new MimeMessage
@@ -455,7 +575,7 @@ public class InboundGiftIdeasServiceTests
         };
 
         message.From.Add(MailboxAddress.Parse(from ?? exchange.AlphaEmail));
-        message.To.Add(MailboxAddress.Parse($"{exchange.Token}@ideas.namesoutofahat.com"));
+        message.To.Add(MailboxAddress.Parse($"{token ?? exchange.Token}@ideas.namesoutofahat.com"));
 
         if (autoSubmitted)
             message.Headers.Add("Auto-Submitted", "auto-replied");
@@ -474,10 +594,12 @@ public class InboundGiftIdeasServiceTests
         string spf = "PASS",
         string dkim = "PASS",
         string dmarc = "PASS",
-        string? recipient = null
+        string? recipient = null,
+        string? token = null,
+        string? source = null
     )
     {
-        var to = recipient ?? $"{exchange.Token}@ideas.namesoutofahat.com";
+        var to = recipient ?? $"{token ?? exchange.Token}@ideas.namesoutofahat.com";
 
         return new InboundRecord
         {
@@ -486,7 +608,7 @@ public class InboundGiftIdeasServiceTests
                 Mail = new SimpleEmailEvent<LambdaReceiptAction>.SimpleEmailMessage
                 {
                     MessageId = "message-id",
-                    Source = exchange.AlphaEmail,
+                    Source = source ?? exchange.AlphaEmail,
                     Destination = [to]
                 },
                 Receipt = new SimpleEmailEvent<LambdaReceiptAction>.SimpleEmailReceipt<LambdaReceiptAction>
@@ -514,6 +636,8 @@ public class InboundGiftIdeasServiceTests
         string OrganizerEmail,
         Guid AlphaId,
         string AlphaEmail,
+        Guid BetaId,
+        Guid GammaId,
         string GammaEmail,
         string Token
     );

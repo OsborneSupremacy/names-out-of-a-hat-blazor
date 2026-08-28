@@ -103,8 +103,7 @@ internal class InboundGiftIdeasService
         if (IsDoNotReplyAddress(recipient))
             return await AnswerDoNotReplyAsync(mail.Source).ConfigureAwait(false);
 
-        var (found, route) = await _giftExchangeProvider
-            .FindGiftIdeaRouteAsync(SecretToken.Hash(ExtractToken(recipient)))
+        var (found, route) = await ResolveRouteAsync(SecretToken.Hash(ExtractToken(recipient)))
             .ConfigureAwait(false);
 
         // An address nobody was issued. Silence rather than a bounce: answering would confirm which
@@ -119,6 +118,36 @@ internal class InboundGiftIdeasService
 
         var email = _parser.Parse(rawMessage);
 
+        var senderOutcome = CheckSender(email, route);
+
+        // The last exit that ends in silence.
+        if (senderOutcome != GiftIdeaSubmissionOutcome.Shared)
+            return senderOutcome;
+
+        // From here the sender is known, so every exit tells them what happened.
+        var contentOutcome = await CheckContentAsync(email, route).ConfigureAwait(false);
+
+        if (contentOutcome != GiftIdeaSubmissionOutcome.Shared)
+            return await ReplyWithRejectionAsync(route, contentOutcome, email).ConfigureAwait(false);
+
+        return await ShareAsync(route, email, mail.MessageId).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Whether this message may be treated as having come from the participant its token belongs
+    /// to.
+    /// </summary>
+    /// <remarks>
+    /// The last of the checks that end in silence, and the one that decides the sender is real.
+    /// Everything after it can safely write back; nothing before it can.
+    /// </remarks>
+    /// <returns>
+    /// <see cref="GiftIdeaSubmissionOutcome.Shared"/> when there is nothing wrong, in the same
+    /// sense <see cref="GiftIdeaContentPolicy.Check"/> uses it: not that anything has been shared
+    /// yet, but that nothing stands in the way.
+    /// </returns>
+    private GiftIdeaSubmissionOutcome CheckSender(InboundEmail email, GiftIdeaRoute route)
+    {
         // The token says which row to write. This says who is allowed to write it. The token
         // travels in an address that gets forwarded and quoted, so on its own it is a weaker claim
         // than it looks, and pairing it with the participant's own address is what makes it hold.
@@ -135,41 +164,115 @@ internal class InboundGiftIdeasService
             return GiftIdeaSubmissionOutcome.DroppedAutomatedMessage;
         }
 
-        // From here the sender is known, so every exit tells them what happened.
+        return GiftIdeaSubmissionOutcome.Shared;
+    }
+
+    /// <summary>
+    /// Whether there is anything about this submission that stops it being passed on.
+    /// </summary>
+    /// <remarks>
+    /// Every outcome here is a Rejected one, which is the property that lets the caller answer all
+    /// of them the same way instead of writing a reply beside each check. Whether the exchange is
+    /// still running sits alongside the content rules rather than above them because from the
+    /// sender's side it is the same kind of answer: a reason, and something to do about it.
+    ///
+    /// Ordered cheapest first, so a message refused on a rule this application can apply itself
+    /// never reaches Comprehend.
+    /// </remarks>
+    /// <returns><see cref="GiftIdeaSubmissionOutcome.Shared"/> when nothing is wrong, as above.</returns>
+    private async Task<GiftIdeaSubmissionOutcome> CheckContentAsync(InboundEmail email, GiftIdeaRoute route)
+    {
         if (!AcceptingStatuses.Contains(route.HatStatus))
-            return await ReplyWithRejectionAsync(
-                    route, GiftIdeaSubmissionOutcome.RejectedExchangeNotAcceptingIdeas, email)
-                .ConfigureAwait(false);
+            return GiftIdeaSubmissionOutcome.RejectedExchangeNotAcceptingIdeas;
 
         var policyOutcome = _contentPolicy.Check(email.Body, route.SenderPickedRecipient.Name);
 
         if (policyOutcome != GiftIdeaSubmissionOutcome.Shared)
-            return await ReplyWithRejectionAsync(route, policyOutcome, email).ConfigureAwait(false);
+            return policyOutcome;
 
         var (isClean, _) = await _contentModerationService
             .ValidateContentAsync(email.Body, "gift ideas")
             .ConfigureAwait(false);
 
-        if (!isClean)
-            return await ReplyWithRejectionAsync(
-                    route, GiftIdeaSubmissionOutcome.RejectedInappropriateContent, email)
-                .ConfigureAwait(false);
+        return isClean
+            ? GiftIdeaSubmissionOutcome.Shared
+            : GiftIdeaSubmissionOutcome.RejectedInappropriateContent;
+    }
 
-        await _giftExchangeProvider
-            .AddGiftIdeaAsync(route.ParticipantId, email.Body, mail.MessageId)
-            .ConfigureAwait(false);
+    /// <summary>
+    /// Stores the submission, sends it on, and tells the sender it went.
+    /// </summary>
+    /// <remarks>
+    /// Stored before either message goes out. If sending fails after this, the submission still
+    /// exists and can be delivered again; the reverse would lose what somebody wrote.
+    /// </remarks>
+    private async Task<GiftIdeaSubmissionOutcome> ShareAsync(
+        GiftIdeaRoute route,
+        InboundEmail email,
+        string inboundMessageId
+    )
+    {
+        await StoreAsync(route, email.Body, inboundMessageId).ConfigureAwait(false);
 
-        // Stored before either message goes out. If sending fails after this, the submission still
-        // exists and can be delivered again; the reverse would lose what somebody wrote.
         await ForwardToGiverAsync(route, email.Body).ConfigureAwait(false);
 
-        await _sender.SendAsync(
-                route.Sender.Email,
-                GiftIdeaEmailCompositionService.ConfirmationSubject,
-                _composer.ComposeConfirmation(email.Body, email.AttachmentNames))
-            .ConfigureAwait(false);
+        await ConfirmToSenderAsync(route, email).ConfigureAwait(false);
 
         return GiftIdeaSubmissionOutcome.Shared;
+    }
+
+    /// <summary>
+    /// Writes the submission to whichever table it belongs in.
+    /// </summary>
+    /// <remarks>
+    /// Two tables, because the two are not the same claim. What somebody says about themselves is
+    /// theirs; what somebody says about another participant is a suggestion made to the one person
+    /// who asked for it, and must never be read back as the subject's own words.
+    /// </remarks>
+    private Task<Guid> StoreAsync(GiftIdeaRoute route, string ideas, string inboundMessageId) =>
+        route.IsContribution switch
+        {
+            true => _giftExchangeProvider.AddContributedGiftIdeaAsync(route.AskId, ideas, inboundMessageId),
+            false => _giftExchangeProvider.AddGiftIdeaAsync(route.ParticipantId, ideas, inboundMessageId)
+        };
+
+    /// <summary>
+    /// Echoes back to the sender exactly what was kept, so a bad guess at where their message ended
+    /// is something they can see and correct.
+    /// </summary>
+    private Task ConfirmToSenderAsync(GiftIdeaRoute route, InboundEmail email)
+    {
+        // Subject and body chosen together rather than one ternary each, so that the two cannot
+        // be made to disagree about which kind of message this is.
+        var (subject, body) = route.IsContribution switch
+        {
+            true => (
+                GiftIdeaEmailCompositionService.ContributionConfirmationSubject(route.Subject.Name),
+                _composer.ComposeContributionConfirmation(route.Subject.Name, email.Body, email.AttachmentNames)),
+            false => (
+                GiftIdeaEmailCompositionService.ConfirmationSubject,
+                _composer.ComposeConfirmation(email.Body, email.AttachmentNames))
+        };
+
+        return _sender.SendAsync(route.Sender.Email, subject, body);
+    }
+
+    /// <summary>
+    /// Finds what an address routes to, whichever of the two kinds of token it carries.
+    /// </summary>
+    /// <remarks>
+    /// The participant's own address is tried first because it is much the commoner of the two, and
+    /// the second lookup only happens for a message that would otherwise have been dropped. The
+    /// token spaces do not overlap — every token is generated the same way and stored in one table
+    /// or the other — so the order is a matter of cost rather than of precedence.
+    /// </remarks>
+    private async Task<(bool found, GiftIdeaRoute route)> ResolveRouteAsync(string tokenHash)
+    {
+        var own = await _giftExchangeProvider.FindGiftIdeaRouteAsync(tokenHash).ConfigureAwait(false);
+
+        return own.found
+            ? own
+            : await _giftExchangeProvider.FindGiftIdeaContributionRouteAsync(tokenHash).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -266,17 +369,27 @@ internal class InboundGiftIdeasService
     private Task ForwardToGiverAsync(GiftIdeaRoute route, string ideas)
     {
         // Nobody has drawn this participant, so there is nobody to forward to. The submission is
-        // already stored, and whoever draws them later can be sent it then.
+        // already stored, and whoever draws them later can be sent it then. A contribution always
+        // has somebody — the asker — so this is only ever reached on the ordinary path.
         if (string.IsNullOrWhiteSpace(route.Giver.Email))
         {
             _logger.LogInformation("Stored a gift ideas submission with nobody yet to forward it to.");
             return Task.CompletedTask;
         }
 
-        return _sender.SendAsync(
-            route.Giver.Email,
-            GiftIdeaEmailCompositionService.ForwardSubject(route.Sender.Name),
-            _composer.ComposeForward(route.Sender.Name, route.HatName, ideas));
+        // Chosen together, and one send rather than two, for the reason given in
+        // ConfirmToSenderAsync: the address is the same either way, and only the words differ.
+        var (subject, body) = route.IsContribution switch
+        {
+            true => (
+                GiftIdeaEmailCompositionService.ContributionForwardSubject(route.Sender.Name, route.Subject.Name),
+                _composer.ComposeContributionForward(route.Sender.Name, route.Subject.Name, route.HatName, ideas)),
+            false => (
+                GiftIdeaEmailCompositionService.ForwardSubject(route.Sender.Name),
+                _composer.ComposeForward(route.Sender.Name, route.HatName, ideas))
+        };
+
+        return _sender.SendAsync(route.Giver.Email, subject, body);
     }
 
     private async Task<Stream> ReadRawMessageAsync(string messageId)

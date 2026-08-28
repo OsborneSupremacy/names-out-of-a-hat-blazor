@@ -636,3 +636,120 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: DROP INDEX idx_gift_idea_token_participant
+
+  - changeSet:
+      id: gift_idea_ask--0001
+      author: ben
+      comment: >
+        One participant asking another for ideas about a third. The original Ask needed no table
+        because gift_idea_token already said everything it meant; asking somebody other than your
+        own pick involves three participants, and a row naming one cannot say which.
+      changes:
+        - sqlFile:
+            path: tables/gift_idea_ask--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE gift_idea_ask
+
+  - changeSet:
+      id: contributed_gift_idea--0001
+      author: ben
+      comment: >
+        Suggestions somebody made about another participant. Kept apart from gift_idea so that a
+        third party's guess can never be forwarded as though the subject had written it themselves.
+      changes:
+        - sqlFile:
+            path: tables/contributed_gift_idea--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE contributed_gift_idea
+
+  - changeSet:
+      id: uq_gift_idea_ask_hash--0001
+      author: ben
+      comment: >
+        The lookup inbound mail makes. It knows the token and nothing else, so this index is the
+        whole route from an address to an ask.
+
+        Unique, like uq_gift_idea_token_hash: the table starts empty, so there is no crowd of
+        backfilled rows for a unique index to reject.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_gift_idea_ask_hash ON gift_idea_ask (token_hash)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_gift_idea_ask_hash
+
+  - changeSet:
+      id: idx_gift_idea_ask_asker--0001
+      author: ben
+      comment: >
+        Cleanup, and the only one of the three columns DeleteHatAsync needs: every ask in a hat was
+        made by a participant of that hat, so filtering on the asker reaches all of them.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_gift_idea_ask_asker ON gift_idea_ask (asker_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_gift_idea_ask_asker
+
+  - changeSet:
+      id: idx_gift_idea_ask_helper--0001
+      author: ben
+      comment: >
+        Removing one participant has to reach asks in all three roles, not just the asker's. An ask
+        whose helper has left the exchange would otherwise keep a live address pointed at somebody
+        who is no longer in it.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_gift_idea_ask_helper ON gift_idea_ask (helper_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_gift_idea_ask_helper
+
+  - changeSet:
+      id: idx_gift_idea_ask_subject--0001
+      author: ben
+      comment: >
+        The third role, for the same cleanup. Ideas about somebody who has left the exchange have
+        nobody to be about.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_gift_idea_ask_subject ON gift_idea_ask (subject_participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_gift_idea_ask_subject
+
+  - changeSet:
+      id: idx_contributed_gift_idea_ask--0001
+      author: ben
+      comment: >
+        Both questions this table is asked start from an ask: the newest suggestion sent in reply to
+        one, and the sweep that removes them when the ask goes. Not unique -- accumulating rows is
+        the point, as it is in gift_idea.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_contributed_gift_idea_ask ON contributed_gift_idea (gift_idea_ask_id, created_at)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_contributed_gift_idea_ask
+
+  - changeSet:
+      id: giftexchange_user--0009
+      author: ben
+      comment: >
+        CRUD on the tables behind asking somebody other than your own pick. Both the application
+        function and the inbound mail function connect as this role, so one grant covers writing an
+        ask when somebody asks and appending a suggestion when one arrives.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0009.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON gift_idea_ask, contributed_gift_idea FROM giftexchange_user

@@ -354,6 +354,30 @@ public class GiftExchangeProvider
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 
+            // Asks, and the suggestions written in reply to them. Filtering on the asker alone is
+            // enough here: all three participants named by an ask belong to the hat that is going,
+            // so nothing is left behind by only looking at one of them.
+            //
+            // The ids are read out before either delete rather than left as a subquery. The
+            // contributions have to be found through the asks, and once the asks are gone there is
+            // nothing left to find them by.
+            var askIds = await context.GiftIdeaAsks
+                .AsNoTracking()
+                .Where(ask => participantIds.Contains(ask.AskerParticipantId))
+                .Select(ask => ask.GiftIdeaAskId)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            await context.ContributedGiftIdeas
+                .Where(contribution => askIds.Contains(contribution.GiftIdeaAskId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.GiftIdeaAsks
+                .Where(ask => askIds.Contains(ask.GiftIdeaAskId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
             await context.Participants
                 .Where(participant => participant.HatId == request.HatId)
                 .ExecuteDeleteAsync()
@@ -536,10 +560,265 @@ public class GiftExchangeProvider
             Sender = new Person { Name = match.SenderName, Email = match.SenderEmail },
             SenderPickedRecipient = new Person { Name = match.PickedName, Email = match.PickedEmail },
             SenderPickedRecipientParticipantId = match.PickedParticipantId,
+            // Their own words about themselves, so the sender is the subject. The contribution
+            // lookup below is the only place these two come apart.
+            Subject = new Person { Name = match.SenderName, Email = match.SenderEmail },
             Giver = giver is null
                 ? Persons.Empty
-                : new Person { Name = giver.Name, Email = giver.Email }
+                : new Person { Name = giver.Name, Email = giver.Email },
+            AskId = Guid.Empty
         });
+    }
+
+    /// <summary>
+    /// Resolves an incoming email to the ask it answers, from the hash of the token it was
+    /// addressed to. The counterpart of <see cref="FindGiftIdeaRouteAsync"/> for the case where
+    /// somebody is writing about another participant rather than themselves.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately a second method against a second table rather than one lookup over both. The
+    /// two token kinds mean genuinely different things — one names a participant, the other names a
+    /// three-way arrangement between participants — and a query that returned either would have to
+    /// leave half its columns empty on each path, which is how the wrong one eventually gets read.
+    /// The caller tries this only after the other has found nothing, and the token spaces do not
+    /// overlap.
+    /// </remarks>
+    /// <param name="tokenHash">
+    /// <see cref="SecretToken.Hash"/> of the token taken from the recipient address, as above.
+    /// </param>
+    public async Task<(bool found, GiftIdeaRoute route)> FindGiftIdeaContributionRouteAsync(string tokenHash)
+    {
+        if (string.IsNullOrWhiteSpace(tokenHash))
+            return (false, GiftIdeaRoutes.Empty);
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        // Every join is inner and every one of them is safe. The asker and the subject are rows the
+        // ask cannot outlive — removing either participant deletes the ask — and the helper's own
+        // pick resolves through the sentinel participant when they have not drawn anybody, exactly
+        // as it does above.
+        var match = await (
+                from ask in context.GiftIdeaAsks.AsNoTracking()
+                where ask.TokenHash == tokenHash
+                join helper in context.Participants on ask.HelperParticipantId equals helper.ParticipantId
+                join helperPerson in context.Persons on helper.PersonId equals helperPerson.PersonId
+                join hat in context.Hats on helper.HatId equals hat.HatId
+                join helperPick in context.Participants
+                    on helper.PickedRecipientParticipantId equals helperPick.ParticipantId
+                join helperPickPerson in context.Persons on helperPick.PersonId equals helperPickPerson.PersonId
+                join subject in context.Participants on ask.SubjectParticipantId equals subject.ParticipantId
+                join subjectPerson in context.Persons on subject.PersonId equals subjectPerson.PersonId
+                join asker in context.Participants on ask.AskerParticipantId equals asker.ParticipantId
+                join askerPerson in context.Persons on asker.PersonId equals askerPerson.PersonId
+                select new
+                {
+                    ask.GiftIdeaAskId,
+                    helper.ParticipantId,
+                    hat.HatId,
+                    HatName = hat.Name,
+                    hat.Status,
+                    SenderName = helperPerson.Name,
+                    SenderEmail = helperPerson.Email,
+                    HelperPickParticipantId = helperPick.ParticipantId,
+                    HelperPickName = helperPickPerson.Name,
+                    HelperPickEmail = helperPickPerson.Email,
+                    SubjectName = subjectPerson.Name,
+                    SubjectEmail = subjectPerson.Email,
+                    AskerName = askerPerson.Name,
+                    AskerEmail = askerPerson.Email
+                })
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (match is null)
+            return (false, GiftIdeaRoutes.Empty);
+
+        return (true, new GiftIdeaRoute
+        {
+            ParticipantId = match.ParticipantId,
+            HatId = match.HatId,
+            HatName = match.HatName,
+            HatStatus = match.Status,
+            Sender = new Person { Name = match.SenderName, Email = match.SenderEmail },
+            // Still the helper's own pick, not the subject. This feeds the check on what the helper
+            // must not leak about themselves, which is a separate question from who they are
+            // writing about.
+            SenderPickedRecipient = new Person { Name = match.HelperPickName, Email = match.HelperPickEmail },
+            SenderPickedRecipientParticipantId = match.HelperPickParticipantId,
+            Subject = new Person { Name = match.SubjectName, Email = match.SubjectEmail },
+            // The asker. They drew the subject, which is why they asked, so this is the same person
+            // the ordinary path finds by looking for whoever holds the subject's name.
+            Giver = new Person { Name = match.AskerName, Email = match.AskerEmail },
+            AskId = match.GiftIdeaAskId
+        });
+    }
+
+    /// <summary>
+    /// Everybody in a hat that a participant could ask for gift ideas: all of them but themselves.
+    /// </summary>
+    /// <remarks>
+    /// Their own pick is included and marked, rather than being handled separately, because from
+    /// the asker's side it is one list of people and one choice. Whether a given name leads to
+    /// "what would you like?" or "what do you think they'd like?" is this application's problem,
+    /// not theirs.
+    ///
+    /// Names only, no addresses: see <see cref="AskCandidate"/>.
+    /// </remarks>
+    public async Task<ImmutableList<AskCandidate>> ListAskCandidatesAsync(Guid hatId, Guid askerParticipantId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var asker = await context.Participants
+            .AsNoTracking()
+            .Where(participant => participant.ParticipantId == askerParticipantId)
+            .Select(participant => new { participant.PickedRecipientParticipantId })
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (asker is null)
+            return [];
+
+        var candidates = await (
+                from participant in context.Participants.AsNoTracking()
+                where participant.HatId == hatId && participant.ParticipantId != askerParticipantId
+                join person in context.Persons on participant.PersonId equals person.PersonId
+                select new { participant.ParticipantId, person.Name })
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        // Sorted here rather than in SQL: the pick comes first whatever it is called, and a
+        // database collation has no way to know that.
+        return
+        [
+            .. candidates
+                .Select(candidate => new AskCandidate
+                {
+                    ParticipantId = candidate.ParticipantId,
+                    Name = candidate.Name,
+                    IsTheirPick = candidate.ParticipantId == asker.PickedRecipientParticipantId
+                })
+                .OrderByDescending(candidate => candidate.IsTheirPick)
+                .ThenBy(candidate => candidate.Name, StringComparer.CurrentCultureIgnoreCase)
+        ];
+    }
+
+    /// <summary>
+    /// Resolves the ids an asker chose to the people behind them, keeping only the ones they were
+    /// entitled to choose.
+    /// </summary>
+    /// <remarks>
+    /// The filtering is the point, not the lookup. The ids arrive in a form submission, and a form
+    /// this application rendered is still something the sender can edit before posting it back, so
+    /// membership of the asker's own hat is checked here rather than assumed from the page having
+    /// offered it. An id belonging to another exchange, or to the asker themselves, is dropped
+    /// silently: there is nothing to report to somebody who has edited a form by hand.
+    ///
+    /// Ordered as <see cref="ListAskCandidatesAsync"/> orders them, so that what the results page
+    /// lists back reads in the same order as the page they chose from.
+    /// </remarks>
+    public async Task<ImmutableList<AskTarget>> FindAskTargetsAsync(
+        Guid hatId,
+        Guid askerParticipantId,
+        ImmutableList<Guid> chosenParticipantIds
+    )
+    {
+        if (chosenParticipantIds.IsEmpty)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var asker = await context.Participants
+            .AsNoTracking()
+            .Where(participant => participant.ParticipantId == askerParticipantId)
+            .Select(participant => new { participant.PickedRecipientParticipantId })
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (asker is null)
+            return [];
+
+        var targets = await (
+                from participant in context.Participants.AsNoTracking()
+                where participant.HatId == hatId
+                      && participant.ParticipantId != askerParticipantId
+                      && chosenParticipantIds.Contains(participant.ParticipantId)
+                join person in context.Persons on participant.PersonId equals person.PersonId
+                select new { participant.ParticipantId, person.Name, person.Email })
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return
+        [
+            .. targets
+                .Select(target => new AskTarget
+                {
+                    ParticipantId = target.ParticipantId,
+                    Person = new Person { Name = target.Name, Email = target.Email },
+                    IsTheirPick = target.ParticipantId == asker.PickedRecipientParticipantId
+                })
+                .OrderByDescending(target => target.IsTheirPick)
+                .ThenBy(target => target.Person.Name, StringComparer.CurrentCultureIgnoreCase)
+        ];
+    }
+
+    /// <summary>
+    /// Records one participant asking another for ideas about a third, and issues the token the
+    /// helper will write back on.
+    /// </summary>
+    /// <remarks>
+    /// Added alongside any earlier ask between the same two people rather than replacing it, for
+    /// the reason <see cref="IssueGiftIdeaTokenAsync"/> gives: the token in an ask already sent
+    /// cannot be reconstructed, so overwriting the row would kill an address sitting in somebody's
+    /// inbox. Every ask anybody has been sent keeps working, and each one carries its own subject.
+    /// </remarks>
+    /// <returns>The token in the clear. Only ever available here.</returns>
+    public async Task<string> IssueGiftIdeaAskAsync(
+        Guid askerParticipantId,
+        Guid helperParticipantId,
+        Guid subjectParticipantId
+    )
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var token = SecretToken.Create();
+
+        context.GiftIdeaAsks.Add(new GiftIdeaAskEntity
+        {
+            GiftIdeaAskId = Guid.CreateVersion7(),
+            AskerParticipantId = askerParticipantId,
+            HelperParticipantId = helperParticipantId,
+            SubjectParticipantId = subjectParticipantId,
+            TokenHash = SecretToken.Hash(token),
+            IssuedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
+
+        return token;
+    }
+
+    /// <summary>
+    /// Appends a suggestion somebody made about another participant. Nothing is overwritten, for
+    /// the reasons contributed_gift_idea--0001.sql gives.
+    /// </summary>
+    public async Task<Guid> AddContributedGiftIdeaAsync(Guid askId, string ideas, string inboundMessageId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var contribution = new ContributedGiftIdeaEntity
+        {
+            ContributedGiftIdeaId = Guid.CreateVersion7(),
+            GiftIdeaAskId = askId,
+            Ideas = ideas,
+            CreatedAt = DateTimeOffset.UtcNow,
+            InboundMessageId = inboundMessageId
+        };
+
+        context.ContributedGiftIdeas.Add(contribution);
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
+
+        return contribution.ContributedGiftIdeaId;
     }
 
     /// <summary>
@@ -837,6 +1116,29 @@ public class GiftExchangeProvider
 
             await context.GiftIdeaTokens
                 .Where(token => token.ParticipantId == participantId)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // Every ask that names them, in any of its three roles. Not only the ones they made:
+            // an ask they were asked to answer would otherwise leave a live address pointed at
+            // somebody who has left the exchange, and an ask about them would leave a helper being
+            // invited to suggest gifts for a person who is no longer in it.
+            var askIds = await context.GiftIdeaAsks
+                .AsNoTracking()
+                .Where(ask => ask.AskerParticipantId == participantId
+                              || ask.HelperParticipantId == participantId
+                              || ask.SubjectParticipantId == participantId)
+                .Select(ask => ask.GiftIdeaAskId)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            await context.ContributedGiftIdeas
+                .Where(contribution => askIds.Contains(contribution.GiftIdeaAskId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            await context.GiftIdeaAsks
+                .Where(ask => askIds.Contains(ask.GiftIdeaAskId))
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 

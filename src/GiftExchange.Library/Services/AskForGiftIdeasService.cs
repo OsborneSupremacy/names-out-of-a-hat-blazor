@@ -1,9 +1,27 @@
+using System.Text;
+using System.Web;
+
 namespace GiftExchange.Library.Services;
 
 /// <summary>
-/// The Ask: one participant asking the person they drew for gift ideas, without being named.
+/// The Ask: one participant asking for gift ideas about the person whose name they drew, without
+/// being named.
 /// </summary>
 /// <remarks>
+/// Who they ask is up to them. Asking the person themselves is the obvious route and stays the
+/// default, but it is not always the useful one — somebody who does not want to tip off their own
+/// mother, however anonymous the email claims to be, can ask her husband and her daughter-in-law
+/// instead, and get answers from people who will not spend the next month wondering. So the same
+/// button now offers the whole exchange, and any number of them can be asked at once.
+///
+/// What that costs is a weaker kind of anonymity, and it cannot be engineered away. Being asked
+/// what you would like reveals nothing: everybody is drawn by exactly one person, so the recipient
+/// already knew somebody held their name. Being asked what somebody else would like reveals that
+/// the asker drew that somebody — and the reader knows it was not them and not the subject, so in a
+/// small exchange the remaining field is very short. The page says so before anybody chooses, which
+/// is the only honest place to put it: the asker is the one person who knows whether the people
+/// they have in mind will bother working it out.
+///
 /// Two endpoints for one action, and the split is the security design rather than an accident of
 /// REST. The button lives in an email, so following it is a GET — and mail security scanners,
 /// Microsoft Defender Safe Links among them, fetch links in delivered mail to check them. A GET
@@ -11,8 +29,8 @@ namespace GiftExchange.Library.Services;
 /// throttle window spent, and somebody mailed on behalf of a person who had not yet read the
 /// invitation, let alone clicked anything.
 ///
-/// So the GET only renders a page asking whether they meant it, which a scanner is welcome to
-/// fetch as often as it likes, and the POST behind the button on that page does the work.
+/// So the GET only renders the list of people they could ask, which a scanner is welcome to fetch
+/// as often as it likes, and the POST behind the button on that page does the work.
 /// </remarks>
 [UsedImplicitly]
 internal class AskForGiftIdeasService : IApiGatewayHandler
@@ -24,6 +42,9 @@ internal class AskForGiftIdeasService : IApiGatewayHandler
     /// on the receiving end cannot tell repeated asks from nagging — they do not know how many
     /// people are asking, only how often they are being asked. Short enough that somebody who
     /// genuinely got no answer can try again within the life of an exchange.
+    ///
+    /// Held per pair, so choosing five people costs five separate windows rather than one. See the
+    /// remarks on <see cref="IReplyThrottleProvider.TryReserveAskSlotAsync"/>.
     /// </summary>
     private static readonly TimeSpan AskWindow = TimeSpan.FromDays(7);
 
@@ -76,60 +97,220 @@ internal class AskForGiftIdeasService : IApiGatewayHandler
             .FindGiftIdeaRouteAsync(SecretToken.Hash(token))
             .ConfigureAwait(false);
 
-        // Deliberately the same page for an unknown token and a finished exchange. Telling the
-        // difference apart would let somebody holding a guessed token learn whether it named a real
-        // participant.
-        if (!found || !AskableStatuses.Contains(route.HatStatus))
-            return Page(_pageComposer.ComposeUnavailable());
-
-        if (route.SenderPickedRecipientParticipantId == Guid.Empty
+        // Four dead ends, one page, and the sameness is the point rather than a shortcut. Telling
+        // an unknown token apart from a finished exchange would let somebody holding a guessed one
+        // learn whether it named a real participant, and the pair below say there is no pick —
+        // which leaves nothing to ask about, of the pick or of anybody else.
+        if (!found
+            || !AskableStatuses.Contains(route.HatStatus)
+            || route.SenderPickedRecipientParticipantId == Guid.Empty
             || string.IsNullOrWhiteSpace(route.SenderPickedRecipient.Email))
-            return Page(_pageComposer.ComposeUnavailable());
+            return Page(AskPageComposer.ComposeUnavailable());
 
-        return request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase)
-            ? await SendAskAsync(route).ConfigureAwait(false)
-            : Page(_pageComposer.ComposeConfirm(route.SenderPickedRecipient.Name, token));
-    }
-
-    private async Task<APIGatewayProxyResponse> SendAskAsync(GiftIdeaRoute route)
-    {
-        var (reserved, previouslyAskedAt) = await _replyThrottleProvider
-            .TryReserveAskSlotAsync(route.ParticipantId, AskWindow)
+        var candidates = await _giftExchangeProvider
+            .ListAskCandidatesAsync(route.HatId, route.ParticipantId)
             .ConfigureAwait(false);
 
-        // Refused asks are answered by email rather than only on the page, because the likeliest
-        // reader is somebody who does not remember asking and needs the date to make sense of it —
-        // and because the page is gone the moment they close the tab.
+        // An exchange of one. Nothing sends this state, but a page offering an empty list with a
+        // send button is worse than saying the link is not available.
+        if (candidates.IsEmpty)
+            return Page(AskPageComposer.ComposeUnavailable());
+
+        return request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase)
+            ? await SendAsksAsync(request, route, token, candidates).ConfigureAwait(false)
+            : Page(_pageComposer.ComposeChoose(
+                route.SenderPickedRecipient.Name, candidates, token, string.Empty));
+    }
+
+    private async Task<APIGatewayProxyResponse> SendAsksAsync(
+        APIGatewayProxyRequest request,
+        GiftIdeaRoute route,
+        string token,
+        ImmutableList<AskCandidate> candidates
+    )
+    {
+        var subjectName = route.SenderPickedRecipient.Name;
+
+        // Resolved against the database rather than against the list just rendered. The form came
+        // back from a browser, and what a browser sends is whatever it was told to send.
+        var targets = await _giftExchangeProvider
+            .FindAskTargetsAsync(route.HatId, route.ParticipantId, ParseChoices(request))
+            .ConfigureAwait(false);
+
+        // Back to the same page rather than on to a results page with nothing on it. Ticking
+        // nobody is a slip, and the useful response to a slip is the form again.
+        if (targets.IsEmpty)
+            return Page(_pageComposer.ComposeChoose(
+                subjectName, candidates, token, "Choose at least one person to ask."));
+
+        var attempts = ImmutableList.CreateBuilder<AskAttempt>();
+
+        foreach (var target in targets)
+            attempts.Add(await AskOneAsync(route, target).ConfigureAwait(false));
+
+        var outcomes = attempts.ToImmutable();
+
+        // Only when something did not happen. Everything that went through is already on the page
+        // in front of them, and a second copy by email of a round that worked is noise; a round
+        // that fell short is worth having in writing, because the page is gone the moment they
+        // close the tab.
+        if (outcomes.Any(attempt => !attempt.Sent))
+            await _sender.SendAsync(
+                    route.Sender.Email,
+                    GiftIdeaEmailCompositionService.AskPartiallySentSubject,
+                    _composer.ComposeAskSummary(subjectName, outcomes))
+                .ConfigureAwait(false);
+
+        return Page(_pageComposer.ComposeAskResults(subjectName, outcomes));
+    }
+
+    /// <summary>
+    /// Asks one person, and says what became of it.
+    /// </summary>
+    /// <remarks>
+    /// The throttle is claimed before anything else happens, so a refusal costs nothing — no email
+    /// composed, and no token issued, which matters because a token issued for an ask that was
+    /// never sent would be a live address nobody had been given.
+    /// </remarks>
+    private async Task<AskAttempt> AskOneAsync(GiftIdeaRoute route, AskTarget target)
+    {
+        var (reserved, previouslyAskedAt) = await _replyThrottleProvider
+            .TryReserveAskSlotAsync(route.ParticipantId, target.ParticipantId, AskWindow)
+            .ConfigureAwait(false);
+
         if (!reserved)
         {
             _logger.LogInformation("Suppressed an Ask inside the throttle window.");
 
-            await _sender.SendAsync(
-                    route.Sender.Email,
-                    GiftIdeaEmailCompositionService.AskThrottledSubject,
-                    _composer.ComposeAskThrottled(route.SenderPickedRecipient.Name, previouslyAskedAt))
-                .ConfigureAwait(false);
-
-            return Page(_pageComposer.ComposeAlreadyAsked(route.SenderPickedRecipient.Name, previouslyAskedAt));
+            return Refused(target, previouslyAskedAt);
         }
 
-        // A token of their own, issued alongside any they already hold rather than over them.
-        // Theirs cannot be reconstructed — only its hash was kept — so this is the only way to put
-        // a working SHARE GIFT IDEAS address into an email they did not originally receive.
+        await SendAskAsync(route, target).ConfigureAwait(false);
+
+        return Sent(target);
+    }
+
+    /// <summary>
+    /// Sends whichever of the two asks this person is due.
+    /// </summary>
+    /// <remarks>
+    /// Both name nobody. Asking somebody what they would like gives nothing away at all; asking
+    /// somebody what a third person would like gives away that the asker drew that third person,
+    /// which is the trade the page has already put to them.
+    /// </remarks>
+    private Task SendAskAsync(GiftIdeaRoute route, AskTarget target) =>
+        target.IsTheirPick switch
+        {
+            true => AskThemWhatTheyWouldLikeAsync(route, target),
+            false => AskThemAboutThePickAsync(route, target)
+        };
+
+    /// <summary>
+    /// Asks the person whose name the asker drew what they would like, for themselves.
+    /// </summary>
+    /// <remarks>
+    /// A token of their own, issued alongside any they already hold rather than over them. Theirs
+    /// cannot be reconstructed — only its hash was kept — so this is the only way to put a working
+    /// SHARE GIFT IDEAS address into an email they did not originally receive.
+    /// </remarks>
+    private async Task AskThemWhatTheyWouldLikeAsync(GiftIdeaRoute route, AskTarget target)
+    {
         var giftIdeasToken = await _giftExchangeProvider
-            .IssueGiftIdeaTokenAsync(route.SenderPickedRecipientParticipantId)
+            .IssueGiftIdeaTokenAsync(target.ParticipantId)
             .ConfigureAwait(false);
 
-        // Names nobody. Everybody is drawn by exactly one person, so being asked reveals nothing
-        // the recipient did not already know — but naming the asker would reveal the one thing
-        // this application exists to keep quiet.
         await _sender.SendAsync(
-                route.SenderPickedRecipient.Email,
+                target.Person.Email,
                 GiftIdeaEmailCompositionService.AskSubject(route.HatName),
                 _composer.ComposeAsk(route.HatName, giftIdeasToken))
             .ConfigureAwait(false);
+    }
 
-        return Page(_pageComposer.ComposeSent(route.SenderPickedRecipient.Name));
+    /// <summary>
+    /// Asks somebody else in the exchange what they think the asker's pick would like.
+    /// </summary>
+    /// <remarks>
+    /// The subject is written into the ask rather than followed back through the asker's pick
+    /// later, so that the name in this email and the name the reply is filed under stay the same
+    /// even if the organizer edits the draw afterwards.
+    /// </remarks>
+    private async Task AskThemAboutThePickAsync(GiftIdeaRoute route, AskTarget target)
+    {
+        var askToken = await _giftExchangeProvider
+            .IssueGiftIdeaAskAsync(
+                route.ParticipantId,
+                target.ParticipantId,
+                route.SenderPickedRecipientParticipantId)
+            .ConfigureAwait(false);
+
+        await _sender.SendAsync(
+                target.Person.Email,
+                GiftIdeaEmailCompositionService.ContributionAskSubject(route.SenderPickedRecipient.Name),
+                _composer.ComposeContributionAsk(
+                    route.HatName, route.SenderPickedRecipient.Name, askToken))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>An ask that went out.</summary>
+    /// <remarks>
+    /// The date is <see cref="DateTimeOffset.MinValue"/> because it means "no earlier ask stood in
+    /// the way", which is a different fact from a date nobody recorded — and the callers reporting
+    /// this never read the date off a sent attempt anyway.
+    /// </remarks>
+    private static AskAttempt Sent(AskTarget target) =>
+        new()
+        {
+            Name = target.Person.Name,
+            Sent = true,
+            PreviouslyAskedAt = DateTimeOffset.MinValue
+        };
+
+    /// <summary>An ask the throttle refused, with the date it is refusing on behalf of.</summary>
+    private static AskAttempt Refused(AskTarget target, DateTimeOffset previouslyAskedAt) =>
+        new()
+        {
+            Name = target.Person.Name,
+            Sent = false,
+            PreviouslyAskedAt = previouslyAskedAt
+        };
+
+    /// <summary>
+    /// The participant ids ticked on the form.
+    /// </summary>
+    /// <remarks>
+    /// Tolerant throughout: an unreadable body, an unparseable id or a duplicate produces a shorter
+    /// list rather than an error. Nothing here decides anything on its own — every id survives only
+    /// if the database agrees it belongs to this asker's exchange — so the useful thing to do with
+    /// junk is to drop it and let the emptiness be reported as "choose somebody".
+    /// </remarks>
+    private static ImmutableList<Guid> ParseChoices(APIGatewayProxyRequest request)
+    {
+        var body = request.Body ?? string.Empty;
+
+        if (request.IsBase64Encoded && body.Length > 0)
+        {
+            try
+            {
+                body = Encoding.UTF8.GetString(Convert.FromBase64String(body));
+            }
+            catch (FormatException)
+            {
+                return [];
+            }
+        }
+
+        var chosen = HttpUtility.ParseQueryString(body).GetValues(AskPageComposer.ChoiceField);
+
+        if (chosen is null)
+            return [];
+
+        return
+        [
+            .. chosen
+                .Select(value => Guid.TryParse(value, out var participantId) ? participantId : Guid.Empty)
+                .Where(participantId => participantId != Guid.Empty)
+                .Distinct()
+        ];
     }
 
     /// <summary>

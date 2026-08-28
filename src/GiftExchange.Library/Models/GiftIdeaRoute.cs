@@ -6,9 +6,16 @@ namespace GiftExchange.Library.Models;
 ///
 /// One lookup rather than several because the handler needs all of it or none of it: who is allowed
 /// to have sent this, whether the exchange is still taking submissions, and where the text goes.
+///
+/// Covers both kinds of submission. A participant writing about themselves and a participant
+/// answering somebody's request for ideas about a third person arrive down the same pipe and face
+/// the same rules, and every check between authentication and moderation is identical for the two.
+/// What differs is <see cref="Subject"/> — whether the ideas are the sender's own — and
+/// <see cref="AskId"/> says which case this is.
 /// </summary>
 public record GiftIdeaRoute
 {
+    /// <summary>The sender's participant row, within <see cref="HatId"/>.</summary>
     public required Guid ParticipantId { get; init; }
 
     public required Guid HatId { get; init; }
@@ -30,8 +37,13 @@ public record GiftIdeaRoute
     /// Serves two unrelated purposes. Their name is here to be looked for: if it appears in
     /// submitted text, the sender has quoted their own invitation into the message, and forwarding
     /// that would tell <see cref="Giver"/> who the sender drew — the one secret this application
-    /// keeps. Their address is where an Ask goes, since the sender asking for gift ideas is asking
-    /// this person for them.
+    /// keeps. And their row is where an Ask goes by default, since the likeliest person to ask
+    /// about a pick is the pick themselves.
+    ///
+    /// This stays the sender's own pick even on a contribution, where the ideas are about somebody
+    /// else entirely. The check it feeds is about what the sender must not leak, not about who the
+    /// message concerns — and the two can never collide, because the subject of a contribution was
+    /// drawn by the asker, so no helper can have drawn them.
     /// </summary>
     public required Person SenderPickedRecipient { get; init; }
 
@@ -42,11 +54,33 @@ public record GiftIdeaRoute
     public required Guid SenderPickedRecipientParticipantId { get; init; }
 
     /// <summary>
-    /// Whoever drew the sender, and so the single person these ideas are for. Telling them that the
-    /// sender wrote something reveals nothing: they already know whose name they hold. The reverse
-    /// is never sent — the sender is not told who this is.
+    /// The person the ideas are about. The sender themselves on an ordinary submission; on a
+    /// contribution, the participant whose name the asker drew.
+    /// </summary>
+    public required Person Subject { get; init; }
+
+    /// <summary>
+    /// Whoever drew <see cref="Subject"/>, and so the single person these ideas are for.
+    ///
+    /// On an ordinary submission that is whoever drew the sender, and telling them the sender wrote
+    /// something reveals nothing — they already know whose name they hold. On a contribution it is
+    /// the participant who asked, which is the same person by a shorter route: they asked because
+    /// they drew the subject. The reverse is never sent in either direction.
     /// </summary>
     public required Person Giver { get; init; }
+
+    /// <summary>
+    /// The ask this submission answers, or the all-zero id when the sender is writing about
+    /// themselves and nobody asked them through this route.
+    /// </summary>
+    public required Guid AskId { get; init; }
+
+    /// <summary>
+    /// Whether this is somebody's suggestion about another participant rather than their own words
+    /// about themselves. The two are stored in different tables and described differently in every
+    /// message, so nothing downstream should infer it by comparing people.
+    /// </summary>
+    public bool IsContribution => AskId != Guid.Empty;
 }
 
 internal static class GiftIdeaRoutes
@@ -60,6 +94,8 @@ internal static class GiftIdeaRoutes
         Sender = Persons.Empty,
         SenderPickedRecipient = Persons.Empty,
         SenderPickedRecipientParticipantId = Guid.Empty,
-        Giver = Persons.Empty
+        Subject = Persons.Empty,
+        Giver = Persons.Empty,
+        AskId = Guid.Empty
     };
 }
