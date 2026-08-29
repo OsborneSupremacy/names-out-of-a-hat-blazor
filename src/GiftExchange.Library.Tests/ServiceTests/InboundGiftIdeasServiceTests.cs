@@ -251,6 +251,73 @@ public class InboundGiftIdeasServiceTests
     }
 
     [Fact]
+    public async Task ProcessRecordAsync_GivenARefusal_TellsThemWhereToSendTheNextOneRatherThanToReply()
+    {
+        // arrange: a refusal used to end with "reply to this email", which was a dead end. The
+        // refusal comes from the no-reply address, so a reply reaches the mailbox that answers only
+        // that nobody read it — and that answer is throttled to one a day, so a second attempt gets
+        // nothing at all.
+        var exchange = await SeedAsync();
+        GivenTheMessageIs(exchange, "Ideas below.\nThe person picked for you is: Beta");
+
+        // act
+        await _sut.ProcessRecordAsync(RecordFor(exchange));
+
+        // assert
+        var refusal = SentMessages().Single();
+
+        refusal.From.Mailboxes.Single().Address.Should().Be(DoNotReply);
+
+        refusal.HtmlBody.Should()
+            .Contain($"{exchange.Token}@ideas.namesoutofahat.com", "the sender needs the address to write to")
+            .And.Contain("SHARE GIFT IDEAS")
+            .And.NotContain("Reply to this email");
+    }
+
+    [Fact]
+    public async Task ProcessRecordAsync_GivenARefusalOnAContribution_PointsAtTheAskAddress()
+    {
+        // arrange: Gamma was asked about Beta, and quotes their own invitation back at us. The way
+        // back has to be the ask address they wrote to, not the one for their own wishes.
+        var exchange = await SeedAsync();
+        var ask = await GammaAskedAboutBetaAsync(exchange);
+
+        GivenTheMessageIs(
+            exchange,
+            "The person picked for you is: Alpha",
+            exchange.GammaEmail,
+            token: ask.Token);
+
+        // act
+        var outcome = await _sut.ProcessRecordAsync(
+            RecordFor(exchange, token: ask.Token, source: exchange.GammaEmail));
+
+        // assert
+        outcome.Should().Be(GiftIdeaSubmissionOutcome.RejectedWouldRevealTheirPick);
+
+        var refusal = SentMessages().Single();
+
+        refusal.To.Mailboxes.Single().Address.Should().Be(exchange.GammaEmail);
+        refusal.HtmlBody.Should().Contain($"{ask.Token}@ideas.namesoutofahat.com").And.Contain("BETA");
+    }
+
+    [Fact]
+    public async Task ProcessRecordAsync_GivenAClosedExchange_OffersNoWayToTryAgain()
+    {
+        // arrange: the one refusal nothing can be done about. A button inviting another message
+        // would promise something that cannot happen, since the next one meets the same refusal.
+        var exchange = await SeedAsync();
+        await _provider.UpdateHatStatusAsync(exchange.OrganizerEmail, exchange.HatId, HatStatus.Closed);
+        GivenTheMessageIs(exchange, "A scarf.");
+
+        // act
+        await _sut.ProcessRecordAsync(RecordFor(exchange));
+
+        // assert
+        SentMessages().Single().HtmlBody.Should().NotContain("SHARE GIFT IDEAS");
+    }
+
+    [Fact]
     public async Task ProcessRecordAsync_GivenModerationRefusesIt_DoesNotStoreOrForward()
     {
         // arrange

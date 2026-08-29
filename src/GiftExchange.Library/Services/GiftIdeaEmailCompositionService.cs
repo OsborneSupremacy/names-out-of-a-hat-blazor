@@ -194,13 +194,43 @@ public class GiftIdeaEmailCompositionService
     /// Every branch says what to do next, because a reply that only says no leaves somebody with a
     /// gift exchange they cannot take part in and no idea why.
     /// </remarks>
-    public string ComposeRejection(GiftIdeaSubmissionOutcome outcome, ImmutableList<string> droppedAttachments) =>
+    public string ComposeRejection(ComposeRejectionRequest request) =>
         Wrap([
             "We couldn't share what you sent.",
-            ExplainRejection(outcome),
-            ..DroppedAttachmentsNote(droppedAttachments),
-            "Reply to this email with a new message and we'll try again."
+            ExplainRejection(request.Outcome),
+            ..DroppedAttachmentsNote(request.DroppedAttachments),
+            ..TryAgainNote(request)
         ]);
+
+    /// <summary>
+    /// The way back after a refusal: the same button the invitation carried, addressed to the same
+    /// place the refused message was sent.
+    /// </summary>
+    /// <remarks>
+    /// This used to say "reply to this email", which was wrong twice over. Everything here goes out
+    /// from the no-reply address, so a reply landed on the mailbox that answers only that nobody
+    /// read it — and that answer is throttled to one a day, so somebody who tried twice got silence
+    /// the second time. It was also the worst available advice for the commonest refusal: a message
+    /// refused for naming the sender's own pick had quoted their invitation, and a reply would have
+    /// quoted something again. A mailto: opens an empty message, so there is nothing to quote.
+    ///
+    /// Says outright not to reply, rather than leaving the button to imply it. The reply is the
+    /// obvious move and the button is one more thing to notice, so the sentence has to beat the
+    /// habit.
+    /// </remarks>
+    private static IEnumerable<string> TryAgainNote(ComposeRejectionRequest request)
+    {
+        // Nothing to offer somebody whose exchange has finished. The next message would meet the
+        // same refusal, and a button inviting one would be promising something that cannot happen.
+        if (request.Outcome == GiftIdeaSubmissionOutcome.RejectedExchangeNotAcceptingIdeas)
+            yield break;
+
+        yield return "Please send a new email rather than replying to this one &mdash; replies reach an address nobody reads. The button below opens an empty message addressed to the right place.";
+
+        yield return request.IsContribution
+            ? BuildShareIdeasAboutBlock(request.SubjectName, request.GiftIdeasToken)
+            : BuildShareGiftIdeasBlock(request.GiftIdeasToken);
+    }
 
     /// <summary>
     /// Carries one participant's ideas to the person who drew them.

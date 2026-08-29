@@ -103,8 +103,11 @@ internal class InboundGiftIdeasService
         if (IsDoNotReplyAddress(recipient))
             return await AnswerDoNotReplyAsync(mail.Source).ConfigureAwait(false);
 
-        var (found, route) = await ResolveRouteAsync(SecretToken.Hash(ExtractToken(recipient)))
-            .ConfigureAwait(false);
+        // Kept rather than only hashed: a refusal has to tell the sender where to send the next
+        // attempt, and this address is that place.
+        var token = ExtractToken(recipient);
+
+        var (found, route) = await ResolveRouteAsync(SecretToken.Hash(token)).ConfigureAwait(false);
 
         // An address nobody was issued. Silence rather than a bounce: answering would confirm which
         // addresses exist, and would do it to whoever the message claims to be from.
@@ -128,7 +131,7 @@ internal class InboundGiftIdeasService
         var contentOutcome = await CheckContentAsync(email, route).ConfigureAwait(false);
 
         if (contentOutcome != GiftIdeaSubmissionOutcome.Shared)
-            return await ReplyWithRejectionAsync(route, contentOutcome, email).ConfigureAwait(false);
+            return await ReplyWithRejectionAsync(route, contentOutcome, email, token).ConfigureAwait(false);
 
         return await ShareAsync(route, email, mail.MessageId).ConfigureAwait(false);
     }
@@ -349,10 +352,19 @@ internal class InboundGiftIdeasService
         return GiftIdeaSubmissionOutcome.RedirectedFromDoNotReply;
     }
 
+    /// <summary>
+    /// Tells the sender why their message could not be used, and how to send another.
+    /// </summary>
+    /// <remarks>
+    /// The token goes with it. Only the address the message arrived at can say where the next
+    /// attempt should go, and that address is not recoverable from the route — what is stored is a
+    /// hash of the token, which is the point of storing a hash.
+    /// </remarks>
     private async Task<GiftIdeaSubmissionOutcome> ReplyWithRejectionAsync(
         GiftIdeaRoute route,
         GiftIdeaSubmissionOutcome outcome,
-        InboundEmail email
+        InboundEmail email,
+        string giftIdeasToken
     )
     {
         _logger.LogInformation("Refused a gift ideas submission: {Outcome}", outcome);
@@ -360,7 +372,14 @@ internal class InboundGiftIdeasService
         await _sender.SendAsync(
                 route.Sender.Email,
                 GiftIdeaEmailCompositionService.CouldNotShareSubject,
-                _composer.ComposeRejection(outcome, email.AttachmentNames))
+                _composer.ComposeRejection(new ComposeRejectionRequest
+                {
+                    Outcome = outcome,
+                    DroppedAttachments = email.AttachmentNames,
+                    GiftIdeasToken = giftIdeasToken,
+                    IsContribution = route.IsContribution,
+                    SubjectName = route.Subject.Name
+                }))
             .ConfigureAwait(false);
 
         return outcome;
