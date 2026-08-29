@@ -60,10 +60,12 @@
   color: #b3261e;
 }
 
-/* Small and quiet. Correcting an address is a repair, not something the page should invite. */
-.fix-address-button {
-  align-self: flex-start;
-  margin-top: 0.25rem;
+/* Small and quiet. Correcting an address is a repair, not something the page should invite.
+ *
+ * No align-self: the participant cell is a flex column that already starts its children at the
+ * left. It used to need one, and the rule did nothing, because that cell was a plain block and
+ * this sat inline against the Remove button rather than under it. */
+.edit-address-button {
   padding: 0.125rem 0;
   background: none;
   border: none;
@@ -74,6 +76,6 @@
   cursor: pointer;
 }
 
-.fix-address-button:hover {
+.edit-address-button:hover {
   color: inherit;
 }

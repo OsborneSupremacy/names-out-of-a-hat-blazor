@@ -758,10 +758,10 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                   */}
                                 <button
                                   type="button"
-                                  className="fix-address-button"
+                                  className="edit-address-button"
                                   onClick={() => handleOpenAddressModal(participant)}
                                 >
-                                  Fix address
+                                  Edit Address
                                 </button>
                               </div>
                             </td>
@@ -833,10 +833,10 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                   {isEditingThis && (
                                     <button
                                       type="button"
-                                      className="fix-address-button"
+                                      className="edit-address-button"
                                       onClick={() => handleOpenAddressModal(participant)}
                                     >
-                                      Fix address
+                                      Edit Address
                                     </button>
                                   )}
                                   {isEditingThis && !isOrganizer && (

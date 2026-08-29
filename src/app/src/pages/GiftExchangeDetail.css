@@ -525,6 +525,17 @@
   letter-spacing: 0.025em;
 }
 
+/* A column, so the two controls that appear while a row is being edited land under the address
+ * rather than beside it. They are a link and a button, both inline by default, so without this
+ * they shared a line and the wider one sat on top of the other. align-items keeps them at their
+ * own width instead of stretching to the cell. */
+.participant-name-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
 .participant-email {
   display: block;
   color: #6b7280;
@@ -840,10 +851,12 @@
   background-color: #991b1b;
 }
 
+/* Smaller than .danger-button's page-level sizing. This one lives inside a table row next to the
+ * name it acts on, and at full size it read as the main thing on offer there. */
 .remove-participant-button {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  padding: 0.5rem 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
 }
 
 @media (prefers-color-scheme: dark) {

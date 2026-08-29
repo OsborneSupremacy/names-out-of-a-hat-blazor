@@ -55,7 +55,7 @@ export function EditAddressModal({
     <div className="modal-overlay" onClick={isSaving ? undefined : onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Fix {participantName}&rsquo;s address</h2>
+          <h2>Edit {participantName}&rsquo;s address</h2>
         </div>
 
         <div className="edit-address-body">
