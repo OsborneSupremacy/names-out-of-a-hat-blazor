@@ -13,11 +13,14 @@ import {
   sendInvitations,
   closeHat,
   copyHat,
+  editParticipantAddress,
   Hat,
+  Participant,
   PreviewInvitationsResponse,
 } from '../api'
 import { HAT_STATUS_STEPS, formatHatStatus } from '../hatStatus'
 import { deliveryTone, formatDeliveryStatus, showsDeliveryDetail } from '../deliveryStatus'
+import { EditAddressModal, ResendKind } from '../components/EditAddressModal'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -56,6 +59,12 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [showSendConfirmation, setShowSendConfirmation] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
+  const [editingAddressFor, setEditingAddressFor] = useState<Participant | null>(null)
+  const [savingAddress, setSavingAddress] = useState(false)
+  // Kept apart from the page-level `error`, which replaces the whole view when it is set. A failed
+  // address change should leave the organizer looking at their exchange with the dialog still open.
+  const [addressError, setAddressError] = useState('')
+  const [addressNotice, setAddressNotice] = useState('')
 
   useEffect(() => {
     async function loadHat() {
@@ -172,6 +181,62 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       setError(err instanceof Error ? err.message : 'Failed to remove participant')
     } finally {
       setRemovingParticipant(null)
+    }
+  }
+
+  /**
+   * Which email a correction will resend, given where the exchange has got to.
+   *
+   * Mirrors EditParticipantAddressService.MessageTypeFor on the server. The server is what decides;
+   * this is only so the dialog can say what is about to happen before it happens.
+   */
+  const resendKindFor = (status: string): ResendKind => {
+    if (status === 'INVITATIONS_SENT' || status === 'READY_TO_CLOSE') return 'invitation'
+    if (status === 'CLOSED') return 'announcement'
+    return 'none'
+  }
+
+  const handleOpenAddressModal = (participant: Participant) => {
+    setAddressError('')
+    setAddressNotice('')
+    setEditingAddressFor(participant)
+  }
+
+  const handleSaveAddress = async (newEmail: string) => {
+    if (!hatId || !editingAddressFor) return
+
+    const { name } = editingAddressFor.person
+
+    setSavingAddress(true)
+    setAddressError('')
+
+    try {
+      const result = await editParticipantAddress({
+        organizerEmail: userEmail,
+        hatId,
+        currentEmail: editingAddressFor.person.email,
+        newEmail,
+      })
+
+      setEditingAddressFor(null)
+
+      // Says what actually happened rather than a generic "saved". Mail going out on the
+      // organizer's behalf should never be something they have to infer.
+      setAddressNotice(
+        result.emailResent
+          ? `${name} is now at ${newEmail}, and ${
+              result.messageType === 'COMPLETION' ? 'the announcement has' : 'their invitation has'
+            } been resent there.`
+          : `${name} is now at ${newEmail}. Nothing has been sent for this gift exchange yet, so nobody was emailed.`
+      )
+
+      const updatedHat = await getHat(userEmail, hatId)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error updating participant address:', err)
+      setAddressError(err instanceof Error ? err.message : 'Failed to update the address')
+    } finally {
+      setSavingAddress(false)
     }
   }
 
@@ -655,6 +720,19 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     </button>
                   )}
                 </div>
+                {addressNotice && (
+                  <div className="address-notice">
+                    <span>{addressNotice}</span>
+                    <button
+                      type="button"
+                      className="address-notice-dismiss"
+                      onClick={() => setAddressNotice('')}
+                      aria-label="Dismiss"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
                 {hat.participants.length > 0 ? (
                   (hat.status === 'CLOSED' || hat.status === 'INVITATIONS_SENT' || hat.status === 'READY_TO_CLOSE') ? (
                     <table className="participants-table">
@@ -672,6 +750,19 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                               <div className="participant-name-cell">
                                 <strong>{participant.person.name}</strong>
                                 <span className="participant-email">{participant.person.email}</span>
+                                {/*
+                                  * Only here, on the table shown once invitations have gone out.
+                                  * This is where a wrong address is discovered — the delivery
+                                  * column is right beside it — and where removing and re-adding
+                                  * somebody would break the draw instead of fixing anything.
+                                  */}
+                                <button
+                                  type="button"
+                                  className="fix-address-button"
+                                  onClick={() => handleOpenAddressModal(participant)}
+                                >
+                                  Fix address
+                                </button>
                               </div>
                             </td>
                             <td>
@@ -738,6 +829,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                   <span className="participant-email">{participant.person.email}</span>
                                   {canEditEligibility && !isEditingThis && (
                                     <span className="row-edit-indicator">Click row to edit</span>
+                                  )}
+                                  {isEditingThis && (
+                                    <button
+                                      type="button"
+                                      className="fix-address-button"
+                                      onClick={() => handleOpenAddressModal(participant)}
+                                    >
+                                      Fix address
+                                    </button>
                                   )}
                                   {isEditingThis && !isOrganizer && (
                                     <button
@@ -851,6 +951,18 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       </main>
 
       <Footer />
+
+      {editingAddressFor && hat && (
+        <EditAddressModal
+          participantName={editingAddressFor.person.name}
+          currentEmail={editingAddressFor.person.email}
+          resendKind={resendKindFor(hat.status)}
+          isSaving={savingAddress}
+          error={addressError}
+          onCancel={() => setEditingAddressFor(null)}
+          onConfirm={handleSaveAddress}
+        />
+      )}
 
       {showAddParticipantModal && (
         <AddParticipantModal

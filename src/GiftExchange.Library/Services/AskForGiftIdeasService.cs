@@ -174,15 +174,20 @@ internal class AskForGiftIdeasService : IApiGatewayHandler
     /// </remarks>
     private async Task<AskAttempt> AskOneAsync(GiftIdeaRoute route, AskTarget target)
     {
-        var (reserved, previouslyAskedAt) = await _replyThrottleProvider
-            .TryReserveAskSlotAsync(route.ParticipantId, target.ParticipantId, AskWindow)
+        var slot = await _replyThrottleProvider
+            .TryReserveAskSlotAsync(new ReserveAskSlotRequest
+            {
+                AskerParticipantId = route.ParticipantId,
+                TargetParticipantId = target.ParticipantId,
+                Window = AskWindow
+            })
             .ConfigureAwait(false);
 
-        if (!reserved)
+        if (!slot.Reserved)
         {
             _logger.LogInformation("Suppressed an Ask inside the throttle window.");
 
-            return Refused(target, previouslyAskedAt);
+            return Refused(target, slot.PreviouslyReservedAt);
         }
 
         await SendAskAsync(route, target).ConfigureAwait(false);

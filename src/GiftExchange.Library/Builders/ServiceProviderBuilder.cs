@@ -80,6 +80,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
                 .AddSingleton<IValidator<PreviewInvitationsRequest>, PreviewInvitationsRequestValidator>()
                 .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
+                .AddSingleton<IValidator<EditParticipantAddressRequest>, EditParticipantAddressRequestValidator>()
                 .AddSingleton<IValidator<ValidateHatRequest>, ValidateHatRequestValidator>();
 
         internal IServiceCollection AddBusinessServices() =>
@@ -114,6 +115,11 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, EditParticipantService>("put/participant")
                 .AddKeyedSingleton<IApiGatewayHandler, GetParticipantService>("get/participant/{organizeremail}/{hatid}/{participantemail}")
                 .AddKeyedSingleton<IApiGatewayHandler, RemoveParticipantService>("delete/participant")
+
+                // Its own endpoint rather than part of put/participant, which edits eligibility
+                // and resets the hat to IN_PROGRESS when it does — correct before the draw, and
+                // ruinous after invitations have gone out.
+                .AddKeyedSingleton<IApiGatewayHandler, EditParticipantAddressService>("put/participant/address")
 
                 .AddKeyedSingleton<IApiGatewayHandler, ValidationService>("post/hat/validate")
 

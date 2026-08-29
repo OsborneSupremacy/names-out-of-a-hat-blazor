@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "emailResent": {
+            "type": "boolean",
+            "description": "Whether an email was queued to the new address. False before invitations have gone out, when there is nothing to resend."
+        },
+        "messageType": {
+            "type": "string",
+            "description": "Which email was sent: INVITATION, COMPLETION, or empty when none was."
+        }
+    },
+    "required": [
+        "emailResent",
+        "messageType"
+    ],
+    "additionalProperties": false
+}

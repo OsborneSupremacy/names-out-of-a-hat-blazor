@@ -544,6 +544,110 @@ public class GiftExchangeProvider
     }
 
     /// <summary>
+    /// Moves one participant onto a different email address, leaving everything else about them
+    /// alone.
+    /// </summary>
+    /// <remarks>
+    /// The participant row survives; only its <c>person_id</c> changes. That matters more than it
+    /// looks. Removing and re-adding somebody — which is the only way an organizer can do this
+    /// today — runs <see cref="DeleteParticipantAsync"/>, which clears eligibility in both
+    /// directions and nulls any pick pointing at them: after the hat is shaken that silently breaks
+    /// the draw, leaving somebody buying for nobody with nothing to say so. Re-pointing keeps the
+    /// pick, the eligibility, and the delivery history, and the delivery column walks from bounced
+    /// to delivered on its own because <c>participant_id</c> never moved.
+    ///
+    /// The person the address belongs to is found or created, never renamed. A person is global —
+    /// they may be in other exchanges, and their address may be how an organizer signs in — so
+    /// renaming one to fit this hat would reach well beyond the exchange being edited. The cost is
+    /// that moving somebody onto an address that already belongs to a person adopts that person's
+    /// name, which can collide with another participant here; that is refused rather than resolved.
+    ///
+    /// Nothing revokes the tokens issued against the old address, and nothing needs to.
+    /// <c>InboundGiftIdeasService.CheckSender</c> requires an inbound message's From to match the
+    /// participant's current address, so re-pointing this row is itself what stops whoever holds
+    /// the old invitation from writing into the exchange.
+    /// </remarks>
+    internal async Task<UpdateParticipantAddressResponse> UpdateParticipantAddressAsync(
+        UpdateParticipantAddressRequest request
+    )
+    {
+        var response = UpdateParticipantAddressResponses.For(AddressChangeOutcome.ParticipantNotFound);
+
+        await InTransactionAsync(async context =>
+        {
+            // Reset, because InTransactionAsync replays the whole delegate on a fresh context.
+            response = UpdateParticipantAddressResponses.For(AddressChangeOutcome.ParticipantNotFound);
+
+            var participant = await context.Participants
+                .Include(row => row.Person)
+                .SingleOrDefaultAsync(row => row.HatId == request.HatId
+                                             && row.Person.Email == request.CurrentEmail)
+                .ConfigureAwait(false);
+
+            if (participant is null)
+                return;
+
+            var existingPerson = await context.Persons
+                .SingleOrDefaultAsync(person => person.Email == request.NewEmail)
+                .ConfigureAwait(false);
+
+            // A brand new address takes the name the participant already had, which is the whole
+            // point of an address correction: the person did not change, only where to reach them.
+            var name = existingPerson?.Name ?? participant.Person.Name;
+
+            var others = await context.Participants
+                .AsNoTracking()
+                .Where(row => row.HatId == request.HatId && row.ParticipantId != participant.ParticipantId)
+                .Select(row => new { row.PersonId, row.Person.Name })
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            if (existingPerson is not null && others.Any(other => other.PersonId == existingPerson.PersonId))
+            {
+                response = UpdateParticipantAddressResponses.For(AddressChangeOutcome.AddressAlreadyInExchange);
+                return;
+            }
+
+            if (others.Any(other => other.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            {
+                // Named, because the message an organizer sees has to quote the name they collided
+                // with rather than say only that something did.
+                response = UpdateParticipantAddressResponses.For(AddressChangeOutcome.NameAlreadyInExchange)
+                    with { Name = name };
+                return;
+            }
+
+            if (existingPerson is null)
+            {
+                var person = new PersonEntity
+                {
+                    PersonId = Guid.CreateVersion7(),
+                    Name = name,
+                    Email = request.NewEmail
+                };
+
+                context.Persons.Add(person);
+                participant.PersonId = person.PersonId;
+            }
+            else
+            {
+                participant.PersonId = existingPerson.PersonId;
+            }
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+
+            response = new UpdateParticipantAddressResponse
+            {
+                Outcome = AddressChangeOutcome.Changed,
+                ParticipantId = participant.ParticipantId,
+                Name = name
+            };
+        }).ConfigureAwait(false);
+
+        return response;
+    }
+
+    /// <summary>
     /// Records what SES said about one message, creating the row if this is the first thing heard
     /// about it and moving it forwards if it is not.
     /// </summary>
@@ -696,29 +800,37 @@ public class GiftExchangeProvider
 
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        // The joins through the pick are inner, which is what the sentinel participant and person
-        // are for: a participant who has not drawn anybody carries the all-zero id, and that id
-        // names a real row whose name is the empty string.
-        var match = await (
-                from token in context.GiftIdeaTokens.AsNoTracking()
-                where token.TokenHash == tokenHash
-                join participant in context.Participants on token.ParticipantId equals participant.ParticipantId
-                join sender in context.Persons on participant.PersonId equals sender.PersonId
-                join hat in context.Hats on participant.HatId equals hat.HatId
-                join picked in context.Participants
-                    on participant.PickedRecipientParticipantId equals picked.ParticipantId
-                join pickedPerson in context.Persons on picked.PersonId equals pickedPerson.PersonId
-                select new
+        // Two joins, not five. The hops to a person and to a hat are navigations, so EF emits those
+        // joins itself; only the two that cross an id with no navigation behind it are stated here,
+        // and both are deliberate — a token names a participant and a pick names a participant,
+        // neither through a foreign key.
+        //
+        // Both are inner joins, which is what the sentinel participant and person are for: a
+        // participant who has not drawn anybody carries the all-zero id, and that id names a real
+        // row whose name is the empty string.
+        var match = await context.GiftIdeaTokens
+            .AsNoTracking()
+            .Where(token => token.TokenHash == tokenHash)
+            .Join(
+                context.Participants,
+                token => token.ParticipantId,
+                participant => participant.ParticipantId,
+                (_, participant) => participant)
+            .Join(
+                context.Participants,
+                participant => participant.PickedRecipientParticipantId,
+                picked => picked.ParticipantId,
+                (participant, picked) => new
                 {
                     participant.ParticipantId,
-                    hat.HatId,
-                    HatName = hat.Name,
-                    hat.Status,
-                    SenderName = sender.Name,
-                    SenderEmail = sender.Email,
+                    participant.Hat.HatId,
+                    HatName = participant.Hat.Name,
+                    participant.Hat.Status,
+                    SenderName = participant.Person.Name,
+                    SenderEmail = participant.Person.Email,
                     PickedParticipantId = picked.ParticipantId,
-                    PickedName = pickedPerson.Name,
-                    PickedEmail = pickedPerson.Email
+                    PickedName = picked.Person.Name,
+                    PickedEmail = picked.Person.Email
                 })
             .SingleOrDefaultAsync()
             .ConfigureAwait(false);
@@ -729,11 +841,10 @@ public class GiftExchangeProvider
         // Who drew the sender, which is the inverse of a pick and so cannot be reached by following
         // one. Read separately rather than joined above: this is the one part that may legitimately
         // find nothing, and an inner join would have discarded the whole match along with it.
-        var giver = await (
-                from participant in context.Participants.AsNoTracking()
-                where participant.PickedRecipientParticipantId == match.ParticipantId
-                join person in context.Persons on participant.PersonId equals person.PersonId
-                select new { person.Name, person.Email })
+        var giver = await context.Participants
+            .AsNoTracking()
+            .Where(participant => participant.PickedRecipientParticipantId == match.ParticipantId)
+            .Select(participant => new { participant.Person.Name, participant.Person.Email })
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
 
@@ -779,39 +890,53 @@ public class GiftExchangeProvider
 
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
+        // Four joins for the four participants an ask involves — the helper, the helper's own pick,
+        // the subject and the asker. Each one's name and address arrives through the Person
+        // navigation rather than a join of its own, and so does the hat, which is why this is four
+        // rather than the nine an id-by-id reading would suggest.
+        //
         // Every join is inner and every one of them is safe. The asker and the subject are rows the
         // ask cannot outlive — removing either participant deletes the ask — and the helper's own
         // pick resolves through the sentinel participant when they have not drawn anybody, exactly
         // as it does above.
-        var match = await (
-                from ask in context.GiftIdeaAsks.AsNoTracking()
-                where ask.TokenHash == tokenHash
-                join helper in context.Participants on ask.HelperParticipantId equals helper.ParticipantId
-                join helperPerson in context.Persons on helper.PersonId equals helperPerson.PersonId
-                join hat in context.Hats on helper.HatId equals hat.HatId
-                join helperPick in context.Participants
-                    on helper.PickedRecipientParticipantId equals helperPick.ParticipantId
-                join helperPickPerson in context.Persons on helperPick.PersonId equals helperPickPerson.PersonId
-                join subject in context.Participants on ask.SubjectParticipantId equals subject.ParticipantId
-                join subjectPerson in context.Persons on subject.PersonId equals subjectPerson.PersonId
-                join asker in context.Participants on ask.AskerParticipantId equals asker.ParticipantId
-                join askerPerson in context.Persons on asker.PersonId equals askerPerson.PersonId
-                select new
+        var match = await context.GiftIdeaAsks
+            .AsNoTracking()
+            .Where(ask => ask.TokenHash == tokenHash)
+            .Join(
+                context.Participants,
+                ask => ask.HelperParticipantId,
+                helper => helper.ParticipantId,
+                (ask, helper) => new { ask, helper })
+            .Join(
+                context.Participants,
+                row => row.helper.PickedRecipientParticipantId,
+                helperPick => helperPick.ParticipantId,
+                (row, helperPick) => new { row.ask, row.helper, helperPick })
+            .Join(
+                context.Participants,
+                row => row.ask.SubjectParticipantId,
+                subject => subject.ParticipantId,
+                (row, subject) => new { row.ask, row.helper, row.helperPick, subject })
+            .Join(
+                context.Participants,
+                row => row.ask.AskerParticipantId,
+                asker => asker.ParticipantId,
+                (row, asker) => new
                 {
-                    ask.GiftIdeaAskId,
-                    helper.ParticipantId,
-                    hat.HatId,
-                    HatName = hat.Name,
-                    hat.Status,
-                    SenderName = helperPerson.Name,
-                    SenderEmail = helperPerson.Email,
-                    HelperPickParticipantId = helperPick.ParticipantId,
-                    HelperPickName = helperPickPerson.Name,
-                    HelperPickEmail = helperPickPerson.Email,
-                    SubjectName = subjectPerson.Name,
-                    SubjectEmail = subjectPerson.Email,
-                    AskerName = askerPerson.Name,
-                    AskerEmail = askerPerson.Email
+                    row.ask.GiftIdeaAskId,
+                    row.helper.ParticipantId,
+                    row.helper.Hat.HatId,
+                    HatName = row.helper.Hat.Name,
+                    row.helper.Hat.Status,
+                    SenderName = row.helper.Person.Name,
+                    SenderEmail = row.helper.Person.Email,
+                    HelperPickParticipantId = row.helperPick.ParticipantId,
+                    HelperPickName = row.helperPick.Person.Name,
+                    HelperPickEmail = row.helperPick.Person.Email,
+                    SubjectName = row.subject.Person.Name,
+                    SubjectEmail = row.subject.Person.Email,
+                    AskerName = asker.Person.Name,
+                    AskerEmail = asker.Person.Email
                 })
             .SingleOrDefaultAsync()
             .ConfigureAwait(false);
@@ -864,11 +989,11 @@ public class GiftExchangeProvider
         if (asker is null)
             return [];
 
-        var candidates = await (
-                from participant in context.Participants.AsNoTracking()
-                where participant.HatId == hatId && participant.ParticipantId != askerParticipantId
-                join person in context.Persons on participant.PersonId equals person.PersonId
-                select new { participant.ParticipantId, person.Name })
+        var candidates = await context.Participants
+            .AsNoTracking()
+            .Where(participant => participant.HatId == hatId
+                                  && participant.ParticipantId != askerParticipantId)
+            .Select(participant => new { participant.ParticipantId, participant.Person.Name })
             .ToListAsync()
             .ConfigureAwait(false);
 
@@ -923,13 +1048,17 @@ public class GiftExchangeProvider
         if (asker is null)
             return [];
 
-        var targets = await (
-                from participant in context.Participants.AsNoTracking()
-                where participant.HatId == hatId
-                      && participant.ParticipantId != askerParticipantId
-                      && chosenParticipantIds.Contains(participant.ParticipantId)
-                join person in context.Persons on participant.PersonId equals person.PersonId
-                select new { participant.ParticipantId, person.Name, person.Email })
+        var targets = await context.Participants
+            .AsNoTracking()
+            .Where(participant => participant.HatId == hatId
+                                  && participant.ParticipantId != askerParticipantId
+                                  && chosenParticipantIds.Contains(participant.ParticipantId))
+            .Select(participant => new
+            {
+                participant.ParticipantId,
+                participant.Person.Name,
+                participant.Person.Email
+            })
             .ToListAsync()
             .ConfigureAwait(false);
 

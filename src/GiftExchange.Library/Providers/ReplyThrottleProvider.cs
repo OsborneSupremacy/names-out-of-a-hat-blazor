@@ -82,10 +82,39 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
     }
 
     /// <inheritdoc />
-    public async Task<(bool reserved, DateTimeOffset previouslyAskedAt)> TryReserveAskSlotAsync(
-        Guid askerParticipantId,
-        Guid targetParticipantId,
-        TimeSpan window
+    public Task<ReserveSlotResponse> TryReserveAskSlotAsync(ReserveAskSlotRequest request) =>
+        ReserveAsync(
+            // Both ids, so that asking a second person is a separate slot from asking the first.
+            $"ASKTHROTTLE#{request.AskerParticipantId}#{request.TargetParticipantId}",
+            "ASKTHROTTLE",
+            request.Window,
+            "an Ask");
+
+    /// <inheritdoc />
+    public Task<ReserveSlotResponse> TryReserveAddressChangeSlotAsync(
+        ReserveAddressChangeSlotRequest request
+    ) =>
+        ReserveAsync(
+            $"ADDRESSCHANGETHROTTLE#{request.ParticipantId}",
+            "ADDRESSCHANGETHROTTLE",
+            request.Window,
+            "an address change");
+
+    /// <summary>
+    /// The conditional put both slot methods are: write an item that expires, unless one is already
+    /// there and has not.
+    /// </summary>
+    /// <remarks>
+    /// One implementation rather than two, now that both speak the same request and answer with the
+    /// same response. Everything that differed between them was the key, which is the only thing
+    /// still passed in.
+    /// </remarks>
+    /// <param name="what">Names the thing being suppressed, for the log line when this fails.</param>
+    private async Task<ReserveSlotResponse> ReserveAsync(
+        string partitionKey,
+        string sortKey,
+        TimeSpan window,
+        string what
     )
     {
         var now = DateTimeOffset.UtcNow;
@@ -96,10 +125,12 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
             TableName = _tableName,
             Item = new Dictionary<string, AttributeValue>
             {
-                // Both ids, so that asking a second person is a separate slot from asking the
-                // first. See the remarks on IReplyThrottleProvider.TryReserveAskSlotAsync.
-                ["PK"] = new() { S = $"ASKTHROTTLE#{askerParticipantId}#{targetParticipantId}" },
-                ["SK"] = new() { S = "ASKTHROTTLE" },
+                ["PK"] = new() { S = partitionKey },
+                ["SK"] = new() { S = sortKey },
+                // Still AskedAt, though this now also holds address changes. It is the attribute
+                // name already written into live items, and renaming it would silently lose the
+                // timestamp on every one still inside its window -- for no gain, since nothing
+                // reads it but ReadAskedAt.
                 ["AskedAt"] = new() { N = now.ToUnixTimeSeconds().ToString() },
                 ["ExpiresAt"] = new() { N = expiresAt.ToString() },
                 ["ttl"] = new() { N = expiresAt.ToString() }
@@ -110,7 +141,7 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
                 [":now"] = new() { N = now.ToUnixTimeSeconds().ToString() }
             },
             // The item that blocked the write comes back with the rejection, which is the only way
-            // to tell the asker when they last asked without a second read that could disagree
+            // to tell the caller when the last one was without a second read that could disagree
             // with the one that just refused them.
             ReturnValuesOnConditionCheckFailure = ReturnValuesOnConditionCheckFailure.ALL_OLD
         };
@@ -118,18 +149,19 @@ internal class ReplyThrottleProvider : IReplyThrottleProvider
         try
         {
             await _dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
-            return (true, DateTimeOffset.MinValue);
+            return ReserveSlotResponses.Reserved;
         }
         catch (ConditionalCheckFailedException exception)
         {
-            return (false, ReadAskedAt(exception));
+            return ReserveSlotResponses.RefusedSince(ReadAskedAt(exception));
         }
         catch (Exception exception)
         {
-            // Fails closed, as above. An Ask not sent is a nuisance; an outage that lets somebody
-            // mail their recipient without limit is a way to harass them through this application.
-            _logger.LogError(exception, "Could not reserve an Ask slot; suppressing the Ask.");
-            return (false, DateTimeOffset.MinValue);
+            // Fails closed, as TryReserveReplySlotAsync does. An Ask not sent is a nuisance and an
+            // organizer waiting a few minutes is an inconvenience; an outage that lifts either
+            // limit is a way to send unmetered mail through this application.
+            _logger.LogError(exception, "Could not reserve a slot; suppressing {What}.", what);
+            return ReserveSlotResponses.Refused;
         }
     }
 

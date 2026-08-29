@@ -52,8 +52,8 @@ public class AskForGiftIdeasServiceTests
 
         _provider = serviceProvider.GetRequiredService<GiftExchangeProvider>();
 
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>())
-            .Returns((true, DateTimeOffset.MinValue));
+        _throttle.TryReserveAskSlotAsync(Arg.Any<ReserveAskSlotRequest>())
+            .Returns(ReserveSlotResponses.Reserved);
 
         _ses.When(ses => ses.SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>()))
             .Do(call =>
@@ -95,7 +95,7 @@ public class AskForGiftIdeasServiceTests
 
         await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
         await _throttle.DidNotReceive()
-            .TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>());
+            .TryReserveAskSlotAsync(Arg.Any<ReserveAskSlotRequest>());
     }
 
     [Fact]
@@ -216,8 +216,8 @@ public class AskForGiftIdeasServiceTests
         // arrange
         var askedOn = new DateTimeOffset(2026, 8, 3, 9, 0, 0, TimeSpan.Zero);
 
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>())
-            .Returns((false, askedOn));
+        _throttle.TryReserveAskSlotAsync(Arg.Any<ReserveAskSlotRequest>())
+            .Returns(ReserveSlotResponses.RefusedSince(askedOn));
 
         var exchange = await SeedAsync();
 
@@ -238,8 +238,8 @@ public class AskForGiftIdeasServiceTests
     public async Task Post_GivenTheThrottleRefuses_IssuesNoTokenAndAsksNobody()
     {
         // arrange
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<TimeSpan>())
-            .Returns((false, DateTimeOffset.UtcNow.AddDays(-2)));
+        _throttle.TryReserveAskSlotAsync(Arg.Any<ReserveAskSlotRequest>())
+            .Returns(ReserveSlotResponses.RefusedSince(DateTimeOffset.UtcNow.AddDays(-2)));
 
         var exchange = await SeedAsync();
 
@@ -386,8 +386,8 @@ public class AskForGiftIdeasServiceTests
         var askedOn = new DateTimeOffset(2026, 8, 3, 9, 0, 0, TimeSpan.Zero);
         var exchange = await SeedAsync();
 
-        _throttle.TryReserveAskSlotAsync(Arg.Any<Guid>(), exchange.GammaId, Arg.Any<TimeSpan>())
-            .Returns((false, askedOn));
+        _throttle.TryReserveAskSlotAsync(Arg.Is<ReserveAskSlotRequest>(ask => ask.TargetParticipantId == exchange.GammaId))
+            .Returns(ReserveSlotResponses.RefusedSince(askedOn));
 
         // act
         var response = await _sut.FunctionHandler(

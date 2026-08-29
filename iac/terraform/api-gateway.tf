@@ -6,56 +6,50 @@ resource "aws_api_gateway_rest_api" "giftexchange-gateway" {
   }
 }
 
+# Which deployment the live stage serves is not Terraform's business.
+#
+# Publishing an API Gateway stage is a release, not a piece of infrastructure. It has to happen
+# after the Lambda package is built and uploaded, it has to be repeatable without a plan, and it is
+# the step you want to be able to run on its own when something needs republishing. All of that is
+# CI's job, and .github/workflows/.reusable-deploy-api-gateway-stage.yml does it: after every apply
+# it calls create-deployment and repoints the stage at the result.
+#
+# This resource exists only because aws_api_gateway_stage requires a deployment_id and will not be
+# created without one. It is a bootstrap, superseded seconds later on the very first build and
+# never consulted again. Nothing here should ever be made to represent what is actually live —
+# an earlier version of this file carried a triggers hash trying to do exactly that, which was
+# redundant from the day it was written and only ever managed to imply that Terraform decided
+# something it did not.
 resource "aws_api_gateway_deployment" "default" {
   rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
-  description = "Deployment for the Gift Exchange API Gateway"
-
-  # Adding a method or an integration does not change this resource, so without something to force
-  # its hand Terraform leaves the existing deployment in place and the new endpoint is never
-  # published. It then answers "Missing Authentication Token", which is API Gateway's way of saying
-  # the route does not exist and reads like an auth problem instead.
-  #
-  # The endpoints written out longhand are the ones at risk: those built through ./modules/api are
-  # covered by the depends_on below, and these are not.
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.auth-requestlink-resource.id,
-      aws_api_gateway_resource.auth-redeem-resource.id,
-      aws_api_gateway_resource.ask-token-resource.id,
-      [for method in aws_api_gateway_method.auth-post : method.id],
-      [for method in aws_api_gateway_method.ask : method.id],
-      [for integration in aws_api_gateway_integration.auth-post : integration.id],
-      [for integration in aws_api_gateway_integration.ask : integration.id],
-    ]))
-  }
+  description = "Bootstrap deployment. The live stage is published by CI, not from here."
 
   lifecycle {
     create_before_destroy = true
   }
-  depends_on = [
-    module.lambda-add-participant,
-    module.lambda-assign-recipients,
-    module.lambda-close-hat,
-    module.lambda-copy-hat,
-    module.lambda-create-hat,
-    module.lambda-delete-hat,
-    module.lambda-edit-hat,
-    module.lambda-edit-participant,
-    module.lambda-get-hat,
-    module.lambda-get-hats,
-    module.lambda-get-participant,
-    module.lambda-preview-invitations-hat,
-    module.lambda-remove-participant,
-    module.lambda-send-invitations-hat,
-    module.lambda-update-profile,
-    module.lambda-validate-hat
-  ]
+
+  # One endpoint, not all of them. Creating a deployment against a REST API with no methods fails
+  # outright, so a from-scratch build needs at least one to exist first — and one is all that check
+  # requires. Listing every module would look like completeness mattered, and the list would then
+  # rot silently: leaving an endpoint out has no consequence, because CI publishes the API a moment
+  # later regardless of what this deployment contains.
+  depends_on = [module.lambda-get-hat]
 }
 
 resource "aws_api_gateway_stage" "live-stage" {
-  stage_name    = "live"
-  rest_api_id   = aws_api_gateway_rest_api.giftexchange-gateway.id
+  stage_name  = "live"
+  rest_api_id = aws_api_gateway_rest_api.giftexchange-gateway.id
+
+  # Read once, when the stage is first created, and never again. CI repoints the stage after every
+  # apply, so without the ignore below every subsequent plan would propose dragging it back to the
+  # bootstrap deployment above — a diff that says Terraform is in charge of what is live, which it
+  # is not, and which would be genuinely destructive if anybody ever applied it between a build and
+  # its publish step.
   deployment_id = aws_api_gateway_deployment.default.id
+
+  lifecycle {
+    ignore_changes = [deployment_id]
+  }
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_access_logs.arn

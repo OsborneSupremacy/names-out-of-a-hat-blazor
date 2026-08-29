@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The organizer of the gift exchange. Overwritten with the authenticated caller before the request is handled."
+        },
+        "hatId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The gift exchange the participant belongs to"
+        },
+        "currentEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The address the participant is currently recorded at, used to find them"
+        },
+        "newEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The address to move them to"
+        }
+    },
+    "required": [
+        "organizerEmail",
+        "hatId",
+        "currentEmail",
+        "newEmail"
+    ],
+    "additionalProperties": false
+}

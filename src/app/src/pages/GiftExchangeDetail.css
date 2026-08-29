@@ -1130,3 +1130,25 @@
   color: #666666;
   word-break: break-word;
 }
+
+/* What happened after an address was corrected — and in particular whether that sent an email.
+ * Rendered here rather than as a page-level message, which replaces the whole view. */
+.address-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid #1a7f4b;
+  font-size: 0.875rem;
+}
+
+.address-notice-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1.125rem;
+  line-height: 1;
+  color: #666666;
+  cursor: pointer;
+}

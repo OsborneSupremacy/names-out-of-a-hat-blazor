@@ -50,6 +50,20 @@ export interface EditParticipantRequest {
   eligibleRecipients: string[]
 }
 
+export interface EditParticipantAddressRequest {
+  organizerEmail: string
+  hatId: string
+  currentEmail: string
+  newEmail: string
+}
+
+export interface EditParticipantAddressResponse {
+  /** False before invitations have gone out, when there is nothing to resend. */
+  emailResent: boolean
+  /** INVITATION, COMPLETION, or empty when nothing was sent. */
+  messageType: string
+}
+
 export interface DeleteHatRequest {
   organizerEmail: string
   hatId: string
@@ -268,6 +282,31 @@ export async function editParticipant(request: EditParticipantRequest): Promise<
   if (!response.ok) {
     await handleApiError(response, 'Failed to edit participant')
   }
+}
+
+/**
+ * Corrects the address a participant was invited at.
+ *
+ * Its own endpoint rather than part of editParticipant, which edits eligibility and resets the
+ * exchange to IN_PROGRESS as a side effect — harmless before the draw, and destructive after
+ * invitations have gone out, which is exactly when an address needs correcting.
+ */
+export async function editParticipantAddress(
+  request: EditParticipantAddressRequest
+): Promise<EditParticipantAddressResponse> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/participant/address`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to update the address')
+  }
+
+  return await response.json()
 }
 
 export async function deleteHat(request: DeleteHatRequest): Promise<void> {

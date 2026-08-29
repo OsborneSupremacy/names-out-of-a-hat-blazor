@@ -83,11 +83,13 @@ public partial class EntityMappingTests
     [Fact]
     public void NoMappedProperty_IsNullable()
     {
-        var nullable =
-            from entity in BuildModel().GetEntityTypes()
-            from property in entity.GetProperties()
-            where property.IsNullable
-            select $"{entity.ClrType.Name}.{property.Name}";
+        var nullable = BuildModel()
+            .GetEntityTypes()
+            .SelectMany(
+                entity => entity.GetProperties(),
+                (entity, property) => new { entity, property })
+            .Where(mapped => mapped.property.IsNullable)
+            .Select(mapped => $"{mapped.entity.ClrType.Name}.{mapped.property.Name}");
 
         nullable.Should().BeEmpty();
     }
@@ -154,12 +156,14 @@ public partial class EntityMappingTests
     [Fact]
     public void NoSurvivingColumn_IsNullable()
     {
-        var nullable =
-            from table in ParseTables()
-            from column in table.Value
-            where !column.Value.Contains("NOT NULL", StringComparison.OrdinalIgnoreCase)
-                  && !column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase)
-            select $"{table.Key}.{column.Key}";
+        var nullable = ParseTables()
+            .SelectMany(
+                table => table.Value,
+                (table, column) => new { table, column })
+            .Where(declared =>
+                !declared.column.Value.Contains("NOT NULL", StringComparison.OrdinalIgnoreCase)
+                && !declared.column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase))
+            .Select(declared => $"{declared.table.Key}.{declared.column.Key}");
 
         nullable.Should().BeSubsetOf(ColumnsDsqlCannotConstrain);
     }
@@ -171,12 +175,14 @@ public partial class EntityMappingTests
     [Fact]
     public void EveryDocumentedNullableColumn_IsStillNullable()
     {
-        var nullable =
-            from table in ParseTables()
-            from column in table.Value
-            where !column.Value.Contains("NOT NULL", StringComparison.OrdinalIgnoreCase)
-                  && !column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase)
-            select $"{table.Key}.{column.Key}";
+        var nullable = ParseTables()
+            .SelectMany(
+                table => table.Value,
+                (table, column) => new { table, column })
+            .Where(declared =>
+                !declared.column.Value.Contains("NOT NULL", StringComparison.OrdinalIgnoreCase)
+                && !declared.column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase))
+            .Select(declared => $"{declared.table.Key}.{declared.column.Key}");
 
         ColumnsDsqlCannotConstrain.Should().BeSubsetOf(nullable);
     }
@@ -188,11 +194,12 @@ public partial class EntityMappingTests
     [Fact]
     public void NoSurvivingColumn_HasADefault()
     {
-        var defaulted =
-            from table in ParseTables()
-            from column in table.Value
-            where column.Value.Contains("DEFAULT", StringComparison.OrdinalIgnoreCase)
-            select $"{table.Key}.{column.Key}";
+        var defaulted = ParseTables()
+            .SelectMany(
+                table => table.Value,
+                (table, column) => new { table, column })
+            .Where(declared => declared.column.Value.Contains("DEFAULT", StringComparison.OrdinalIgnoreCase))
+            .Select(declared => $"{declared.table.Key}.{declared.column.Key}");
 
         defaulted.Should().BeEmpty();
     }
@@ -204,12 +211,15 @@ public partial class EntityMappingTests
     [Fact]
     public void EveryPrimaryKey_IsNamedForItsTable()
     {
-        var misnamed =
-            from table in ParseTables()
-            from column in table.Value
-            where column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase)
-                  && column.Key != $"{table.Key}_id"
-            select $"{table.Key}.{column.Key} should be {table.Key}_id";
+        var misnamed = ParseTables()
+            .SelectMany(
+                table => table.Value,
+                (table, column) => new { table, column })
+            .Where(declared =>
+                declared.column.Value.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase)
+                && declared.column.Key != $"{declared.table.Key}_id")
+            .Select(declared =>
+                $"{declared.table.Key}.{declared.column.Key} should be {declared.table.Key}_id");
 
         misnamed.Should().BeEmpty();
     }
