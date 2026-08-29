@@ -31,9 +31,11 @@ mail vanishing, and a change to them deserves somebody deciding to make it.
 
 - `ses.tf` — the `mail.` identity, DKIM, custom MAIL FROM, and the receipt rule archiving everything
   arriving at `mail.namesoutofahat.com`.
-- `ses-gift-ideas.tf` — the `ideas.` identity and its DNS. Receive-only: it publishes DKIM keys, but
-  nothing signs with them, because everything the application sends goes out from
-  `donotreply@mail.namesoutofahat.com`. Its SPF and DMARC records say exactly that.
+- `ses-gift-ideas.tf` — the `ideas.` identity and its DNS. Receive-only in practice: everything the
+  application sends goes out from `donotreply@mail.namesoutofahat.com`, and its SPF and DMARC
+  records say exactly that. It still publishes the full outbound set — DKIM keys and a custom MAIL
+  FROM at `bounce.ideas.` — so both DMARC legs align if anything is ever sent from here, and so the
+  console stops reporting the identity as unaligned in the meantime.
 - `route53.tf` — verification, DKIM, MX, SPF and DMARC records for `mail.`, plus the DMARC report
   authorization the apex record needs.
 - `ses-delivery-events.tf` — the configuration set every outbound participant email names on the
