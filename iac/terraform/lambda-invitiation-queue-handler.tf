@@ -81,4 +81,16 @@ resource "aws_lambda_event_source_mapping" "invitation-queue-handler-sqs-trigger
   batch_size                         = 1
   maximum_batching_window_in_seconds = 30
   enabled                            = true
+
+  # The same ceiling, for the same reason, as the delivery events mapping -- see the comment there
+  # for the incident that put it on both. This is the other fan-out: sending invitations queues one
+  # message per participant, and an organizer with a large exchange is exactly the person whose
+  # next page load must not be the one that gets refused.
+  #
+  # Slower, and that is fine. Thirty invitations two at a time is a few seconds, and nobody is
+  # waiting on the queue -- EnqueueInvitationsService has already answered the organizer by the
+  # time any of this runs.
+  scaling_config {
+    maximum_concurrency = 2
+  }
 }

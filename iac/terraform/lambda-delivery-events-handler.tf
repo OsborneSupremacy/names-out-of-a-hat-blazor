@@ -98,4 +98,22 @@ resource "aws_lambda_event_source_mapping" "delivery-events-handler-sqs-trigger"
   function_name    = aws_lambda_function.delivery-events-handler.arn
   batch_size       = 1
   enabled          = true
+
+  # The ceiling on how much of the account's Lambda concurrency this feed may take.
+  #
+  # Without it, one record per invocation and no cap means a send to thirty participants -- sixty
+  # or so events arriving at once -- scales this out as far as Lambda will go. On 2026-08-29 that
+  # was far enough to leave nothing for the API function: it was denied a slot, API Gateway turned
+  # the 429 into its generic 500, and an organizer pressing Copy got an internal server error for
+  # a request that never reached the application. This function was throttled on more than half
+  # its invocations that day.
+  #
+  # Two, which is the minimum SQS accepts. Nothing waits on these events -- a delivery status that
+  # lands a few seconds later costs nobody anything -- so there is no reason for a background feed
+  # to compete with somebody clicking a button. Worth keeping even once the account's concurrency
+  # quota is raised: the shape of the failure returns at any scale where a fan-out coincides with
+  # somebody using the site, it just takes a bigger exchange to get there.
+  scaling_config {
+    maximum_concurrency = 2
+  }
 }
