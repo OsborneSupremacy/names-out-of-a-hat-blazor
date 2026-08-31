@@ -3,6 +3,7 @@ using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.Scheduler;
 using Amazon.SimpleEmail;
+using Amazon.SimpleNotificationService;
 using Amazon.SimpleSystemsManagement;
 using Amazon.AuroraDsql.Npgsql;
 using GiftExchange.Library.Interceptors;
@@ -31,6 +32,7 @@ internal static class ServiceProviderBuilder
                 .AddDefaultAWSOptions(new AWSOptions { Region = region })
                 .AddAWSService<IAmazonDynamoDB>()
                 .AddAWSService<IAmazonSQS>()
+                .AddAWSService<IAmazonSimpleNotificationService>()
                 .AddAWSService<IAmazonScheduler>()
                 .AddAWSService<IAmazonComprehend>()
                 .AddAWSService<IAmazonS3>()
@@ -81,6 +83,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<PreviewInvitationsRequest>, PreviewInvitationsRequestValidator>()
                 .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantAddressRequest>, EditParticipantAddressRequestValidator>()
+                .AddSingleton<IValidator<SubmitFeedbackRequest>, SubmitFeedbackRequestValidator>()
                 .AddSingleton<IValidator<ValidateHatRequest>, ValidateHatRequestValidator>();
 
         internal IServiceCollection AddBusinessServices() =>
@@ -108,6 +111,12 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, EditHatService>("put/hat")
 
                 .AddKeyedSingleton<IApiGatewayHandler, UpdateProfileService>("put/profile")
+
+                // Authenticated, because the footer that opens the contact form only renders on
+                // signed-in pages. That is what keeps this off the list of things needing a
+                // CAPTCHA: there is no anonymous route to it, and the sender's address comes from
+                // the session rather than from a box somebody can type anything into.
+                .AddKeyedSingleton<IApiGatewayHandler, SubmitFeedbackService>("post/feedback")
 
                 .AddKeyedSingleton<IApiGatewayHandler, DeleteHatService>("delete/hat")
 

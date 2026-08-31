@@ -1,0 +1,65 @@
+/* The shared form styling in CreateHatModal.css reaches input[type="text"] only, so the two
+ * controls this dialog uses are dressed here rather than there. Widening those selectors would
+ * restyle every dialog in the application to fix one. */
+.contact-select,
+.contact-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: white;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.contact-textarea {
+  resize: vertical;
+  min-height: 8rem;
+  line-height: 1.5;
+}
+
+.contact-select:focus,
+.contact-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.contact-select:disabled,
+.contact-textarea:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+}
+
+.contact-counter {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.contact-sent {
+  padding: 1.5rem;
+}
+
+.contact-sent p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .contact-select,
+  .contact-textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .contact-select:disabled,
+  .contact-textarea:disabled {
+    background-color: #1f2937;
+  }
+}

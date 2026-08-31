@@ -47,6 +47,7 @@ public class SchemaDriftTests
         { nameof(RemoveParticipantRequest), "RemoveParticipantRequest.schema.json", "" },
         { nameof(SendInvitationsRequest), "SendInvitationsRequest.schema.json", "" },
         { nameof(ValidateHatRequest), "ValidateHatRequest.schema.json", "" },
+        { nameof(SubmitFeedbackRequest), "SubmitFeedbackRequest.schema.json", "" },
         { nameof(UpdateProfileRequest), "UpdateProfileRequest.schema.json", "" },
         { nameof(ValidateHatResponse), "ValidateHatResponse.schema.json", "" },
 
@@ -165,6 +166,29 @@ public class SchemaDriftTests
 
             node = child;
         }
+    }
+
+    /// <summary>
+    /// The categories the contact form offers live in three places: this schema's enum, which is
+    /// what API Gateway rejects a bad request against; <see cref="FeedbackCategories.All"/>, which
+    /// is what the validator accepts; and the frontend's list. The first two are checked here.
+    /// Drift between them means a category the form offers is refused at the edge, or one the
+    /// gateway waves through that the validator then rejects with a different message.
+    /// </summary>
+    [Fact]
+    public void FeedbackSchema_OffersExactlyTheCategoriesTheValidatorAccepts()
+    {
+        using var document = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(SchemaDirectory, "SubmitFeedbackRequest.schema.json")));
+
+        var documented = document.RootElement
+            .GetProperty("properties")
+            .GetProperty("category")
+            .GetProperty("enum")
+            .EnumerateArray()
+            .Select(entry => entry.GetString()!);
+
+        documented.Should().BeEquivalentTo(FeedbackCategories.All);
     }
 
     /// <summary>

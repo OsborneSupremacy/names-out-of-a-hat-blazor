@@ -31,6 +31,9 @@ locals {
     # them, and forgetting this one fails silently -- the mail still sends, and nothing is heard
     # back about it ever again.
     "SES_CONFIGURATION_SET" = data.terraform_remote_state.email.outputs.ses_configuration_set_name
+    # Where the contact form's messages go. Deliberately not the alarms topic -- see
+    # sns-notifications.tf for why the two are kept apart.
+    "FEEDBACK_TOPIC_ARN" = aws_sns_topic.feedback.arn
   }
   publish_zip_path = "../../src/GiftExchange.Library/bin/GiftExchange.Library.zip"
 }

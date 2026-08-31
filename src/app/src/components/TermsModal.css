@@ -1,0 +1,54 @@
+/* Wider than the form dialogs, and taller. This is prose to be read rather than fields to be
+ * filled, and at the 500px the shared chrome sets, every paragraph became a narrow column. */
+.terms-modal {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  /* The body below scrolls, not the dialog: the header and the close button stay put, so there is
+   * always a way out without scrolling back to the top of eleven sections. */
+  overflow: hidden;
+}
+
+.terms-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.terms-updated {
+  margin-top: 0;
+  font-size: 0.8125rem;
+  opacity: 0.7;
+}
+
+.terms-body h3 {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.terms-body p {
+  margin: 0 0 0.75rem;
+}
+
+.terms-body ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.terms-body li {
+  margin-bottom: 0.375rem;
+}
+
+.terms-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  .terms-actions {
+    border-top-color: #374151;
+  }
+}

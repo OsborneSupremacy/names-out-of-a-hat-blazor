@@ -104,6 +104,14 @@ export interface UpdateProfileRequest {
   name: string
 }
 
+/** The categories the contact form offers. Mirrors FeedbackCategories.All on the server. */
+export type FeedbackCategory = 'QUESTION' | 'FEATURE_REQUEST' | 'OTHER_FEEDBACK'
+
+export interface SubmitFeedbackRequest {
+  category: FeedbackCategory
+  message: string
+}
+
 export interface CopyHatRequest {
   organizerEmail: string
   hatId: string
@@ -423,5 +431,19 @@ export async function updateProfile(request: UpdateProfileRequest): Promise<void
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to update your name')
+  }
+}
+
+export async function submitFeedback(request: SubmitFeedbackRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/feedback`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to send your message')
   }
 }

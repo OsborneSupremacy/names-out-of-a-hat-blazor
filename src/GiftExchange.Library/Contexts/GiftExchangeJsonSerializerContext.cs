@@ -54,6 +54,7 @@ namespace GiftExchange.Library.Contexts;
 // bucket and reports nothing back here.
 [JsonSerializable(typeof(SimpleEmailEvent<LambdaReceiptAction>))]
 [JsonSerializable(typeof(StatusCodeOnlyResponse))]
+[JsonSerializable(typeof(SubmitFeedbackRequest))]
 [JsonSerializable(typeof(UpdateProfileRequest))]
 [JsonSerializable(typeof(ValidateHatRequest))]
 [JsonSerializable(typeof(ValidateHatResponse))]

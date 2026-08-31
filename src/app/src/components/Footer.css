@@ -17,6 +17,37 @@
   font-size: 0.875rem;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Styled as a link because it behaves like one to the reader, while staying a button for
+ * everything that cares what it actually does. */
+.footer-link {
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.footer-link:hover {
+  color: #1f2937;
+}
+
+.footer-separator {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
 @media (prefers-color-scheme: dark) {
   .app-footer {
     background-color: #111827;
@@ -25,5 +56,17 @@
 
   .footer-content p {
     color: #9ca3af;
+  }
+
+  .footer-link {
+    color: #9ca3af;
+  }
+
+  .footer-link:hover {
+    color: #f9fafb;
+  }
+
+  .footer-separator {
+    color: #4b5563;
   }
 }

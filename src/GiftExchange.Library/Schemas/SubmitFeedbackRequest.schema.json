@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "Ignored if sent. The authorizer supplies the caller's address."
+        },
+        "category": {
+            "type": "string",
+            "enum": [
+                "QUESTION",
+                "FEATURE_REQUEST",
+                "OTHER_FEEDBACK"
+            ],
+            "description": "What the feedback is about"
+        },
+        "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "What the sender wants to say"
+        }
+    },
+    "required": [
+        "category",
+        "message"
+    ]
+}
