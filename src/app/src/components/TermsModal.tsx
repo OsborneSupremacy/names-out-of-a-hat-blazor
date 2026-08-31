@@ -152,8 +152,7 @@ export function TermsModal({ onClose }: TermsModalProps) {
 
           <h3>11. Contact</h3>
           <p>
-            Questions about these terms can be sent through the Contact link in the footer, or to{' '}
-            <a href="mailto:giftexchange@osbornesupremacy.com">giftexchange@osbornesupremacy.com</a>.
+            Questions about these terms can be sent through the Contact link in the footer.
           </p>
         </div>
 
