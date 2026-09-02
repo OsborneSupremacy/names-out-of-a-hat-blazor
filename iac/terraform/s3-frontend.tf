@@ -46,6 +46,26 @@ resource "aws_s3_bucket_policy" "frontend" {
             "AWS:SourceArn" = aws_cloudfront_distribution.frontend.arn
           }
         }
+      },
+      # S3 will not admit that an object is missing to a caller that cannot list the bucket: a GET
+      # for a key that is not there comes back 403 AccessDenied rather than 404 NoSuchKey. That was
+      # survivable while CloudFront rewrote both to "200 /index.html", and is not now that the
+      # status is passed through — a missing file has to read as missing. Listing is granted to the
+      # one distribution, on the bucket itself rather than its contents, which is what the
+      # distinction needs.
+      {
+        Sid    = "AllowCloudFrontServicePrincipalListBucket"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:ListBucket"
+        Resource = aws_s3_bucket.frontend.arn
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.frontend.arn
+          }
+        }
       }
     ]
   })

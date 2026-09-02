@@ -7,6 +7,16 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
   signing_protocol                  = "sigv4"
 }
 
+# Viewer-request rewrite that puts SPA routes onto /index.html. See the function's own file for
+# why this is done here rather than with custom error responses.
+resource "aws_cloudfront_function" "frontend_spa_router" {
+  name    = "frontend-spa-router"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrites SPA route paths to /index.html and leaves file paths to 404"
+  publish = true
+  code    = file("${path.module}/functions/frontend-spa-router.js")
+}
+
 # CloudFront distribution for frontend (namesoutofahat.com and www)
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
@@ -28,20 +38,18 @@ resource "aws_cloudfront_distribution" "frontend" {
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
     cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+
+    # Runs before the cache key is computed, so every route shares the one /index.html entry.
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.frontend_spa_router.arn
+    }
   }
 
-  # Custom error response for SPA routing
-  custom_error_response {
-    error_code         = 404
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
-
-  custom_error_response {
-    error_code         = 403
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
+  # No custom_error_response blocks by design. Routing is handled on the way in by
+  # aws_cloudfront_function.frontend_spa_router, so an error reaching this point is a real one and
+  # is passed to the caller with its own status. Rewriting 404 and 403 to "200 /index.html" was what
+  # made a missing file indistinguishable from a working page.
 
   restrictions {
     geo_restriction {
