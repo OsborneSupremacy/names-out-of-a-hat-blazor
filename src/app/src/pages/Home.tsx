@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getHats, createHat, HatMetadata } from '../api'
 import { formatHatStatus } from '../hatStatus'
 import { Header } from '../components/Header'
@@ -19,6 +19,9 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   // null until the hats response arrives, so the greeting never guesses.
   const [organizerName, setOrganizerName] = useState<string | null>(null)
+  // An organizer with nothing to look at is here to create something, so the dialog opens for them.
+  // Guarded so that dismissing it leaves them on the empty state rather than reopening it.
+  const openedCreateForEmptyList = useRef(false)
 
   useEffect(() => {
     async function loadHats() {
@@ -26,6 +29,11 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
         const response = await getHats(userEmail)
         setHats(response.hats)
         setOrganizerName(response.organizerName)
+
+        if (response.hats.length === 0 && !openedCreateForEmptyList.current) {
+          openedCreateForEmptyList.current = true
+          setShowCreateModal(true)
+        }
       } catch (err) {
         console.error('Error loading gift exchanges:', err)
         setError(err instanceof Error ? err.message : 'Failed to load your gift exchanges')
@@ -44,16 +52,15 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
   }
 
   const handleCreateSubmit = async (hatName: string, name: string) => {
-    await createHat({
+    const { hatId } = await createHat({
       hatName,
       organizerName: name,
       organizerEmail: userEmail,
     })
 
-    // Refresh the hats list
-    const updatedHats = await getHats(userEmail)
-    setHats(updatedHats.hats)
-    setOrganizerName(updatedHats.organizerName)
+    // A new exchange has nothing in it yet, so send the organizer straight to where they fill it in
+    // rather than back to a list they have just left.
+    navigate(`/gift-exchange/${hatId}`)
   }
 
   const handleHatClick = (hatId: string) => {

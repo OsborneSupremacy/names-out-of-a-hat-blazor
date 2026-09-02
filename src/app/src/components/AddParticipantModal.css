@@ -119,6 +119,18 @@
   cursor: not-allowed;
 }
 
+/* The "added, add another?" step that replaces the form after a successful save. Matches the
+ * form's own padding so the dialog does not resize around the swap. */
+.participant-added {
+  padding: 1.5rem;
+}
+
+.participant-added-message {
+  margin: 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
 .error-text {
   color: #dc2626;
   font-size: 0.875rem;
@@ -202,7 +214,8 @@
     color: #f9fafb;
   }
 
-  .form-group label {
+  .form-group label,
+  .participant-added-message {
     color: #d1d5db;
   }
 

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   getHat,
@@ -65,6 +65,9 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   // address change should leave the organizer looking at their exchange with the dialog still open.
   const [addressError, setAddressError] = useState('')
   const [addressNotice, setAddressNotice] = useState('')
+  // An exchange holding only its organizer cannot do anything yet, so the dialog opens for them.
+  // Guarded so that closing it does not bring it straight back when the hat reloads.
+  const openedAddParticipantForEmptyHat = useRef(false)
 
   useEffect(() => {
     async function loadHat() {
@@ -80,6 +83,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
         setEditedName(hatData.name)
         setEditedAdditionalInfo(hatData.additionalInformation)
         setEditedPriceRange(hatData.priceRange)
+
+        if (
+          hatData.participants.length <= 1 &&
+          hatData.status === 'IN_PROGRESS' &&
+          !openedAddParticipantForEmptyHat.current
+        ) {
+          openedAddParticipantForEmptyHat.current = true
+          setShowAddParticipantModal(true)
+        }
       } catch (err) {
         console.error('Error loading gift exchange:', err)
         setError(err instanceof Error ? err.message : 'Failed to load gift exchange details')
@@ -544,6 +556,39 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                 )}
               </div>
 
+              <div className="hat-info-grid">
+                <div className="info-card full-width">
+                  <h3>Additional Information</h3>
+                  {isEditing ? (
+                    <textarea
+                      className="edit-textarea"
+                      value={editedAdditionalInfo}
+                      onChange={(e) => setEditedAdditionalInfo(e.target.value)}
+                      rows={4}
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p>{hat.additionalInformation || <span className="text-muted">None</span>}</p>
+                  )}
+                </div>
+
+                <div className="info-card">
+                  <h3>Price Range</h3>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="edit-input"
+                      value={editedPriceRange}
+                      onChange={(e) => setEditedPriceRange(e.target.value)}
+                      placeholder="e.g., $20-$50"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p>{hat.priceRange || <span className="text-muted">Not set</span>}</p>
+                  )}
+                </div>
+              </div>
+
               <div className="status-progression">
                 <div className="status-steps">
                   {HAT_STATUS_STEPS.map((status, index) => (
@@ -668,39 +713,6 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     <p className="action-hint">Start the next one with the same people and the same rules. This exchange stays as it is.</p>
                   </div>
                 )}
-              </div>
-
-              <div className="hat-info-grid">
-                <div className="info-card full-width">
-                  <h3>Additional Information</h3>
-                  {isEditing ? (
-                    <textarea
-                      className="edit-textarea"
-                      value={editedAdditionalInfo}
-                      onChange={(e) => setEditedAdditionalInfo(e.target.value)}
-                      rows={4}
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p>{hat.additionalInformation || <span className="text-muted">None</span>}</p>
-                  )}
-                </div>
-
-                <div className="info-card">
-                  <h3>Price Range</h3>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      className="edit-input"
-                      value={editedPriceRange}
-                      onChange={(e) => setEditedPriceRange(e.target.value)}
-                      placeholder="e.g., $20-$50"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p>{hat.priceRange || <span className="text-muted">Not set</span>}</p>
-                  )}
-                </div>
               </div>
 
               <div className="participants-section">
@@ -936,7 +948,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
               {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'READY_TO_CLOSE' && hat.status !== 'CLOSED' && (
                 <div className="delete-section">
                   <button
-                    className="danger-button"
+                    className="danger-button delete-hat-button"
                     onClick={handleDeleteHat}
                   >
                     Delete Gift Exchange
