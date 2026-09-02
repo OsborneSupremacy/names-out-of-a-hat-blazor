@@ -76,6 +76,15 @@
   color: inherit;
 }
 
+/* The card centres its contents and the input carries a 1rem gap to whatever follows. The
+ * explainer link wants neither: it belongs with the field above it, lined up with that field's
+ * label rather than centred under the card. */
+.signin-card .why-email-trigger {
+  display: block;
+  margin: 0 0 1.25rem;
+  text-align: left;
+}
+
 .signin-error {
   margin-bottom: 1rem;
   color: #d33;

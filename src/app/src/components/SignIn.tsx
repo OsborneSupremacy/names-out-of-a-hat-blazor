@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { requestMagicLink } from '../auth'
+import { WhyEmailModal } from './WhyEmailModal'
 import './SignIn.css'
 
 export function SignIn() {
@@ -7,6 +8,7 @@ export function SignIn() {
   const [isSending, setIsSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [showWhyEmail, setShowWhyEmail] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -72,6 +74,15 @@ export function SignIn() {
               disabled={isSending}
             />
 
+            {/* Under the field it is about, where somebody hesitating over it is already looking. */}
+            <button
+              type="button"
+              className="why-email-trigger"
+              onClick={() => setShowWhyEmail(true)}
+            >
+              Why do you need my email?
+            </button>
+
             {error && <div className="signin-error">{error}</div>}
 
             <button type="submit" className="signin-primary" disabled={isSending}>
@@ -80,6 +91,10 @@ export function SignIn() {
           </form>
         )}
       </div>
+
+      {showWhyEmail && (
+        <WhyEmailModal context="sign-in" onClose={() => setShowWhyEmail(false)} />
+      )}
     </div>
   )
 }

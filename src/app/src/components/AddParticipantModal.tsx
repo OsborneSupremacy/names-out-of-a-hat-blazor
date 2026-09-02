@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react'
+import { WhyEmailModal } from './WhyEmailModal'
 import './AddParticipantModal.css'
 
 interface AddParticipantModalProps {
@@ -14,6 +15,7 @@ export function AddParticipantModal({ onClose, onSubmit }: AddParticipantModalPr
   // Participants are nearly always added in a run, so after each one the dialog stays up and asks
   // whether there is another. Holds the name just added, or null while the form is showing.
   const [justAdded, setJustAdded] = useState<string | null>(null)
+  const [showWhyEmail, setShowWhyEmail] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -108,6 +110,16 @@ export function AddParticipantModal({ onClose, onSubmit }: AddParticipantModalPr
                 placeholder="participant@example.com"
                 disabled={isSubmitting}
               />
+
+              {/* Asking for somebody else's address is the point at which an organizer is most
+                * likely to want a reason, so the reason is offered right there. */}
+              <button
+                type="button"
+                className="why-email-trigger"
+                onClick={() => setShowWhyEmail(true)}
+              >
+                Why do you need their email?
+              </button>
             </div>
 
             {error && <div className="error-text">{error}</div>}
@@ -130,6 +142,10 @@ export function AddParticipantModal({ onClose, onSubmit }: AddParticipantModalPr
               </button>
             </div>
           </form>
+        )}
+
+        {showWhyEmail && (
+          <WhyEmailModal context="participants" onClose={() => setShowWhyEmail(false)} />
         )}
       </div>
     </div>
