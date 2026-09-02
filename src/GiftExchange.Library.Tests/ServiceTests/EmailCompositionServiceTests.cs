@@ -159,6 +159,34 @@ public class EmailCompositionServiceTests
         body.Should().NotContain("ideas.namesoutofahat.com");
     }
 
+    [Theory]
+    // The phrasing itself is covered by PriceRangePhrasingTests; this is about the body actually
+    // carrying it, and about the line disappearing entirely when no price was set.
+    [InlineData("around $100", "Please purchase a gift costing around $100.")]
+    [InlineData("$25 - $40", "Please purchase a gift costing $25 - $40.")]
+    [InlineData("Keep it under $20", "Keep it under $20.")]
+    public void ComposeEmail_GivenAPrice_CarriesItAsASentenceThatReads(string priceRange, string expected)
+    {
+        // arrange
+        var hat = HatFor("Ben", "ben@example.com", "Family Christmas") with { PriceRange = priceRange };
+
+        // act
+        var body = _sut.ComposeEmail(hat, "Alice", "Charlie", "token");
+
+        // assert
+        body.Should().Contain(expected);
+    }
+
+    [Fact]
+    public void ComposeEmail_GivenNoPrice_LeavesTheLineOut()
+    {
+        // act
+        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
+
+        // assert
+        body.Should().NotContain("Please purchase a gift");
+    }
+
     private static Hat HatFor(string organizerName, string organizerEmail, string hatName) =>
         new()
         {

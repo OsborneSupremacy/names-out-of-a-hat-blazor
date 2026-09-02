@@ -22,8 +22,11 @@ public class EmailCompositionService
             $"<b>{pickedName.GetPersonEmojiFor()} {HttpUtility.HtmlEncode(pickedName)}</b>"
         };
 
+        // Encoded after the sentence is built rather than before: the words around the organizer's
+        // text are fixed and carry nothing to encode, and PriceRangePhrasing works on what they
+        // actually typed rather than on an escaped version of it.
         if (!string.IsNullOrWhiteSpace(hat.PriceRange))
-            lines.Add($"Please purchase a gift in the range of {HttpUtility.HtmlEncode(hat.PriceRange)}.");
+            lines.Add(HttpUtility.HtmlEncode(PriceRangePhrasing.Describe(hat.PriceRange)));
 
         if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
             lines.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation.Trim()));
