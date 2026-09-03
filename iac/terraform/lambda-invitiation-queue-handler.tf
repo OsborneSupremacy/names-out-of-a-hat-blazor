@@ -10,6 +10,12 @@ resource "aws_lambda_function" "invitation-queue-handler" {
   source_code_hash = filebase64sha256(local.publish_zip_path)
   role             = aws_iam_role.invitation-queue-handler-role.arn
 
+  # Traces the gateway hop and, separately, the Init phase this function's memory setting is
+  # sized for. See xray.tf for what that does and does not show without SDK instrumentation.
+  tracing_config {
+    mode = "Active"
+  }
+
   environment {
     variables = local.common_environment_variables
   }

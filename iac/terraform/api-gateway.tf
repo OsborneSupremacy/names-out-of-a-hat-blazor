@@ -51,6 +51,12 @@ resource "aws_api_gateway_stage" "live-stage" {
     ignore_changes = [deployment_id]
   }
 
+  # Without this the trace starts at the Lambda invocation and the time API Gateway spent before
+  # it -- authorizer, request validation, integration setup -- is simply missing from it. Since
+  # what these traces are mostly for is the gap between the 28 second function timeout and the
+  # 29 second gateway ceiling, the gateway's own share of a request is the half worth having.
+  xray_tracing_enabled = true
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_access_logs.arn
     format = jsonencode({

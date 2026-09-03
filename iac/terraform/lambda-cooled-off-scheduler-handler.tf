@@ -14,6 +14,12 @@ resource "aws_lambda_function" "cooled-off-scheduler-handler" {
   source_code_hash = filebase64sha256(local.publish_zip_path)
   role             = aws_iam_role.cooled-off-scheduler-handler-role.arn
 
+  # Traces the gateway hop and, separately, the Init phase this function's memory setting is
+  # sized for. See xray.tf for what that does and does not show without SDK instrumentation.
+  tracing_config {
+    mode = "Active"
+  }
+
   environment {
     variables = local.common_environment_variables
   }
