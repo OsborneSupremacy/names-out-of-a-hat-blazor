@@ -9,6 +9,7 @@ using Amazon.AuroraDsql.Npgsql;
 using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using Amazon.XRay.Recorder.Handlers.EntityFramework;
 using GiftExchange.Library.Interceptors;
+using GiftExchange.Library.Utility;
 using Amazon.S3;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
@@ -34,12 +35,17 @@ internal static class ServiceProviderBuilder
         // build on.
         if (IsRunningInLambda) AWSSDKHandler.RegisterXRayForAllServices();
 
-        return new ServiceCollection()
-            .AddUtilities()
-            .AddVendorServices()
-            .AddBusinessServices()
-            .AddValidators()
-            .BuildServiceProvider();
+        // Named so it is distinguishable in a trace from the work it makes possible. This
+        // measures registration and container construction only -- the expensive singletons are
+        // registered lazily and resolve later, inside the request that first needs them, which is
+        // exactly the distinction a cold start comment cannot make and a trace can.
+        return Tracing.Measure("container-build", () =>
+            new ServiceCollection()
+                .AddUtilities()
+                .AddVendorServices()
+                .AddBusinessServices()
+                .AddValidators()
+                .BuildServiceProvider());
     }
 
     // Set by the Lambda runtime itself and by nothing else, which is what makes it a reliable
@@ -62,7 +68,14 @@ internal static class ServiceProviderBuilder
                 .AddAWSService<IAmazonS3>()
                 .AddAWSService<IAmazonSimpleSystemsManagement>()
                 .AddSingleton<IAmazonSimpleEmailService, AmazonSimpleEmailServiceClient>() // AddAWSService fails for SES
-                .AddSingleton<DsqlDataSource>(_ => DsqlDataSourceProvider.Create())
+                // Measured, because this is the single largest thing a cold start does and the one
+                // the memory_size on this function was raised to pay for: the connector signs an
+                // IAM auth token and opens a verify-full TLS connection before the first query can
+                // run. It is local work as far as the AWS SDK handler is concerned, so nothing
+                // automatic sees it; without this subsegment it is an unattributed gap between the
+                // invocation starting and the first statement being sent.
+                .AddSingleton<DsqlDataSource>(_ =>
+                    Tracing.Measure("dsql-datasource-create", DsqlDataSourceProvider.Create))
                 // A factory rather than AddDbContext: this container has no scopes, so a scoped
                 // DbContext would be resolved from the root and shared like a singleton. A
                 // DbContext is not thread safe, so each unit of work gets its own.

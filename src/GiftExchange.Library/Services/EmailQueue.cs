@@ -1,5 +1,6 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using GiftExchange.Library.Utility;
 
 namespace GiftExchange.Library.Services;
 
@@ -32,10 +33,28 @@ internal class EmailQueue : IEmailQueue
         _queueUrl = EnvReader.GetStringValue("INVITATIONS_QUEUE_URL");
     }
 
-    public Task EnqueueAsync(GiftExchangeEmailRequest email) =>
-        _sqsClient.SendMessageAsync(new SendMessageRequest
+    public Task EnqueueAsync(GiftExchangeEmailRequest email)
+    {
+        var request = new SendMessageRequest
         {
             QueueUrl = _queueUrl,
             MessageBody = _jsonService.SerializeDefault(email)
-        });
+        };
+
+        // Carries the caller's trace onto the message, so the send that happens later joins the
+        // request that asked for it instead of starting a trace of its own. The X-Ray SDK
+        // instruments this SendMessage call but puts nothing on the message itself, so without
+        // these three lines the journey from an organizer pressing Send to SES accepting each
+        // invitation is one trace per hop with nothing connecting them.
+        //
+        // A system attribute rather than a message attribute: Lambda's event source mapping reads
+        // AWSTraceHeader from the system set specifically to continue a trace, and system
+        // attributes do not count against the message's own attribute limit or change its body.
+        var traceHeader = Tracing.CurrentTraceHeader;
+        if (traceHeader is not null)
+            request.MessageSystemAttributes["AWSTraceHeader"] =
+                new MessageSystemAttributeValue { DataType = "String", StringValue = traceHeader };
+
+        return _sqsClient.SendMessageAsync(request);
+    }
 }
