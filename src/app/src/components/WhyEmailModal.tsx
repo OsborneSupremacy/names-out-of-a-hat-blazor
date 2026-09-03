@@ -120,7 +120,7 @@ function WhyNotAPhoneNumber() {
     <>
       <h3>Why not a phone number?</h3>
       <p>
-        Would that feel better — your number, and your participants&rsquo;? We would genuinely like
+        We would genuinely like
         to use phone numbers. A text is how plenty of people would rather hear about this.
       </p>
       <p>
