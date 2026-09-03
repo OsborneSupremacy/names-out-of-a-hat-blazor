@@ -42,6 +42,22 @@ locals {
     # provides a facade segment. But the cost of being wrong about that is a 500 to an organizer,
     # and the cost of this line is a log entry.
     "AWS_XRAY_CONTEXT_MISSING" = "LOG_ERROR"
+
+    # Powertools names the segment and, when Logging and Metrics are added later, the log field and
+    # metric dimension too. Left unset it defaults to the literal "service_undefined", which is the
+    # kind of value that goes unnoticed until somebody is looking at a trace and cannot tell which
+    # application produced it.
+    "POWERTOOLS_SERVICE_NAME" = "giftexchange"
+
+    # The default is true, and true would put every API response this application returns into
+    # trace metadata -- participants, addresses, and for a closed exchange the assignments
+    # themselves. Each handler already passes CaptureMode explicitly; this is the backstop for the
+    # one that eventually will not, because a default that leaks is worse than no default at all.
+    "POWERTOOLS_TRACER_CAPTURE_RESPONSE" = "false"
+
+    # Errors stay on. An exception is the thing a trace is most often opened to read, and unlike a
+    # response it is not a wholesale copy of somebody's data.
+    "POWERTOOLS_TRACER_CAPTURE_ERROR" = "true"
   }
   publish_zip_path = "../../src/GiftExchange.Library/bin/GiftExchange.Library.zip"
 }

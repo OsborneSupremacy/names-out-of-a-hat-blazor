@@ -1,6 +1,8 @@
 using Amazon.Lambda.SimpleEmailEvents;
 using Amazon.Lambda.SimpleEmailEvents.Actions;
 
+using AWS.Lambda.Powertools.Tracing;
+
 namespace GiftExchange.Library.Handlers;
 
 /// <summary>
@@ -34,6 +36,9 @@ public class InboundGiftIdeasHandler
     }
 
     [UsedImplicitly]
+    // Error capture only, and the reason is stronger here than anywhere else: this function
+    // handles mail somebody sent in, so anything captured from it is a stranger's message.
+    [Tracing(CaptureMode = TracingCaptureMode.Error)]
     public async Task FunctionHandler(SimpleEmailEvent<LambdaReceiptAction> sesEvent, ILambdaContext context)
     {
         var service = GetServiceProvider().GetService<InboundGiftIdeasService>()!;

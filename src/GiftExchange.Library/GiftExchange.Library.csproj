@@ -15,6 +15,7 @@
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.1" />
     <PackageReference Include="Amazon.Lambda.SimpleEmailEvents" Version="4.0.1" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="3.0.1" />
+    <PackageReference Include="AWS.Lambda.Powertools.Metrics" Version="3.2.2" />
     <PackageReference Include="AWSSDK.Comprehend" Version="4.0.100.11" />
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.103.5" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.102.4" />
@@ -24,7 +25,10 @@
     <PackageReference Include="AWSSDK.SimpleSystemsManagement" Version="4.0.103.6" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.100.11" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.101.1" />
-    <PackageReference Include="AWSXRayRecorder.Handlers.AwsSdk" Version="2.14.0" />
+    <PackageReference Include="AWS.Lambda.Powertools.Tracing" Version="3.2.2" />
+    <!-- Powertools wraps the X-Ray SDK and brings Core and the AWS SDK handler with it. This one
+         it does not cover: EF Core query tracing has no Powertools equivalent, so the handler
+         stays an explicit reference. -->
     <PackageReference Include="AWSXRayRecorder.Handlers.EntityFramework" Version="1.7.0" />
     <PackageReference Include="Bogus" Version="35.6.5" />
     <PackageReference Include="dotenv.net" Version="4.0.2" />

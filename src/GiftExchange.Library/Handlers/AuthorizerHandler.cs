@@ -1,3 +1,5 @@
+using AWS.Lambda.Powertools.Tracing;
+
 namespace GiftExchange.Library.Handlers;
 
 /// <summary>
@@ -29,6 +31,12 @@ public class AuthorizerHandler
         return _serviceProvider;
     }
 
+    // Disabled rather than Error. This method's return value is an IAM policy carrying the
+    // caller's email as the principal, and its exceptions are thrown while deciding whether to
+    // trust a token -- both are about who somebody is, which is the one category of detail that
+    // should not be sitting in trace metadata. The subsegment and its timing are still recorded;
+    // only the contents are withheld.
+    [Tracing(CaptureMode = TracingCaptureMode.Disabled)]
     public async Task<APIGatewayCustomAuthorizerResponse> FunctionHandler(
         APIGatewayCustomAuthorizerRequest request,
         ILambdaContext context

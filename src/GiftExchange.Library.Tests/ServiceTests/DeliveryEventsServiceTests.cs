@@ -1,7 +1,6 @@
 using Amazon.Lambda.SQSEvents;
 using GiftExchange.Library.Contexts;
 using GiftExchange.Library.Entities;
-using GiftExchange.Library.Utility;
 
 namespace GiftExchange.Library.Tests.ServiceTests;
 

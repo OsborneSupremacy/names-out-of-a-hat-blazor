@@ -1,3 +1,5 @@
+using AWS.Lambda.Powertools.Tracing;
+
 namespace GiftExchange.Library.Handlers;
 
 [UsedImplicitly]
@@ -25,6 +27,7 @@ public class CooledOffSchedulerHandler
         return _serviceProvider;
     }
 
+    [Tracing(CaptureMode = TracingCaptureMode.Error)]
     public async Task FunctionHandler(HatCooledOffScheduleRequest request, ILambdaContext context)
     {
         var giftExchangeProvider = GetServiceProvider().GetRequiredService<GiftExchangeProvider>();

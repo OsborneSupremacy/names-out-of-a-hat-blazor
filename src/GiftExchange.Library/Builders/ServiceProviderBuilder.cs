@@ -1,15 +1,12 @@
-﻿using System.Text.Json;
-using Amazon;
+﻿using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.Scheduler;
 using Amazon.SimpleEmail;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleSystemsManagement;
 using Amazon.AuroraDsql.Npgsql;
-using Amazon.XRay.Recorder.Handlers.AwsSdk;
-using Amazon.XRay.Recorder.Handlers.EntityFramework;
+using AWS.Lambda.Powertools.Tracing;
 using GiftExchange.Library.Interceptors;
-using GiftExchange.Library.Utility;
 using Amazon.S3;
 using Amazon.SQS;
 using GiftExchange.Library.Validators;
@@ -24,34 +21,37 @@ internal static class ServiceProviderBuilder
         // handler into the AWS SDK's pipeline for every client constructed afterwards, so it has
         // to run before anything resolves one. Once per cold start, which is what this method is.
         //
+        // Powertools does not do this as a side effect of the [Tracing] attribute -- the attribute
+        // traces the decorated method and nothing else -- so without this line every AWS call the
+        // handlers make would be invisible inside an otherwise traced invocation.
+        //
         // Registering for all services rather than naming them keeps this from being another list
         // that has to be remembered when a client is added -- the kind of per-item bookkeeping the
         // LIVE_MODE comment in locals.tf describes going wrong.
         //
-        // Only inside Lambda. Outside it there is no segment to attach a subsegment to and no
-        // daemon to receive one, so a local run or a test would be doing bookkeeping for traces
-        // nothing collects. The tests never call this method -- they compose AddUtilities and
-        // AddBusinessServices directly -- but that is their choice to reverse, not a guarantee to
-        // build on.
-        if (IsRunningInLambda) AWSSDKHandler.RegisterXRayForAllServices();
+        // No guard on it. Powertools checks for itself whether it is running in Lambda and
+        // disables tracing when it is not, which is why the hand-rolled check that used to be here
+        // is gone: two authorities on the same question is one more than the question has.
+        Tracing.RegisterForAllServices();
 
         // Named so it is distinguishable in a trace from the work it makes possible. This
         // measures registration and container construction only -- the expensive singletons are
         // registered lazily and resolve later, inside the request that first needs them, which is
         // exactly the distinction a cold start comment cannot make and a trace can.
-        return Tracing.Measure("container-build", () =>
-            new ServiceCollection()
+        //
+        // Assigned out of the closure because Powertools' WithSubsegment takes an Action rather
+        // than a Func: there is no overload that returns the value the work produced.
+        ServiceProvider? provider = null;
+        Tracing.WithSubsegment("container-build", _ =>
+            provider = new ServiceCollection()
                 .AddUtilities()
                 .AddVendorServices()
                 .AddBusinessServices()
                 .AddValidators()
                 .BuildServiceProvider());
-    }
 
-    // Set by the Lambda runtime itself and by nothing else, which is what makes it a reliable
-    // answer to "is a trace going anywhere?"
-    private static bool IsRunningInLambda =>
-        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME"));
+        return provider!;
+    }
 
     extension(IServiceCollection services)
     {
@@ -75,7 +75,12 @@ internal static class ServiceProviderBuilder
                 // automatic sees it; without this subsegment it is an unattributed gap between the
                 // invocation starting and the first statement being sent.
                 .AddSingleton<DsqlDataSource>(_ =>
-                    Tracing.Measure("dsql-datasource-create", DsqlDataSourceProvider.Create))
+                {
+                    DsqlDataSource? dataSource = null;
+                    Tracing.WithSubsegment("dsql-datasource-create",
+                        _ => dataSource = DsqlDataSourceProvider.Create());
+                    return dataSource!;
+                })
                 // A factory rather than AddDbContext: this container has no scopes, so a scoped
                 // DbContext would be resolved from the root and shared like a singleton. A
                 // DbContext is not thread safe, so each unit of work gets its own.

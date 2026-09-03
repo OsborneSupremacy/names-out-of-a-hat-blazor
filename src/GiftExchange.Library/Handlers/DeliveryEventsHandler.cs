@@ -1,5 +1,7 @@
 using Amazon.Lambda.SQSEvents;
 
+using AWS.Lambda.Powertools.Tracing;
+
 namespace GiftExchange.Library.Handlers;
 
 /// <summary>
@@ -33,6 +35,7 @@ public class DeliveryEventsHandler
     }
 
     [UsedImplicitly]
+    [Tracing(CaptureMode = TracingCaptureMode.Error)]
     public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
         var service = GetServiceProvider().GetService<DeliveryEventsService>()!;

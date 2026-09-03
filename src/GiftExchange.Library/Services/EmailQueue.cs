@@ -1,6 +1,5 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using GiftExchange.Library.Utility;
 
 namespace GiftExchange.Library.Services;
 
@@ -50,7 +49,7 @@ internal class EmailQueue : IEmailQueue
         // A system attribute rather than a message attribute: Lambda's event source mapping reads
         // AWSTraceHeader from the system set specifically to continue a trace, and system
         // attributes do not count against the message's own attribute limit or change its body.
-        var traceHeader = Tracing.CurrentTraceHeader;
+        var traceHeader = TracePropagation.CurrentTraceHeader;
         if (traceHeader is not null)
             request.MessageSystemAttributes["AWSTraceHeader"] =
                 new MessageSystemAttributeValue { DataType = "String", StringValue = traceHeader };
