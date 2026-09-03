@@ -6,6 +6,8 @@ using Amazon.SimpleEmail;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleSystemsManagement;
 using Amazon.AuroraDsql.Npgsql;
+using Amazon.XRay.Recorder.Handlers.AwsSdk;
+using Amazon.XRay.Recorder.Handlers.EntityFramework;
 using GiftExchange.Library.Interceptors;
 using Amazon.S3;
 using Amazon.SQS;
@@ -15,13 +17,35 @@ namespace GiftExchange.Library.Builders;
 
 internal static class ServiceProviderBuilder
 {
-    public static IServiceProvider Build() =>
-        new ServiceCollection()
+    public static IServiceProvider Build()
+    {
+        // Global, static, and therefore here rather than in AddVendorServices: it installs a
+        // handler into the AWS SDK's pipeline for every client constructed afterwards, so it has
+        // to run before anything resolves one. Once per cold start, which is what this method is.
+        //
+        // Registering for all services rather than naming them keeps this from being another list
+        // that has to be remembered when a client is added -- the kind of per-item bookkeeping the
+        // LIVE_MODE comment in locals.tf describes going wrong.
+        //
+        // Only inside Lambda. Outside it there is no segment to attach a subsegment to and no
+        // daemon to receive one, so a local run or a test would be doing bookkeeping for traces
+        // nothing collects. The tests never call this method -- they compose AddUtilities and
+        // AddBusinessServices directly -- but that is their choice to reverse, not a guarantee to
+        // build on.
+        if (IsRunningInLambda) AWSSDKHandler.RegisterXRayForAllServices();
+
+        return new ServiceCollection()
             .AddUtilities()
             .AddVendorServices()
             .AddBusinessServices()
             .AddValidators()
             .BuildServiceProvider();
+    }
+
+    // Set by the Lambda runtime itself and by nothing else, which is what makes it a reliable
+    // answer to "is a trace going anywhere?"
+    private static bool IsRunningInLambda =>
+        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME"));
 
     extension(IServiceCollection services)
     {
@@ -51,7 +75,18 @@ internal static class ServiceProviderBuilder
                         npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
                     // DSQL accepts only REPEATABLE READ, including for the transactions EF opens
                     // by itself around a multi-statement SaveChanges.
-                    .AddInterceptors(new RepeatableReadTransactionInterceptor()));
+                    .AddInterceptors(new RepeatableReadTransactionInterceptor())
+                    // What the AWS SDK handler cannot see. Every other call this function makes
+                    // goes through an AWS client and is traced by the pipeline handler registered
+                    // in Build; DSQL is reached over Postgres, so without this a trace shows the
+                    // invocation's total time with the database work as an unexplained gap in it.
+                    //
+                    // false, so the SQL text is recorded without its parameter values. The
+                    // parameters here are participant email addresses and hat ids, and a trace is
+                    // a place they would be retained on terms nothing else in this application
+                    // sets -- see the retention reasoning in cloudwatch-log-groups.tf for the same
+                    // argument applied to logs.
+                    .AddXRayInterceptor(false));
         }
 
         internal IServiceCollection AddUtilities()

@@ -34,6 +34,14 @@ locals {
     # Where the contact form's messages go. Deliberately not the alarms topic -- see
     # sns-notifications.tf for why the two are kept apart.
     "FEEDBACK_TOPIC_ARN" = aws_sns_topic.feedback.arn
+    # What the X-Ray SDK does when asked to record a subsegment with no segment to hang it on.
+    #
+    # The default is to throw, which would turn "this trace is incomplete" into "this request
+    # failed" -- an observability tool taking down the thing it observes. Nothing should hit this:
+    # ServiceProviderBuilder only registers the AWS SDK handler inside Lambda, where the runtime
+    # provides a facade segment. But the cost of being wrong about that is a 500 to an organizer,
+    # and the cost of this line is a log entry.
+    "AWS_XRAY_CONTEXT_MISSING" = "LOG_ERROR"
   }
   publish_zip_path = "../../src/GiftExchange.Library/bin/GiftExchange.Library.zip"
 }
