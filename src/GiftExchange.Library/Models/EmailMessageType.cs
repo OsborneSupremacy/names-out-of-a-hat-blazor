@@ -1,7 +1,7 @@
 namespace GiftExchange.Library.Models;
 
 /// <summary>
-/// Which of the two things this application sends to everybody at once a message was.
+/// Which of the things this application sends to a participant a message was.
 ///
 /// Carried on the send as an SES message tag and written back onto the delivery row, because
 /// without it the two are indistinguishable once they are in the table: both are "an email to this
@@ -13,6 +13,19 @@ public static class EmailMessageType
     public static string Invitation => "INVITATION";
 
     public static string Completion => "COMPLETION";
+
+    /// <summary>
+    /// The notice sent to everybody still in an exchange after somebody leaves it. Names nobody.
+    /// </summary>
+    public static string ParticipantLeft => "PARTICIPANT_LEFT";
+
+    /// <summary>
+    /// The notice sent to the organizer alone after somebody leaves, which does name them. Tagged
+    /// apart from <see cref="ParticipantLeft"/> because an organizer who is also a participant
+    /// receives both, and a delivery row that could not tell them apart would report one bounce for
+    /// two different messages.
+    /// </summary>
+    public static string OrganizerParticipantLeft => "ORGANIZER_PARTICIPANT_LEFT";
 
     /// <summary>
     /// A message that carried no type tag. Not written by anything here — it exists so that a send
@@ -30,6 +43,8 @@ public static class EmailMessageTypes
     public static readonly ImmutableList<string> All =
     [
         EmailMessageType.Invitation,
-        EmailMessageType.Completion
+        EmailMessageType.Completion,
+        EmailMessageType.ParticipantLeft,
+        EmailMessageType.OrganizerParticipantLeft
     ];
 }

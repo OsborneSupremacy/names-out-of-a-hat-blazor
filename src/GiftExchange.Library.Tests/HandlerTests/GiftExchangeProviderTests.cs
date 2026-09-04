@@ -579,7 +579,7 @@ public class GiftExchangeProviderTests
         };
 
         // act
-        var copied = await _sut.CopyHatAsync(source.HatId, copy, excludePreviousRecipients: false);
+        var copied = await _sut.CopyHatAsync(CopyOf(source.HatId, copy));
 
         // assert
         copied.Should().BeTrue();
@@ -632,7 +632,7 @@ public class GiftExchangeProviderTests
         {
             OrganizerEmail = first.OrganizerEmail, OrganizerName = first.OrganizerName
         };
-        await _sut.CopyHatAsync(first.HatId, second, excludePreviousRecipients: false);
+        await _sut.CopyHatAsync(CopyOf(first.HatId, second));
 
         var third = _hatDataModelFaker.Generate() with
         {
@@ -640,7 +640,7 @@ public class GiftExchangeProviderTests
         };
 
         // act
-        await _sut.CopyHatAsync(second.HatId, third, excludePreviousRecipients: false);
+        await _sut.CopyHatAsync(CopyOf(second.HatId, third));
 
         // assert
         await using var context = _contextFactory.CreateDbContext();
@@ -663,7 +663,7 @@ public class GiftExchangeProviderTests
         {
             OrganizerEmail = source.OrganizerEmail, OrganizerName = source.OrganizerName
         };
-        await _sut.CopyHatAsync(source.HatId, copy, excludePreviousRecipients: false);
+        await _sut.CopyHatAsync(CopyOf(source.HatId, copy));
 
         // act
         await _sut.DeleteHatAsync(new DeleteHatRequest
@@ -697,4 +697,21 @@ public class GiftExchangeProviderTests
 
         return request with { HatId = hat.HatId, OrganizerEmail = hat.OrganizerEmail };
     }
+
+    /// <summary>
+    /// A plain copy: everybody carried over, and last year's picks still eligible.
+    /// </summary>
+    /// <remarks>
+    /// The two rules that leave people out are covered by CopyHatTests, which drives the endpoint
+    /// and so exercises the do-not-add lookup that fills the second of them in. What these tests
+    /// are about is the copying itself.
+    /// </remarks>
+    private static CopyHatDataRequest CopyOf(Guid sourceHatId, HatDataModel newHat) =>
+        new()
+        {
+            SourceHatId = sourceHatId,
+            NewHat = newHat,
+            ExcludePreviousRecipients = false,
+            RefusedEmails = []
+        };
 }

@@ -45,6 +45,15 @@ public sealed class GiftExchangeDbContext : DbContext
     public DbSet<ParticipantEmailDeliveryEntity> ParticipantEmailDeliveries =>
         Set<ParticipantEmailDeliveryEntity>();
 
+    public DbSet<ParticipantLeaveTokenEntity> ParticipantLeaveTokens =>
+        Set<ParticipantLeaveTokenEntity>();
+
+    public DbSet<DoNotAddToExchangeEntity> DoNotAddToExchange => Set<DoNotAddToExchangeEntity>();
+
+    public DbSet<DoNotAddByOrganizerEntity> DoNotAddByOrganizer => Set<DoNotAddByOrganizerEntity>();
+
+    public DbSet<DoNotAddAnywhereEntity> DoNotAddAnywhere => Set<DoNotAddAnywhereEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GiftExchangeDbContext).Assembly);
 }

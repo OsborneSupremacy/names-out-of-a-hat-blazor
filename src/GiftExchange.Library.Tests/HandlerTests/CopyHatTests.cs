@@ -184,6 +184,99 @@ public class CopyHatTests
         response.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task CopyHat_LeavesOutAnybodyWhoHasRefused()
+    {
+        // arrange: this is the one path that adds a whole exchange's worth of people at once, and
+        // so the one place a refusal made last year is silently reversed a year later.
+        var source = await CreateRevealedHatAsync();
+        var refuser = source.Participants[1];
+
+        await _giftExchangeProvider.RecordDoNotAddAsync(new RecordDoNotAddRequest
+        {
+            Email = refuser.Person.Email,
+            HatId = source.Hat.HatId,
+            OrganizerEmail = source.Hat.OrganizerEmail,
+            BlockOrganizer = false,
+            BlockAnywhere = false
+        });
+
+        // act
+        var (statusCode, copy) = await CopyAsync(source, excludePreviousRecipients: false);
+
+        // assert: the copy succeeds and is simply smaller. Refusing it outright would leave the
+        // organizer to work out by elimination which of their friends had opted out.
+        statusCode.Should().Be(HttpStatusCode.Created);
+
+        copy.Participants.Select(participant => participant.Person.Email)
+            .Should().NotContain(refuser.Person.Email);
+
+        copy.Participants.Should().HaveCount(source.Participants.Count - 1);
+    }
+
+    [Fact]
+    public async Task CopyHat_SaysHowManyWereLeftOutWithoutSayingWho()
+    {
+        // arrange
+        var source = await CreateRevealedHatAsync();
+        var refuser = source.Participants[2];
+
+        await _giftExchangeProvider.RecordDoNotAddAsync(new RecordDoNotAddRequest
+        {
+            Email = refuser.Person.Email,
+            HatId = source.Hat.HatId,
+            OrganizerEmail = source.Hat.OrganizerEmail,
+            BlockOrganizer = false,
+            BlockAnywhere = false
+        });
+
+        var request = new CopyHatRequest
+        {
+            OrganizerEmail = source.Hat.OrganizerEmail,
+            HatId = source.Hat.HatId,
+            NewHatName = _hatDataModelFaker.Generate().HatName,
+            ExcludePreviousRecipients = false
+        };
+
+        // act
+        var response = await _sut.FunctionHandler(
+            _jsonService.SerializeDefault(request).ToApiGatewayProxyRequest(),
+            _context);
+
+        // assert: a count and not a list. The organizer needs to know the copy is smaller than what
+        // it was copied from, or they will send invitations to a short exchange without noticing;
+        // naming them would undo the refusal by another route.
+        var body = _jsonService.DeserializeDefault<CopyHatResponse>(response.Body);
+
+        body!.ParticipantsOmitted.Should().Be(1);
+        response.Body.Should().NotContain(refuser.Person.Email);
+        response.Body.Should().NotContain(refuser.Person.Name);
+    }
+
+    [Fact]
+    public async Task CopyHat_WithNobodyRefusing_ReportsNoneOmitted()
+    {
+        // arrange: the ordinary copy, which is nearly all of them.
+        var source = await CreateRevealedHatAsync();
+
+        var request = new CopyHatRequest
+        {
+            OrganizerEmail = source.Hat.OrganizerEmail,
+            HatId = source.Hat.HatId,
+            NewHatName = _hatDataModelFaker.Generate().HatName,
+            ExcludePreviousRecipients = false
+        };
+
+        // act
+        var response = await _sut.FunctionHandler(
+            _jsonService.SerializeDefault(request).ToApiGatewayProxyRequest(),
+            _context);
+
+        // assert
+        _jsonService.DeserializeDefault<CopyHatResponse>(response.Body)!
+            .ParticipantsOmitted.Should().Be(0);
+    }
+
     /// <summary>
     /// A revealed hat with three participants, one eligibility rule of its own, and everybody
     /// holding a pick — enough for the copy to have something to carry over and something to drop.

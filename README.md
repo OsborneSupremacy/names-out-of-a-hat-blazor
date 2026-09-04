@@ -111,6 +111,24 @@ So the GET only renders the list of people you could ask, which a scanner is wel
 
 Asking is throttled to once a week per pair. The person being asked can't distinguish repeated asks from nagging — they don't know how many people are asking, only how often they're being asked.
 
+### Leaving is a way out that the organizer can't reverse
+
+A participant can be added to an exchange by anybody with an organizer account, and until recently there was no way out of one. Every invitation now carries a leave link in its fine print — never the organizer's own copy, because no leave token is ever issued for them, which is a stronger guarantee than a flag somebody has to remember to check.
+
+It's the same two-endpoint split as the Ask, and the stakes are higher: a GET that acted would remove somebody, send the organizer back to the hat and tell everybody else to disregard their name, all because a mail gateway checked a link. So the GET renders a confirmation form and the POST behind the button does the work.
+
+Leaving removes the participant, and — while invitations are the operative ones — sends the exchange back to `IN_PROGRESS` and tells everybody still in it to disregard the name they were given. That notice names nobody, doesn't say how many are left, and is byte-identical for every recipient, so there's nothing in it to compare. The organizer gets a separate email that does name the person, because they can't run the exchange otherwise, along with the suggestion to ask people before adding them next time. Once an exchange has cooled off or closed, leaving still works but nothing is redrawn and nobody else is told — the gifts have already changed hands.
+
+### Three do-not-add lists, so leaving sticks
+
+Removing somebody achieves nothing if the organizer can type the address straight back in — and being asked to draw names again is exactly what sends them to the participant list. So leaving records a refusal, and the leave page offers two more: this exchange (always), this organizer, or gift exchanges altogether.
+
+Three tables rather than one with a scope column. DSQL can't `ALTER COLUMN`, so a column that starts nullable stays nullable, and a nullable scope is how the wrong row eventually gets matched. Addresses are stored lower-cased and trimmed and every index leads with that column, so all three checks are the same predicate shape and run concurrently — each provider method opens its own `DbContext`, which is what makes `Task.WhenAll` over them safe.
+
+Every path that puts an address into an exchange consults them: adding a participant, correcting a participant's address, and copying a finished exchange. A copy drops the people who refused rather than failing, and reports how many were left out without saying who — an organizer holding both lists could subtract one from the other.
+
+The refusal message is the same for all three lists. An organizer who could tell "they blocked you" from "they opted out of everything" could learn, by typing an address into a new exchange, the fact the person deliberately withheld. And nothing removes a row from these lists: an address that can un-block itself from a link in an email is one that anybody reaching that inbox can un-block. The way back in is for somebody to ask first.
+
 ### Anonymity is described honestly rather than overstated
 
 Being asked what *you* would like reveals nothing: everyone is drawn by exactly one person, so the recipient already knew somebody held their name. Being asked what *somebody else* would like reveals that the asker drew that person — and the reader knows it wasn't them and wasn't the subject, so in a small exchange the remaining field is short.

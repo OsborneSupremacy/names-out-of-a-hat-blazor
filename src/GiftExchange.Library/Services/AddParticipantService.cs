@@ -10,18 +10,21 @@ internal class AddParticipantService : IApiGatewayHandler
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    private readonly DoNotAddService _doNotAddService;
 
     public AddParticipantService(
         ILogger<AddParticipantService> logger,
         ApiGatewayAdapter adapter,
         HatPreconditionValidator hatPreconditionValidator,
-        GiftExchangeProvider giftExchangeProvider
+        GiftExchangeProvider giftExchangeProvider,
+        DoNotAddService doNotAddService
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+        _doNotAddService = doNotAddService ?? throw new ArgumentNullException(nameof(doNotAddService));
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(
@@ -62,6 +65,22 @@ internal class AddParticipantService : IApiGatewayHandler
         if(existingParticipants
            .Any(p => p.Person.Email.ContentEquals(request.Email) || p.Person.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
             return new Result<StatusCodeOnlyResponse>(new InvalidOperationException("Participant with provided email or name already exists. Participants must have unique email addresses and names."), HttpStatusCode.Conflict);
+
+        // After the duplicate check and before the write. Somebody who has refused this exchange, or
+        // this organizer, or all of them, is not added back by an organizer typing their address in
+        // again — which is the ordinary next thing to happen, since the organizer is told somebody
+        // left and asked to draw names afresh.
+        //
+        // Forbidden rather than Conflict. A conflict says the request collided with something and
+        // could be retried differently; this one cannot be retried at all with this address.
+        var refused = await _doNotAddService
+            .IsRefusedAsync(request.Email, request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
+
+        if (refused)
+            return new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException(DoNotAddService.RefusalMessage),
+                HttpStatusCode.Forbidden);
 
         await _giftExchangeProvider
             .CreateParticipantAsync(

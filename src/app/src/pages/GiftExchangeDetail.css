@@ -1154,7 +1154,7 @@
 
 /* What happened after an address was corrected — and in particular whether that sent an email.
  * Rendered here rather than as a page-level message, which replaces the whole view. */
-.address-notice {
+.participants-notice {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -1164,7 +1164,7 @@
   font-size: 0.875rem;
 }
 
-.address-notice-dismiss {
+.participants-notice-dismiss {
   margin-left: auto;
   background: none;
   border: none;

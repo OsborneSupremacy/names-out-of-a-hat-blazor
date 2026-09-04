@@ -157,6 +157,12 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, AskForGiftIdeasService>("get/ask/{token}")
                 .AddKeyedSingleton<IApiGatewayHandler, AskForGiftIdeasService>("post/ask/{token}")
 
+                // The same split, for the same reason, and here the stakes of getting it wrong are
+                // higher: a GET that acted would remove somebody from an exchange because their
+                // mail provider checked a link.
+                .AddKeyedSingleton<IApiGatewayHandler, LeaveGiftExchangeService>("get/leave/{token}")
+                .AddKeyedSingleton<IApiGatewayHandler, LeaveGiftExchangeService>("post/leave/{token}")
+
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")
 
@@ -202,6 +208,9 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<AutomaticEmailSender>()
                 .AddSingleton<IEmailQueue, EmailQueue>()
                 .AddSingleton<AskPageComposer>()
+                .AddSingleton<LeavePageComposer>()
+                .AddSingleton<LeaveEmailCompositionService>()
+                .AddSingleton<DoNotAddService>()
                 .AddSingleton<InboundGiftIdeasService>()
                 .AddSingleton<InvitationQueueHandlerService>()
                 .AddSingleton<DeliveryEventsService>()

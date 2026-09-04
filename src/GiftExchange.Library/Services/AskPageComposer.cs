@@ -12,13 +12,8 @@ namespace GiftExchange.Library.Services;
 /// No script also means the form has to work as a form: checkboxes with the same name, posted to
 /// the same address that rendered them. Nothing here needs anything more.
 ///
-/// The one thing these pages do ask the network for is the wordmark, which is worth the exception:
-/// somebody arriving here has followed a link out of an email and is about to be asked to trust the
-/// page with an action, and a page that does not look like the product it claims to be is a poor
-/// thing to ask that of. It is a single image, served from the site these pages belong to, and
-/// nothing depends on it arriving — <see cref="Branding.LogoAltText"/> stands in when it does not.
-/// A scanner fetching this page ahead of the reader may fetch the image too, which costs nothing:
-/// the GET has no side effects, which is the whole reason the Ask is split across two endpoints.
+/// The shell around each page — the masthead, the styles, the wordmark and why it is the one thing
+/// fetched from the network — is <see cref="EmailLinkedPage"/>, shared with the leave pages.
 /// </remarks>
 [UsedImplicitly]
 public class AskPageComposer
@@ -237,21 +232,5 @@ public class AskPageComposer
 
 
     private static string Page(string heading, string body) =>
-        $"""
-         <!doctype html>
-         <html lang="en">
-         <head>
-           <meta charset="utf-8" />
-           <meta name="viewport" content="width=device-width, initial-scale=1" />
-           <title>{HttpUtility.HtmlEncode(heading)} &mdash; Names Out Of A Hat</title>
-         </head>
-         <body style="margin:0;padding:24px;background-color:#faf8f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#222222;line-height:1.5;">
-           <div style="max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:8px;padding:32px;">
-             <a href="{Branding.SiteUrl}" style="display:inline-block;margin:0 0 24px;"><img src="{Branding.LogoUrl}" alt="{Branding.LogoAltText}" width="260" height="87" style="display:block;border:0;max-width:100%;height:auto;" /></a>
-             <h1 style="margin:0 0 16px;font-size:24px;">{HttpUtility.HtmlEncode(heading)}</h1>
-             {body}
-           </div>
-         </body>
-         </html>
-         """;
+        EmailLinkedPage.Compose(heading, body);
 }

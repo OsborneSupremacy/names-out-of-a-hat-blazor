@@ -16,15 +16,19 @@ internal class CopyHatService : IApiGatewayHandler
 
     private readonly ApiGatewayAdapter _adapter;
 
+    private readonly DoNotAddService _doNotAddService;
+
     public CopyHatService(
         GiftExchangeProvider giftExchangeProvider,
         HatPreconditionValidator hatPreconditionValidator,
-        ApiGatewayAdapter adapter
+        ApiGatewayAdapter adapter,
+        DoNotAddService doNotAddService
     )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+        _doNotAddService = doNotAddService ?? throw new ArgumentNullException(nameof(doNotAddService));
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(
@@ -77,8 +81,31 @@ internal class CopyHatService : IApiGatewayHandler
             OrganizerName = sourceHat.Organizer.Name
         };
 
+        // Copying is the one path that adds a whole exchange's worth of people at once, and so the
+        // one place a refusal would otherwise be silently reversed a year later. Checked against
+        // the source hat's id, not the new one: the refusals were written against the exchange
+        // somebody left, and the copy has no list of its own yet.
+        //
+        // Refusals drop people out of the copy rather than failing it. An organizer copying last
+        // year's exchange has done nothing wrong, and refusing the whole thing would leave them
+        // with no way forward but to work out by elimination which of their friends had opted out.
+        var refused = await _doNotAddService
+            .FindRefusedAsync(new DoNotAddCheckRequest
+            {
+                Emails = [.. sourceHat.Participants.Select(participant => participant.Person.Email)],
+                OrganizerEmail = request.OrganizerEmail,
+                HatId = request.HatId
+            })
+            .ConfigureAwait(false);
+
         var copied = await _giftExchangeProvider
-            .CopyHatAsync(request.HatId, newHat, request.ExcludePreviousRecipients)
+            .CopyHatAsync(new CopyHatDataRequest
+            {
+                SourceHatId = request.HatId,
+                NewHat = newHat,
+                ExcludePreviousRecipients = request.ExcludePreviousRecipients,
+                RefusedEmails = refused
+            })
             .ConfigureAwait(false);
 
         if (!copied)
@@ -86,6 +113,15 @@ internal class CopyHatService : IApiGatewayHandler
                 new InvalidOperationException(NameTakenMessage),
                 HttpStatusCode.Conflict);
 
-        return new Result<CopyHatResponse>(new CopyHatResponse { HatId = newHat.HatId }, HttpStatusCode.Created);
+        // Counted from the participants actually left out rather than from the size of the refusal
+        // set, because the organizer is carried over even if their own address is on a list, and
+        // because an address can be on more than one of the three.
+        var participantsOmitted = sourceHat.Participants
+            .Count(participant => !participant.Person.Email.ContentEquals(sourceHat.Organizer.Email)
+                                  && refused.Contains(participant.Person.Email.ToNormalizedEmail()));
+
+        return new Result<CopyHatResponse>(
+            new CopyHatResponse { HatId = newHat.HatId, ParticipantsOmitted = participantsOmitted },
+            HttpStatusCode.Created);
     }
 }

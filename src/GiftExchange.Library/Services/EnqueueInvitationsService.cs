@@ -72,6 +72,13 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         // Who each address belongs to within this hat, so the send can be tagged with it and what
         // SES reports afterwards can be matched to a participant. Read here rather than carried on
         // the domain record, which identifies people by name and address and not by id.
+        // Alongside the gift ideas tokens, and for the same reason. The organizer is skipped by the
+        // provider, so their own copy of the invitation carries no leave link — there is no leaving
+        // an exchange you are running.
+        var leaveTokens = await _giftExchangeProvider
+            .IssueLeaveTokensAsync(request.HatId)
+            .ConfigureAwait(false);
+
         var participantIds = await _giftExchangeProvider
             .GetParticipantIdsByEmailAsync(request.HatId)
             .ConfigureAwait(false);
@@ -85,12 +92,23 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
             // participant in the hat.
             var giftIdeasToken = giftIdeasTokens.GetValueOrDefault(participant.Person.Email, string.Empty);
 
+            // Empty for the organizer, deliberately, and empty is also what an address with no
+            // token issued against it gets: an invitation without the leave sentence rather than
+            // one carrying a link that goes nowhere.
+            var leaveToken = leaveTokens.GetValueOrDefault(participant.Person.Email, string.Empty);
+
             var invitation = new GiftExchangeEmailRequest
             {
                 HatId = request.HatId,
                 OrganizerEmail = request.OrganizerEmail,
-                HtmlBody = _emailCompositionService
-                    .ComposeEmail(hat, participant.Person.Name, participant.PickedRecipient, giftIdeasToken),
+                HtmlBody = _emailCompositionService.ComposeEmail(new ComposeInvitationRequest
+                {
+                    Hat = hat,
+                    ParticipantName = participant.Person.Name,
+                    PickedName = participant.PickedRecipient,
+                    GiftIdeasToken = giftIdeasToken,
+                    LeaveToken = leaveToken
+                }),
                 RecipientEmail = participant.Person.Email,
                 // An address with no id against it still gets its invitation, exactly as one with
                 // no token does. What it loses is the delivery status, which is the lesser harm --

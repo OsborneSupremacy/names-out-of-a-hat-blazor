@@ -5,8 +5,19 @@ namespace GiftExchange.Library.Services;
 [UsedImplicitly]
 public class EmailCompositionService
 {
-    public string ComposeEmail(Hat hat, string participant, string pickedName, string giftIdeasToken)
+    /// <summary>
+    /// One participant's invitation.
+    /// </summary>
+    /// <remarks>
+    /// Internal, because <see cref="ComposeInvitationRequest"/> is. Nothing outside this assembly
+    /// composes an invitation — the three callers are the send, the resend behind an address
+    /// correction, and the organizer's preview.
+    /// </remarks>
+    internal string ComposeEmail(ComposeInvitationRequest request)
     {
+        var hat = request.Hat;
+        var pickedName = request.PickedName;
+
         // Everything below originates with the organizer or a participant. The subject is plain
         // text and must not be encoded, but every value placed into this HTML body must be.
         var organizerName = HttpUtility.HtmlEncode(hat.Organizer.Name);
@@ -15,7 +26,7 @@ public class EmailCompositionService
         var lines = new List<string>
         {
             EmailBranding.Masthead(),
-            $"Dear {HttpUtility.HtmlEncode(participant)},",
+            $"Dear {HttpUtility.HtmlEncode(request.ParticipantName)},",
             GetGreeting(hat, organizerName, organizerEmail),
             "The person whose name was picked out of a hat for you is:",
             $"<b>{pickedName.GetPersonEmojiFor()} {HttpUtility.HtmlEncode(pickedName)}</b>"
@@ -30,20 +41,20 @@ public class EmailCompositionService
         if (!string.IsNullOrWhiteSpace(hat.AdditionalInformation))
             lines.Add(HttpUtility.HtmlEncode(hat.AdditionalInformation.Trim()));
 
-        if (!string.IsNullOrWhiteSpace(giftIdeasToken))
+        if (!string.IsNullOrWhiteSpace(request.GiftIdeasToken))
         {
             // Ask first, then share. The order matches what somebody opening this actually wants
             // to do: they have just been told a name, and the immediate question is what that
             // person wants, not what they themselves want.
-            lines.Add(GiftIdeaEmailCompositionService.BuildAskBlock(pickedName, giftIdeasToken));
-            lines.Add(GiftIdeaEmailCompositionService.BuildShareGiftIdeasBlock(giftIdeasToken));
+            lines.Add(GiftIdeaEmailCompositionService.BuildAskBlock(pickedName, request.GiftIdeasToken));
+            lines.Add(GiftIdeaEmailCompositionService.BuildShareGiftIdeasBlock(request.GiftIdeasToken));
         }
 
         lines.AddRange([
             $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
             "<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>",
             EmailBranding.SignOff(),
-            BuildSmallPrint(organizerEmail)
+            BuildSmallPrint(organizerEmail, request.LeaveToken)
         ]);
 
         var body = new StringBuilder();
@@ -68,8 +79,8 @@ public class EmailCompositionService
         $"{hat.Organizer.Name} has added you to {GiftExchangeNaming.Describe(hat.Name)}!";
 
     /// <summary>
-    /// The footer every invitation carries: who it came from, what this service checks, and what it
-    /// does not stand behind.
+    /// The footer every invitation carries: who it came from, what this service checks, what it
+    /// does not stand behind, and how to get out.
     /// </summary>
     /// <remarks>
     /// The second paragraph is a claim about what actually happens, so it is worth keeping true. An
@@ -78,15 +89,45 @@ public class EmailCompositionService
     /// participant names, the price range and the additional information — passes through
     /// <see cref="ContentModerationService"/> on its way in. "Automatically" is doing real work in
     /// that sentence: nobody reads these, and the paragraph after it is what that costs.
+    ///
+    /// The leave link is last and in the same small grey type as the rest, which is where it
+    /// belongs. Somebody who wants out will look for it and find it; putting it above the fold
+    /// would make an ordinary invitation read as though leaving were the expected response to it,
+    /// and this is the only message most participants get about an exchange they are pleased to be
+    /// in. It is the same placement an unsubscribe line takes, and for the same reasons.
     /// </remarks>
-    private static string BuildSmallPrint(string organizerEmail) =>
-        $"""
-         <small style="color:#666666;">
-         This email was sent on behalf of {organizerEmail} through <a href="https://namesoutofahat.com">namesoutofahat.com</a>, a free app for running gift exchanges where names are drawn at random.
-         <br /><br />
-         Organizers confirm their email address before they can send invitations, and everything they write is screened automatically for illegal and inappropriate content.
-         <br /><br />
-         Beyond those checks, the gift exchange name, the participant names and any additional information are the organizer's own words, and namesoutofahat.com is not responsible for them.
-         </small>
-         """;
+    /// <param name="leaveToken">
+    /// Empty for the organizer, who is never issued one — so the sentence is simply not written
+    /// rather than being written and pointed nowhere. Also empty on a preview of an invitation the
+    /// organizer has not sent yet.
+    /// </param>
+    private static string BuildSmallPrint(string organizerEmail, string leaveToken)
+    {
+        var footer = new StringBuilder();
+
+        footer.Append(
+            $"""
+             <small style="color:#666666;">
+             This email was sent on behalf of {organizerEmail} through <a href="{Branding.SiteUrl}">namesoutofahat.com</a>, a free app for running gift exchanges where names are drawn at random.
+             <br /><br />
+             Organizers confirm their email address before they can send invitations, and everything they write is screened automatically for illegal and inappropriate content.
+             <br /><br />
+             Beyond those checks, the gift exchange name, the participant names and any additional information are the organizer's own words, and namesoutofahat.com is not responsible for them.
+             """);
+
+        if (!string.IsNullOrWhiteSpace(leaveToken))
+        {
+            var leaveUrl = $"{Branding.LeaveUrl}/{HttpUtility.UrlEncode(leaveToken)}";
+
+            footer.Append(
+                $"""
+                 <br /><br />
+                 If you'd rather not take part, you can <a href="{HttpUtility.HtmlAttributeEncode(leaveUrl)}">leave this gift exchange</a>. We'll let the organizer know somebody left, without saying who.
+                 """);
+        }
+
+        footer.Append("</small>");
+
+        return footer.ToString();
+    }
 }

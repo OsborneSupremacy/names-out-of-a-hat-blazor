@@ -8,7 +8,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_NamesTheOrganizersAddressAlongsideTheirName()
     {
         // act
-        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
+        var body = _sut.ComposeEmail(Invitation());
 
         // assert
         body.Should().Contain("Ben (ben@example.com) has added you to the gift exchange, Family Christmas!");
@@ -49,7 +49,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_CarriesTheSmallPrintAndTheOrganizersAddress()
     {
         // act
-        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
+        var body = _sut.ComposeEmail(Invitation());
 
         // assert
         body.Should().Contain("This email was sent on behalf of ben@example.com");
@@ -67,7 +67,7 @@ public class EmailCompositionServiceTests
             with { PriceRange = "<b>$20</b>", AdditionalInformation = "<img src=x onerror=alert(1)>" };
 
         // act
-        var body = _sut.ComposeEmail(hat, "<script>a</script>", "<script>b</script>", "token");
+        var body = _sut.ComposeEmail(Invitation(hat, participantName: "<script>a</script>", pickedName: "<script>b</script>"));
 
         // assert
         // What makes the payloads inert is the escaped angle brackets, not the absence of the
@@ -90,7 +90,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_OpensWithTheBrandingMasthead()
     {
         // act
-        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
+        var body = _sut.ComposeEmail(Invitation());
 
         // assert
         body.Should().StartWith("<a href=\"https://namesoutofahat.com\"><img");
@@ -110,11 +110,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_CarriesAGiftIdeasButtonAddressedToTheParticipantsOwnToken()
     {
         // act
-        var body = _sut.ComposeEmail(
-            HatFor("Ben", "ben@example.com", "Family Christmas"),
-            "Alice",
-            "Charlie",
-            "abc123");
+        var body = _sut.ComposeEmail(Invitation(giftIdeasToken: "abc123"));
 
         // assert
         body.Should().Contain("SHARE GIFT IDEAS");
@@ -129,11 +125,7 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_GivesTheGiftIdeasButtonAMailtoRatherThanAReply()
     {
         // act
-        var body = _sut.ComposeEmail(
-            HatFor("Ben", "ben@example.com", "Family Christmas"),
-            "Alice",
-            "Charlie",
-            "abc123");
+        var body = _sut.ComposeEmail(Invitation(giftIdeasToken: "abc123"));
 
         // assert: this is a security property, not a styling one. This email names the recipient's
         // own pick, so a reply would quote it, and the quoted text would be forwarded to the one
@@ -148,11 +140,7 @@ public class EmailCompositionServiceTests
     {
         // act: an invitation with no token issued gets no block, rather than a button addressed to
         // "@ideas.namesoutofahat.com" that silently routes nowhere.
-        var body = _sut.ComposeEmail(
-            HatFor("Ben", "ben@example.com", "Family Christmas"),
-            "Alice",
-            "Charlie",
-            string.Empty);
+        var body = _sut.ComposeEmail(Invitation(giftIdeasToken: string.Empty));
 
         // assert
         body.Should().NotContain("SHARE GIFT IDEAS");
@@ -171,7 +159,7 @@ public class EmailCompositionServiceTests
         var hat = HatFor("Ben", "ben@example.com", "Family Christmas") with { PriceRange = priceRange };
 
         // act
-        var body = _sut.ComposeEmail(hat, "Alice", "Charlie", "token");
+        var body = _sut.ComposeEmail(Invitation(hat));
 
         // assert
         body.Should().Contain(expected);
@@ -181,11 +169,75 @@ public class EmailCompositionServiceTests
     public void ComposeEmail_GivenNoPrice_LeavesTheLineOut()
     {
         // act
-        var body = _sut.ComposeEmail(HatFor("Ben", "ben@example.com", "Family Christmas"), "Alice", "Charlie", "token");
+        var body = _sut.ComposeEmail(Invitation());
 
         // assert
         body.Should().NotContain("Please purchase a gift");
     }
+
+    [Fact]
+    public void ComposeEmail_GivenALeaveToken_PutsTheWayOutInTheFinePrint()
+    {
+        // act
+        var body = _sut.ComposeEmail(Invitation(leaveToken: "leave-abc123"));
+
+        // assert: present, and in the small print rather than above it. Somebody who wants out will
+        // look for it; putting it higher would make an ordinary invitation read as though leaving
+        // were the expected response to one.
+        body.Should().Contain("https://api.namesoutofahat.com/leave/leave-abc123");
+        body.Should().Contain("leave this gift exchange");
+
+        var finePrint = body[body.IndexOf("<small", StringComparison.Ordinal)..];
+        finePrint.Should().Contain("/leave/leave-abc123", "the link belongs inside the small print");
+    }
+
+    [Fact]
+    public void ComposeEmail_GivenNoLeaveToken_LeavesTheSentenceOutEntirely()
+    {
+        // act: the organizer's own copy. No leave token is ever issued for them, so the sentence is
+        // not written rather than written and pointed nowhere.
+        var body = _sut.ComposeEmail(Invitation(participantName: "Ben", leaveToken: string.Empty));
+
+        // assert
+        body.Should().NotContain("leave this gift exchange");
+        body.Should().NotContain("/leave/");
+    }
+
+    [Fact]
+    public void ComposeEmail_TheLeaveSentenceDoesNotPromiseAnonymityItCannotKeep()
+    {
+        // act
+        var body = _sut.ComposeEmail(Invitation(leaveToken: "leave-abc123"));
+
+        // assert: the organizer <em>is</em> told who left — they cannot run the exchange otherwise.
+        // What is kept from everybody else is said here so that nobody leaves on a false premise.
+        body.Should().Contain("without saying who");
+    }
+
+    /// <summary>
+    /// The ordinary invitation, with only what a test is about spelled out.
+    /// </summary>
+    /// <remarks>
+    /// Every argument is named at the call site, which is the point of the record this builds:
+    /// four of the five fields are strings, and the arguments most worth not transposing — the
+    /// participant's name against the name they drew, the gift ideas token against the leave one —
+    /// are exactly the ones that used to sit next to each other positionally.
+    /// </remarks>
+    private static ComposeInvitationRequest Invitation(
+        Hat? hat = null,
+        string participantName = "Alice",
+        string pickedName = "Charlie",
+        string giftIdeasToken = "token",
+        string leaveToken = "leave-token"
+    ) =>
+        new()
+        {
+            Hat = hat ?? HatFor("Ben", "ben@example.com", "Family Christmas"),
+            ParticipantName = participantName,
+            PickedName = pickedName,
+            GiftIdeasToken = giftIdeasToken,
+            LeaveToken = leaveToken
+        };
 
     private static Hat HatFor(string organizerName, string organizerEmail, string hatName) =>
         new()

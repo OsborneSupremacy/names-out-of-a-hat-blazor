@@ -49,6 +49,8 @@ internal class EditParticipantAddressService : IApiGatewayHandler
 
     private readonly IReplyThrottleProvider _throttleProvider;
 
+    private readonly DoNotAddService _doNotAddService;
+
     public EditParticipantAddressService(
         ILogger<EditParticipantAddressService> logger,
         ApiGatewayAdapter adapter,
@@ -57,7 +59,8 @@ internal class EditParticipantAddressService : IApiGatewayHandler
         EmailCompositionService emailCompositionService,
         CompletionEmailCompositionService completionEmailCompositionService,
         IEmailQueue emailQueue,
-        IReplyThrottleProvider throttleProvider
+        IReplyThrottleProvider throttleProvider,
+        DoNotAddService doNotAddService
     )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -68,6 +71,7 @@ internal class EditParticipantAddressService : IApiGatewayHandler
         _completionEmailCompositionService = completionEmailCompositionService ?? throw new ArgumentNullException(nameof(completionEmailCompositionService));
         _emailQueue = emailQueue ?? throw new ArgumentNullException(nameof(emailQueue));
         _throttleProvider = throttleProvider ?? throw new ArgumentNullException(nameof(throttleProvider));
+        _doNotAddService = doNotAddService ?? throw new ArgumentNullException(nameof(doNotAddService));
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(
@@ -109,6 +113,19 @@ internal class EditParticipantAddressService : IApiGatewayHandler
             return new Result<EditParticipantAddressResponse>(
                 new KeyNotFoundException($"Participant with email `{request.CurrentEmail}` not found"),
                 HttpStatusCode.NotFound);
+
+        // Checked here as it is on an ordinary add, because this endpoint is otherwise a way around
+        // that one: re-pointing an existing row at a refused address would put an invitation in the
+        // inbox of somebody who had asked not to receive them, without ever calling the path that
+        // looks. Ahead of the throttle reservation, so a refused correction spends no slot.
+        var refused = await _doNotAddService
+            .IsRefusedAsync(request.NewEmail, request.OrganizerEmail, request.HatId)
+            .ConfigureAwait(false);
+
+        if (refused)
+            return new Result<EditParticipantAddressResponse>(
+                new InvalidOperationException(DoNotAddService.RefusalMessage),
+                HttpStatusCode.Forbidden);
 
         // Decided from the status as it stands, before anything is written. Nothing below changes
         // the hat's status, so reading it first is only about keeping the decision in one place.
@@ -213,8 +230,27 @@ internal class EditParticipantAddressService : IApiGatewayHandler
                 .IssueGiftIdeaTokenAsync(change.ParticipantId)
                 .ConfigureAwait(false);
 
-            body = _emailCompositionService
-                .ComposeEmail(hat, change.Name, participant.PickedRecipient, giftIdeasToken);
+            // Replaced rather than added to, unlike the gift ideas token above. The old invitation
+            // went to an address that was wrong, and a leave link in it removes this participant
+            // from the exchange — so whoever is reading that inbox must not keep a working one.
+            //
+            // Not for the organizer. They are a participant of their own exchange and can have
+            // their address corrected like anybody else, but there is no leaving an exchange you
+            // are running, so their resent invitation carries no leave sentence.
+            var leaveToken = participant.Person.Email.ContentEquals(hat.Organizer.Email)
+                ? string.Empty
+                : await _giftExchangeProvider
+                    .IssueLeaveTokenAsync(change.ParticipantId)
+                    .ConfigureAwait(false);
+
+            body = _emailCompositionService.ComposeEmail(new ComposeInvitationRequest
+            {
+                Hat = hat,
+                ParticipantName = change.Name,
+                PickedName = participant.PickedRecipient,
+                GiftIdeasToken = giftIdeasToken,
+                LeaveToken = leaveToken
+            });
         }
 
         await _emailQueue.EnqueueAsync(new GiftExchangeEmailRequest

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   getHat,
   editHat,
@@ -38,6 +38,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
 
   const { hatId } = useParams<{ hatId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [hat, setHat] = useState<Hat | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
@@ -64,10 +65,29 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   // Kept apart from the page-level `error`, which replaces the whole view when it is set. A failed
   // address change should leave the organizer looking at their exchange with the dialog still open.
   const [addressError, setAddressError] = useState('')
-  const [addressNotice, setAddressNotice] = useState('')
+  // Anything worth telling the organizer about the participant list, shown just above it. Set by
+  // an address correction and by a copy that had to leave somebody out.
+  const [participantsNotice, setParticipantsNotice] = useState('')
   // An exchange holding only its organizer cannot do anything yet, so the dialog opens for them.
   // Guarded so that closing it does not bring it straight back when the hat reloads.
   const openedAddParticipantForEmptyHat = useRef(false)
+
+  /**
+   * Picks up a notice handed over by whatever navigated here — today only a copy that had to leave
+   * somebody out.
+   *
+   * The history entry is rewritten as it is read, so a refresh does not bring the notice back for
+   * an exchange the organizer has since fixed. Keyed on the exchange as well, so that navigating
+   * between two of them does not carry one's notice onto the other.
+   */
+  useEffect(() => {
+    const carried = (location.state as { notice?: string } | null)?.notice
+
+    if (!carried) return
+
+    setParticipantsNotice(carried)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   useEffect(() => {
     async function loadHat() {
@@ -210,7 +230,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
 
   const handleOpenAddressModal = (participant: Participant) => {
     setAddressError('')
-    setAddressNotice('')
+    setParticipantsNotice('')
     setEditingAddressFor(participant)
   }
 
@@ -234,7 +254,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
 
       // Says what actually happened rather than a generic "saved". Mail going out on the
       // organizer's behalf should never be something they have to infer.
-      setAddressNotice(
+      setParticipantsNotice(
         result.emailResent
           ? `${name} is now at ${newEmail}, and ${
               result.messageType === 'COMPLETION' ? 'the announcement has' : 'their invitation has'
@@ -444,14 +464,27 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const handleCopyHat = async (newHatName: string, excludePreviousRecipients: boolean) => {
     if (!hatId) return
 
-    const { hatId: newHatId } = await copyHat({
+    const { hatId: newHatId, participantsOmitted } = await copyHat({
       organizerEmail: userEmail,
       hatId,
       newHatName,
       excludePreviousRecipients,
     })
 
-    navigate(`/gift-exchange/${newHatId}`)
+    // Carried across the navigation rather than shown before it, because the exchange it is about
+    // is the one we are going to. A count and not names: the API does not say who, deliberately,
+    // and an organizer holding both lists could subtract one from the other.
+    navigate(`/gift-exchange/${newHatId}`, {
+      state:
+        participantsOmitted > 0
+          ? {
+              notice:
+                participantsOmitted === 1
+                  ? 'One person from the previous gift exchange was left out, because they have asked not to be added to gift exchanges. Add anybody else you need before you shake the hat.'
+                  : `${participantsOmitted} people from the previous gift exchange were left out, because they have asked not to be added to gift exchanges. Add anybody else you need before you shake the hat.`,
+            }
+          : undefined,
+    })
   }
 
   const handleShakeHat = async () => {
@@ -732,13 +765,13 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     </button>
                   )}
                 </div>
-                {addressNotice && (
-                  <div className="address-notice">
-                    <span>{addressNotice}</span>
+                {participantsNotice && (
+                  <div className="participants-notice">
+                    <span>{participantsNotice}</span>
                     <button
                       type="button"
-                      className="address-notice-dismiss"
-                      onClick={() => setAddressNotice('')}
+                      className="participants-notice-dismiss"
+                      onClick={() => setParticipantsNotice('')}
                       aria-label="Dismiss"
                     >
                       ×

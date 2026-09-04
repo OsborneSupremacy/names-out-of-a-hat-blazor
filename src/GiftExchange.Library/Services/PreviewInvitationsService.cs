@@ -13,6 +13,19 @@ internal class PreviewInvitationsService : IApiGatewayHandler
     /// </summary>
     private const string PlaceholderGiftIdeasToken = "example-token";
 
+    /// <summary>
+    /// Stands in for the leave token, so the organizer sees the leave sentence in the fine print
+    /// exactly as their participants will.
+    /// </summary>
+    /// <remarks>
+    /// Shown rather than omitted, deliberately. An organizer previewing an invitation is entitled
+    /// to know that it offers a way out — it is their exchange, and finding out from the first
+    /// person who uses it would be worse for everybody. Not a real token for the reason the gift
+    /// ideas placeholder is not one, and more so: a working leave link handed to the organizer
+    /// would remove a participant.
+    /// </remarks>
+    private const string PlaceholderLeaveToken = "example-token";
+
     private readonly ApiGatewayAdapter _adapter;
 
     private readonly HatPreconditionValidator _hatPreconditionValidator;
@@ -71,11 +84,14 @@ internal class PreviewInvitationsService : IApiGatewayHandler
         var preview = new PreviewInvitationsResponse
         {
             Subject = EmailCompositionService.GetSubject(hat),
-            HtmlBody = _emailCompositionService.ComposeEmail(
-                hat,
-                PlaceholderParticipantName,
-                PlaceholderPickedName,
-                PlaceholderGiftIdeasToken),
+            HtmlBody = _emailCompositionService.ComposeEmail(new ComposeInvitationRequest
+            {
+                Hat = hat,
+                ParticipantName = PlaceholderParticipantName,
+                PickedName = PlaceholderPickedName,
+                GiftIdeasToken = PlaceholderGiftIdeasToken,
+                LeaveToken = PlaceholderLeaveToken
+            }),
             SenderIpAddress = request.SenderIpAddress
         };
 

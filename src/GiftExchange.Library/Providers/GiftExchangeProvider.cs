@@ -133,19 +133,16 @@ public class GiftExchangeProvider
     /// along the lines of "nobody draws the same person two years running" would need, and it can
     /// only be captured at the moment the copy is made.
     /// </summary>
-    /// <param name="sourceHatId">The hat being copied. It is only read.</param>
-    /// <param name="newHat">The hat to write. Its organizer scopes the read of the source.</param>
-    /// <param name="excludePreviousRecipients">
-    /// When true, the participant somebody drew in the source hat is left out of their
-    /// eligibility list in the copy.
+    /// <param name="request">
+    /// The source hat, which is only read; the copy to write, whose organizer scopes that read; and
+    /// the two rules deciding who is left out.
     /// </param>
     /// <returns>true if the copy was written, false if the organizer already has a hat by that name.</returns>
-    public async Task<bool> CopyHatAsync(
-        Guid sourceHatId,
-        HatDataModel newHat,
-        bool excludePreviousRecipients
-    )
+    internal async Task<bool> CopyHatAsync(CopyHatDataRequest request)
     {
+        var sourceHatId = request.SourceHatId;
+        var newHat = request.NewHat;
+
         try
         {
             // Resolved before the transaction opens: the organizer already exists, since they own
@@ -159,8 +156,18 @@ public class GiftExchangeProvider
                 var source = await context.Hats
                     .AsNoTracking()
                     .Include(hat => hat.Participants).ThenInclude(participant => participant.EligibleRecipients)
+                    .Include(hat => hat.Participants).ThenInclude(participant => participant.Person)
                     .SingleAsync(hat => hat.HatId == sourceHatId && hat.OrganizerPersonId == organizerPersonId)
                     .ConfigureAwait(false);
+
+                // Whoever has refused an invitation from this organizer does not come along in the
+                // copy. The caller decides who that is; this only has to leave them out, and leave
+                // the organizer in regardless — they are a participant of their own exchange, and a
+                // list they joined for somebody else's is not a reason to remove them from it.
+                var carriedOver = source.Participants
+                    .Where(participant => participant.PersonId == organizerPersonId
+                                          || !request.RefusedEmails.Contains(participant.Person.Email.ToNormalizedEmail()))
+                    .ToList();
 
                 context.Hats.Add(new HatEntity
                 {
@@ -179,10 +186,10 @@ public class GiftExchangeProvider
                     CopiedFromHatId = sourceHatId
                 });
 
-                var newParticipantIds = source.Participants
+                var newParticipantIds = carriedOver
                     .ToDictionary(participant => participant.ParticipantId, _ => Guid.CreateVersion7());
 
-                foreach (var participant in source.Participants)
+                foreach (var participant in carriedOver)
                     context.Participants.Add(new ParticipantEntity
                     {
                         ParticipantId = newParticipantIds[participant.ParticipantId],
@@ -192,20 +199,22 @@ public class GiftExchangeProvider
                         PickedRecipientParticipantId = Guid.Empty
                     });
 
-                foreach (var participant in source.Participants)
+                foreach (var participant in carriedOver)
                 foreach (var eligibility in participant.EligibleRecipients)
                 {
-                    if (excludePreviousRecipients
+                    if (request.ExcludePreviousRecipients
                         && eligibility.EligibleParticipantId == participant.PickedRecipientParticipantId)
                         continue;
 
                     // Nothing enforces referential integrity in DSQL, so a row pointing at a
                     // participant who is no longer in the hat is copied as nothing at all rather
-                    // than taken on faith.
+                    // than taken on faith. A recipient left out of the copy on purpose lands here
+                    // too, which is why the warning says what it does rather than claiming
+                    // something went wrong.
                     if (!newParticipantIds.TryGetValue(eligibility.EligibleParticipantId, out var eligibleId))
                     {
-                        _logger.LogWarning(
-                            "Skipped an eligibility row while copying hat {SourceHatId}: recipient {EligibleParticipantId} is not a participant in it.",
+                        _logger.LogInformation(
+                            "Skipped an eligibility row while copying hat {SourceHatId}: recipient {EligibleParticipantId} is not being carried over.",
                             sourceHatId,
                             eligibility.EligibleParticipantId);
                         continue;
@@ -397,6 +406,11 @@ public class GiftExchangeProvider
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);
 
+            await context.ParticipantLeaveTokens
+                .Where(token => participantIds.Contains(token.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
             // What SES said about the mail sent to these participants. It is a record about an
             // exchange that is being removed, and no longer answers any question once the addresses
             // it describes are gone.
@@ -512,6 +526,312 @@ public class GiftExchangeProvider
 
         return issued.ToImmutable();
     }
+
+    /// <summary>
+    /// Issues one leave token per participant in a hat, and hands back the plaintext.
+    /// </summary>
+    /// <remarks>
+    /// Called alongside <see cref="IssueGiftIdeaTokensAsync"/> when invitations go out, and for the
+    /// same reason: this is the first moment there is an email going to each of these people to
+    /// carry a token, and a token nobody has been told is only a row.
+    ///
+    /// The organizer is skipped. There is no leaving an exchange you are running, and the surest
+    /// way to enforce that is for no token of theirs to exist — a service that checked a flag could
+    /// forget to, and one that has nothing to look up cannot. Their invitation is composed with an
+    /// empty token, and the leave sentence in the fine print is simply not written.
+    ///
+    /// As with the gift ideas tokens, this is the only moment the plaintext exists on this side.
+    /// </remarks>
+    /// <returns>Token by participant email address. Addresses are unique across the application.</returns>
+    public async Task<ImmutableDictionary<string, string>> IssueLeaveTokensAsync(Guid hatId)
+    {
+        var issued = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        await InTransactionAsync(async context =>
+        {
+            // Reset rather than accumulate, for the reason IssueGiftIdeaTokensAsync gives: the
+            // delegate is replayed whole on a fresh context, and tokens from a failed attempt would
+            // otherwise be handed out alongside the ones actually written.
+            issued.Clear();
+
+            var organizerPersonId = await context.Hats
+                .AsNoTracking()
+                .Where(hat => hat.HatId == hatId)
+                .Select(hat => hat.OrganizerPersonId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            var participants = await context.Participants
+                .AsNoTracking()
+                .Where(participant => participant.HatId == hatId
+                                      && participant.PersonId != organizerPersonId)
+                .Select(participant => new { participant.ParticipantId, participant.Person.Email })
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            if (participants.Count == 0)
+                return;
+
+            var participantIds = participants
+                .Select(participant => participant.ParticipantId)
+                .ToList();
+
+            // Reissuing replaces. Invitations can be sent more than once, and leaving the old row
+            // would keep a link alive in an email whose picks are no longer the ones in the hat.
+            await context.ParticipantLeaveTokens
+                .Where(token => participantIds.Contains(token.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            foreach (var participant in participants)
+            {
+                // The opaque length, not the legible one. This token only ever travels inside a
+                // link, so nothing is paid for the extra characters, and what it authorises —
+                // removing somebody from an exchange — is worth the wider space.
+                var token = SecretToken.Create(SecretToken.OpaqueTokenBytes);
+
+                context.ParticipantLeaveTokens.Add(new ParticipantLeaveTokenEntity
+                {
+                    ParticipantLeaveTokenId = Guid.CreateVersion7(),
+                    ParticipantId = participant.ParticipantId,
+                    TokenHash = SecretToken.Hash(token),
+                    IssuedAt = DateTimeOffset.UtcNow
+                });
+
+                issued[participant.Email] = token;
+            }
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+        return issued.ToImmutable();
+    }
+
+    /// <summary>
+    /// Resolves a leave link to the participant it removes, the exchange they are in, and the
+    /// organizer who has to be told, from the hash of the token in the link.
+    /// </summary>
+    /// <param name="tokenHash">
+    /// <see cref="SecretToken.Hash"/> of the token taken from the path. The plaintext is never
+    /// passed here — nothing stored could be compared against it.
+    /// </param>
+    public async Task<(bool found, LeaveRoute route)> FindLeaveRouteAsync(string tokenHash)
+    {
+        // An empty hash is not a lookup worth making, as in FindGiftIdeaRouteAsync.
+        if (string.IsNullOrWhiteSpace(tokenHash))
+            return (false, LeaveRoutes.Empty);
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        // One join stated here, because the hop from a token to a participant crosses an id with no
+        // navigation behind it; the hops to a person, a hat and the hat's organizer are navigations
+        // and EF emits those joins itself.
+        var match = await context.ParticipantLeaveTokens
+            .AsNoTracking()
+            .Where(token => token.TokenHash == tokenHash)
+            .Join(
+                context.Participants,
+                token => token.ParticipantId,
+                participant => participant.ParticipantId,
+                (_, participant) => new
+                {
+                    participant.ParticipantId,
+                    participant.Hat.HatId,
+                    HatName = participant.Hat.Name,
+                    participant.Hat.Status,
+                    LeaverName = participant.Person.Name,
+                    LeaverEmail = participant.Person.Email,
+                    OrganizerName = participant.Hat.Organizer.Name,
+                    OrganizerEmail = participant.Hat.Organizer.Email
+                })
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (match is null)
+            return (false, LeaveRoutes.Empty);
+
+        return (true, new LeaveRoute
+        {
+            ParticipantId = match.ParticipantId,
+            HatId = match.HatId,
+            HatName = match.HatName,
+            HatStatus = match.Status,
+            Leaver = new Person { Name = match.LeaverName, Email = match.LeaverEmail },
+            Organizer = new Person { Name = match.OrganizerName, Email = match.OrganizerEmail }
+        });
+    }
+
+    /// <summary>
+    /// Which of these addresses have refused this particular exchange.
+    /// </summary>
+    /// <remarks>
+    /// One of three lookups that are deliberately separate methods rather than one query over three
+    /// tables. Each opens its own context, so <see cref="DoNotAddService"/> can run all three at
+    /// once — which is the point: the three are independent questions, and asking them in sequence
+    /// would cost three round trips to answer what one round trip's worth of latency covers.
+    ///
+    /// Returns the blocked subset rather than a boolean, so the single-address callers and the
+    /// copy-a-whole-exchange caller share one implementation.
+    /// </remarks>
+    /// <param name="normalizedEmails">Addresses already through <c>ToNormalizedEmail</c>.</param>
+    public async Task<ImmutableList<string>> FindBlockedByExchangeAsync(
+        ImmutableList<string> normalizedEmails,
+        Guid hatId
+    )
+    {
+        if (normalizedEmails.IsEmpty || hatId == Guid.Empty)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var blocked = await context.DoNotAddToExchange
+            .AsNoTracking()
+            .Where(block => block.HatId == hatId && normalizedEmails.Contains(block.EmailNormalized))
+            .Select(block => block.EmailNormalized)
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return [.. blocked];
+    }
+
+    /// <summary>
+    /// Which of these addresses have refused this particular organizer, whatever the exchange.
+    /// </summary>
+    /// <param name="normalizedEmails">Addresses already through <c>ToNormalizedEmail</c>.</param>
+    /// <param name="normalizedOrganizerEmail">The organizer's address, likewise.</param>
+    public async Task<ImmutableList<string>> FindBlockedByOrganizerAsync(
+        ImmutableList<string> normalizedEmails,
+        string normalizedOrganizerEmail
+    )
+    {
+        if (normalizedEmails.IsEmpty || string.IsNullOrWhiteSpace(normalizedOrganizerEmail))
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var blocked = await context.DoNotAddByOrganizer
+            .AsNoTracking()
+            .Where(block => block.OrganizerEmailNormalized == normalizedOrganizerEmail
+                            && normalizedEmails.Contains(block.EmailNormalized))
+            .Select(block => block.EmailNormalized)
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return [.. blocked];
+    }
+
+    /// <summary>
+    /// Which of these addresses have refused gift exchanges altogether.
+    /// </summary>
+    /// <param name="normalizedEmails">Addresses already through <c>ToNormalizedEmail</c>.</param>
+    public async Task<ImmutableList<string>> FindBlockedAnywhereAsync(ImmutableList<string> normalizedEmails)
+    {
+        if (normalizedEmails.IsEmpty)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var blocked = await context.DoNotAddAnywhere
+            .AsNoTracking()
+            .Where(block => normalizedEmails.Contains(block.EmailNormalized))
+            .Select(block => block.EmailNormalized)
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return [.. blocked];
+    }
+
+    /// <summary>
+    /// Writes down what somebody refused on their way out of an exchange.
+    /// </summary>
+    /// <remarks>
+    /// All three lists under one transaction, so a leaver cannot end up blocked from the exchange
+    /// but not from the organizer they asked to be blocked from because a connection dropped in
+    /// between.
+    ///
+    /// Idempotent twice over, because leaving twice is an ordinary thing to happen here — two tabs,
+    /// a double submit, a scanner that follows a POST. Each insert is guarded by a read, which
+    /// handles the sequential case; the unique indexes handle the concurrent one, where two
+    /// transactions both read nothing and both go on to write. A violation on any of these three
+    /// means the row this was asked to write already exists, so there is nothing to report and
+    /// nothing to retry.
+    /// </remarks>
+    internal async Task RecordDoNotAddAsync(RecordDoNotAddRequest request)
+    {
+        try
+        {
+            await RecordDoNotAddCoreAsync(request).ConfigureAwait(false);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            _logger.LogInformation("A do-not-add refusal was already recorded.");
+        }
+    }
+
+    private Task RecordDoNotAddCoreAsync(RecordDoNotAddRequest request) =>
+        InTransactionAsync(async context =>
+        {
+            var email = request.Email.ToNormalizedEmail();
+
+            if (string.IsNullOrWhiteSpace(email))
+                return;
+
+            var now = DateTimeOffset.UtcNow;
+
+            // Always. Leaving an exchange is itself the statement that they do not want to be in
+            // it, so this one is not a checkbox and is not conditional on anything.
+            if (request.HatId != Guid.Empty)
+            {
+                var alreadyBlockedFromExchange = await context.DoNotAddToExchange
+                    .AnyAsync(block => block.EmailNormalized == email && block.HatId == request.HatId)
+                    .ConfigureAwait(false);
+
+                if (!alreadyBlockedFromExchange)
+                    context.DoNotAddToExchange.Add(new DoNotAddToExchangeEntity
+                    {
+                        DoNotAddToExchangeId = Guid.CreateVersion7(),
+                        HatId = request.HatId,
+                        EmailNormalized = email,
+                        CreatedAt = now
+                    });
+            }
+
+            var organizerEmail = request.OrganizerEmail.ToNormalizedEmail();
+
+            if (request.BlockOrganizer && !string.IsNullOrWhiteSpace(organizerEmail))
+            {
+                var alreadyBlockedByOrganizer = await context.DoNotAddByOrganizer
+                    .AnyAsync(block => block.EmailNormalized == email
+                                       && block.OrganizerEmailNormalized == organizerEmail)
+                    .ConfigureAwait(false);
+
+                if (!alreadyBlockedByOrganizer)
+                    context.DoNotAddByOrganizer.Add(new DoNotAddByOrganizerEntity
+                    {
+                        DoNotAddByOrganizerId = Guid.CreateVersion7(),
+                        OrganizerEmailNormalized = organizerEmail,
+                        EmailNormalized = email,
+                        CreatedAt = now
+                    });
+            }
+
+            if (request.BlockAnywhere)
+            {
+                var alreadyBlockedAnywhere = await context.DoNotAddAnywhere
+                    .AnyAsync(block => block.EmailNormalized == email)
+                    .ConfigureAwait(false);
+
+                if (!alreadyBlockedAnywhere)
+                    context.DoNotAddAnywhere.Add(new DoNotAddAnywhereEntity
+                    {
+                        DoNotAddAnywhereId = Guid.CreateVersion7(),
+                        EmailNormalized = email,
+                        CreatedAt = now
+                    });
+            }
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        });
 
     /// <summary>
     /// The participant id behind each address in a hat, so that an outbound message can be tagged
@@ -773,6 +1093,47 @@ public class GiftExchangeProvider
         context.GiftIdeaTokens.Add(new GiftIdeaTokenEntity
         {
             GiftIdeaTokenId = Guid.CreateVersion7(),
+            ParticipantId = participantId,
+            TokenHash = SecretToken.Hash(token),
+            IssuedAt = DateTimeOffset.UtcNow
+        });
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
+
+        return token;
+    }
+
+    /// <summary>
+    /// Issues a leave token for a single participant, replacing any they already hold.
+    /// </summary>
+    /// <remarks>
+    /// Replaces, where <see cref="IssueGiftIdeaTokenAsync"/> adds. The two differ because what the
+    /// tokens authorise differs: several live gift ideas addresses are the intended state, since an
+    /// Ask has to put a working one in front of somebody who never received theirs, and the worst a
+    /// stale one does is accept a note. A stale leave link removes somebody, and the only caller
+    /// here is an address correction — which happens precisely because the earlier invitation went
+    /// to the wrong inbox. Leaving that one live would let whoever holds it take the participant
+    /// out of the exchange.
+    ///
+    /// The caller decides who gets one; this does not check. The organizer exclusion lives in
+    /// <see cref="IssueLeaveTokensAsync"/>, which is the path that issues them in bulk, and in the
+    /// one caller of this method.
+    /// </remarks>
+    /// <returns>The token in the clear. Only ever available here.</returns>
+    public async Task<string> IssueLeaveTokenAsync(Guid participantId)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        await context.ParticipantLeaveTokens
+            .Where(token => token.ParticipantId == participantId)
+            .ExecuteDeleteAsync()
+            .ConfigureAwait(false);
+
+        var token = SecretToken.Create(SecretToken.OpaqueTokenBytes);
+
+        context.ParticipantLeaveTokens.Add(new ParticipantLeaveTokenEntity
+        {
+            ParticipantLeaveTokenId = Guid.CreateVersion7(),
             ParticipantId = participantId,
             TokenHash = SecretToken.Hash(token),
             IssuedAt = DateTimeOffset.UtcNow
@@ -1433,6 +1794,14 @@ public class GiftExchangeProvider
                 .ConfigureAwait(false);
 
             await context.GiftIdeaTokens
+                .Where(token => token.ParticipantId == participantId)
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // Their leave link too. A token whose participant is gone routes nowhere, and what has
+            // to survive a removal is the refusal on the do_not_add lists, not the credential —
+            // those rows are deliberately left standing.
+            await context.ParticipantLeaveTokens
                 .Where(token => token.ParticipantId == participantId)
                 .ExecuteDeleteAsync()
                 .ConfigureAwait(false);

@@ -121,6 +121,11 @@ export interface CopyHatRequest {
 
 export interface CopyHatResponse {
   hatId: string
+  /**
+   * How many of the previous exchange's participants were not carried over, because they had asked
+   * not to be added. A count and not names: the API does not say who, deliberately.
+   */
+  participantsOmitted: number
 }
 
 export interface CloseHatRequest {

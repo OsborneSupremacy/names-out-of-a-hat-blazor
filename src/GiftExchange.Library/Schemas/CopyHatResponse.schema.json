@@ -6,10 +6,16 @@
             "type": "string",
             "format": "uuid",
             "description": "The unique identifier of the newly created hat"
+        },
+        "participantsOmitted": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many participants of the source exchange were not carried over because they had asked not to be added"
         }
     },
     "required": [
-        "hatId"
+        "hatId",
+        "participantsOmitted"
     ],
     "additionalProperties": false
 }

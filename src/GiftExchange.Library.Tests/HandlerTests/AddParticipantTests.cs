@@ -13,6 +13,8 @@ public class AddParticipantTests
 
     private readonly IApiGatewayHandler _sut;
 
+    private readonly GiftExchangeProvider _provider;
+
     public AddParticipantTests(PostgresFixture dbFixture)
     {
         DotEnv.Load();
@@ -28,7 +30,8 @@ public class AddParticipantTests
             .BuildServiceProvider();
 
         _jsonService = serviceProvider.GetRequiredService<JsonService>();
-        _testDataService = new TestDataService(serviceProvider.GetRequiredService<GiftExchangeProvider>());
+        _provider = serviceProvider.GetRequiredService<GiftExchangeProvider>();
+        _testDataService = new TestDataService(_provider);
 
         _requestFaker = new AddParticipantRequestFaker();
 
@@ -81,6 +84,86 @@ public class AddParticipantTests
 
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
+    }
+
+    [Theory]
+    // The three lists, each on its own. Every one of them has to reach this endpoint, and a check
+    // that consulted two of the three would look identical from here for most of the year.
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task AddParticipant_SomebodyWhoHasRefused_ForbiddenResponse(
+        bool blockOrganizer,
+        bool blockAnywhere
+    )
+    {
+        // arrange: whichever list they are on, the organizer typing the address back in is the
+        // thing that must not work. For the second and third cases the refusal was recorded against
+        // a different exchange entirely.
+        var refusedIn = await _testDataService.CreateTestHatAsync();
+        var hat = blockOrganizer || blockAnywhere
+            ? await _testDataService.CreateTestHatAsync()
+            : refusedIn;
+
+        var innerRequest = _requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        };
+
+        await _provider.RecordDoNotAddAsync(new RecordDoNotAddRequest
+        {
+            Email = innerRequest.Email,
+            HatId = refusedIn.Id,
+            OrganizerEmail = blockOrganizer ? hat.Organizer.Email : refusedIn.Organizer.Email,
+            BlockOrganizer = blockOrganizer,
+            BlockAnywhere = blockAnywhere
+        });
+
+        var request = _jsonService.SerializeDefault(innerRequest).ToApiGatewayProxyRequest();
+
+        // act
+        var response = await _sut.FunctionHandler(request, _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+
+        // Forbidden rather than Conflict: a conflict says the request collided with something and
+        // could be retried differently, and this one cannot be retried at all with this address.
+        response.Body.Should().Contain(DoNotAddService.RefusalMessage);
+    }
+
+    [Fact]
+    public async Task AddParticipant_TheRefusalMessageSaysNothingAboutWhichListItWas()
+    {
+        // arrange: an organizer who could tell "they blocked you" from "they blocked everybody"
+        // could learn, by typing an address into a new exchange, the fact the person withheld.
+        var hat = await _testDataService.CreateTestHatAsync();
+
+        var innerRequest = _requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        };
+
+        await _provider.RecordDoNotAddAsync(new RecordDoNotAddRequest
+        {
+            Email = innerRequest.Email,
+            HatId = hat.Id,
+            OrganizerEmail = hat.Organizer.Email,
+            BlockOrganizer = false,
+            BlockAnywhere = true
+        });
+
+        // act
+        var response = await _sut.FunctionHandler(
+            _jsonService.SerializeDefault(innerRequest).ToApiGatewayProxyRequest(),
+            _context);
+
+        // assert
+        response.Body.Should().NotContain("anywhere");
+        response.Body.Should().NotContain("organizer");
+        response.Body.Should().NotContain("exchange.", "even the scope of the refusal is a fact about it");
     }
 
     [Fact]

@@ -70,7 +70,8 @@ public class EditParticipantAddressServiceTests
             new EmailCompositionService(),
             new CompletionEmailCompositionService(),
             _queue,
-            _throttle);
+            _throttle,
+            new DoNotAddService(_provider));
     }
 
     [Fact]

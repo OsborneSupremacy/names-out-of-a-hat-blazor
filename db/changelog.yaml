@@ -834,3 +834,157 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: AWS IAM REVOKE giftexchange_user FROM '${delivery_events_role_arn}'
+
+  - changeSet:
+      id: do_not_add_to_exchange--0001
+      author: ben
+      comment: >
+        The first of the three do-not-add lists: addresses that must never be added to one
+        particular exchange again. Written when somebody leaves from the link in their invitation.
+
+        Kept as three tables rather than one with a scope column, because the three answer
+        genuinely different questions and a single table would need two nullable columns to say
+        which question a row was answering. DSQL cannot ALTER COLUMN, so a column that starts
+        nullable stays nullable, and a nullable scope is how the wrong row eventually gets matched.
+      changes:
+        - sqlFile:
+            path: tables/do_not_add_to_exchange--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE do_not_add_to_exchange
+
+  - changeSet:
+      id: uq_do_not_add_to_exchange--0001
+      author: ben
+      comment: >
+        The only question this table is asked, and the constraint that makes recording a refusal
+        idempotent: leaving twice, or an organizer removing and the participant leaving, writes one
+        row rather than failing.
+
+        email_normalized leads, as it does on all three lists, so every check is the same predicate
+        shape against the same leading column. The address is what the caller always has; the hat is
+        the narrowing.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_do_not_add_to_exchange ON do_not_add_to_exchange (email_normalized, hat_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_do_not_add_to_exchange
+
+  - changeSet:
+      id: do_not_add_by_organizer--0001
+      author: ben
+      comment: >
+        The second list: addresses that must never be added to any exchange run by one organizer.
+        Offered on the leave page and recorded only if it is asked for.
+      changes:
+        - sqlFile:
+            path: tables/do_not_add_by_organizer--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE do_not_add_by_organizer
+
+  - changeSet:
+      id: uq_do_not_add_by_organizer--0001
+      author: ben
+      comment: >
+        As uq_do_not_add_to_exchange, with the organizer's address as the narrowing rather than a
+        hat. Unique for the same reason: a second refusal of the same organizer is the same
+        refusal.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_do_not_add_by_organizer ON do_not_add_by_organizer (email_normalized, organizer_email_normalized)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_do_not_add_by_organizer
+
+  - changeSet:
+      id: do_not_add_anywhere--0001
+      author: ben
+      comment: >
+        The third list: addresses that must never be added to any exchange by anybody. The closest
+        thing here to an unsubscribe, and the reason the other two exist as separate tables -- this
+        one has no scope at all, and a shared table would have carried an empty column for it.
+      changes:
+        - sqlFile:
+            path: tables/do_not_add_anywhere--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE do_not_add_anywhere
+
+  - changeSet:
+      id: uq_do_not_add_anywhere--0001
+      author: ben
+      comment: >
+        One row per address, and the index that both enforces it and answers the check. The whole
+        table is this index.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_do_not_add_anywhere ON do_not_add_anywhere (email_normalized)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_do_not_add_anywhere
+
+  - changeSet:
+      id: participant_leave_token--0001
+      author: ben
+      comment: >
+        The token behind the leave link in an invitation. Issued with the gift ideas tokens when
+        invitations go out, and never for the organizer.
+      changes:
+        - sqlFile:
+            path: tables/participant_leave_token--0001.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: DROP TABLE participant_leave_token
+
+  - changeSet:
+      id: uq_participant_leave_token_hash--0001
+      author: ben
+      comment: >
+        The lookup the leave pages make. A link knows the token and nothing else, so this is the
+        one path that reaches a participant without a hat id -- the same shape as
+        uq_gift_idea_token_hash, and unique for the same reason.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX ASYNC uq_participant_leave_token_hash ON participant_leave_token (token_hash)
+      rollback:
+        - sql:
+            sql: DROP INDEX uq_participant_leave_token_hash
+
+  - changeSet:
+      id: idx_participant_leave_token_participant--0001
+      author: ben
+      comment: >
+        So that reissuing, and the cleanup in DeleteParticipantAsync and DeleteHatAsync, can find a
+        participant's token without a scan. Not unique: reissuing deletes and rewrites rather than
+        relying on a constraint, and the window in between is inside a transaction either way.
+      changes:
+        - sql:
+            sql: CREATE INDEX ASYNC idx_participant_leave_token_participant ON participant_leave_token (participant_id)
+      rollback:
+        - sql:
+            sql: DROP INDEX idx_participant_leave_token_participant
+
+  - changeSet:
+      id: giftexchange_user--0012
+      author: ben
+      comment: >
+        CRUD on the three do-not-add lists and on participant_leave_token. All four are reached by
+        the API function, which connects as this role.
+      changes:
+        - sqlFile:
+            path: roles/giftexchange_user--0012.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON do_not_add_to_exchange, do_not_add_by_organizer, do_not_add_anywhere, participant_leave_token FROM giftexchange_user
