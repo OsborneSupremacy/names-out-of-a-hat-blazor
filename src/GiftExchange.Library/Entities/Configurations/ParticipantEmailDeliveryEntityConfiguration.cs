@@ -18,7 +18,7 @@ internal class ParticipantEmailDeliveryEntityConfiguration : IEntityTypeConfigur
         builder
             .Property(delivery => delivery.MessageType)
             .HasColumnName("message_type")
-            .HasMaxLength(20)
+            .HasMaxLength(MessageTypeMaxLength)
             .IsRequired();
 
         builder
@@ -30,7 +30,7 @@ internal class ParticipantEmailDeliveryEntityConfiguration : IEntityTypeConfigur
         builder
             .Property(delivery => delivery.Status)
             .HasColumnName("status")
-            .HasMaxLength(20)
+            .HasMaxLength(StatusMaxLength)
             .IsRequired();
 
         builder
@@ -65,4 +65,24 @@ internal class ParticipantEmailDeliveryEntityConfiguration : IEntityTypeConfigur
     /// two cannot drift and hand DSQL a string it will refuse.
     /// </summary>
     internal const int DetailMaxLength = 500;
+
+    /// <summary>
+    /// What <c>message_type</c> and <c>status</c> hold, and therefore how long the longest member
+    /// of <see cref="EmailMessageTypes"/> and <see cref="DeliveryStatuses"/> may be.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="DetailMaxLength"/> these are not truncation points. Detail is a stranger's
+    /// sentence and cutting it costs an explanation; these two are our own vocabulary, and a value
+    /// too long for its column is a mistake to fix rather than a string to trim — truncating one
+    /// would write a status no reader could match against the constants it came from.
+    /// EntityMappingTests holds every value to these lengths, which is what
+    /// ORGANIZER_PARTICIPANT_LEFT got past on its way to failing every insert it appeared in.
+    ///
+    /// Neither can be raised. DSQL has no ALTER COLUMN, so a VARCHAR is the width its CREATE TABLE
+    /// gave it for as long as the table exists.
+    /// </remarks>
+    internal const int MessageTypeMaxLength = 20;
+
+    /// <inheritdoc cref="MessageTypeMaxLength"/>
+    internal const int StatusMaxLength = 20;
 }

@@ -25,7 +25,14 @@ public static class EmailMessageType
     /// receives both, and a delivery row that could not tell them apart would report one bounce for
     /// two different messages.
     /// </summary>
-    public static string OrganizerParticipantLeft => "ORGANIZER_PARTICIPANT_LEFT";
+    /// <remarks>
+    /// Spelled shorter than the property that holds it, and deliberately so. This value is written
+    /// verbatim into <c>participant_email_delivery.message_type</c>, which is twenty characters and
+    /// cannot grow — DSQL has no ALTER COLUMN, so the column is whatever its CREATE TABLE said.
+    /// ORGANIZER_PARTICIPANT_LEFT was twenty-six, and every delivery event for one of these notices
+    /// failed its insert until this was cut down.
+    /// </remarks>
+    public static string OrganizerParticipantLeft => "ORGANIZER_LEFT_NOTE";
 
     /// <summary>
     /// A message that carried no type tag. Not written by anything here — it exists so that a send

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using GiftExchange.Library.Contexts;
+using GiftExchange.Library.Entities;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GiftExchange.Library.Tests.EntityTests;
@@ -223,6 +224,132 @@ public partial class EntityMappingTests
 
         misnamed.Should().BeEmpty();
     }
+
+    /// <summary>
+    /// Values the application writes into a column verbatim, and the property each set belongs to.
+    ///
+    /// These are closed vocabularies — a status or a message type is one of a handful of constants
+    /// this codebase spells out — so unlike free text there is no length to guess at and no
+    /// truncation that would make sense. Either every member fits its column or one of them does
+    /// not, and the one that does not fails every insert it ever appears in.
+    /// </summary>
+    private static readonly ImmutableList<(string Entity, string Property, ImmutableList<string> Values)> Vocabularies =
+    [
+        // Unspecified is deliberately absent from EmailMessageTypes.All — it is what an untagged
+        // message becomes, never something a send may tag itself with — but it reaches the column
+        // like the rest, so it is held to the same width.
+        (
+            nameof(ParticipantEmailDeliveryEntity),
+            nameof(ParticipantEmailDeliveryEntity.MessageType),
+            EmailMessageTypes.All.Add(EmailMessageType.Unspecified)
+        ),
+        (
+            nameof(ParticipantEmailDeliveryEntity),
+            nameof(ParticipantEmailDeliveryEntity.Status),
+            DeliveryStatuses.All
+        ),
+        (nameof(HatEntity), nameof(HatEntity.Status), HatStatuses.All)
+    ];
+
+    /// <summary>
+    /// No constant is longer than the column it is written into.
+    ///
+    /// ORGANIZER_PARTICIPANT_LEFT was twenty-six characters against a twenty character column, and
+    /// nothing between the constant and the cluster had an opinion about it: EF does not enforce
+    /// its own HasMaxLength on save, so the first thing to notice was DSQL rejecting the insert —
+    /// once for every organizer-left notice sent, retried six minutes apart until the queue gave
+    /// up on it.
+    ///
+    /// The limit is read from the model rather than restated here, so this cannot pass by agreeing
+    /// with a number that has since moved.
+    /// </summary>
+    [Fact]
+    public void EveryConstantWrittenToAColumn_FitsIt()
+    {
+        var model = BuildModel();
+        var offences = new List<string>();
+
+        foreach (var (entityName, propertyName, values) in Vocabularies)
+        {
+            var property = model
+                .GetEntityTypes()
+                .Single(entity => entity.ClrType.Name == entityName)
+                .GetProperty(propertyName);
+
+            var maxLength = property.GetMaxLength();
+
+            // Guards the guard: an unconstrained property would excuse every value written to it.
+            maxLength.Should().NotBeNull($"{entityName}.{propertyName} should declare a maximum length");
+
+            // And so would an empty vocabulary.
+            values.Should().NotBeEmpty($"{entityName}.{propertyName} should have values to check");
+
+            offences.AddRange(values
+                .Where(value => value.Length > maxLength)
+                .Select(value =>
+                    $"{entityName}.{propertyName} holds {maxLength} characters and \"{value}\" is {value.Length}"));
+        }
+
+        offences.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// A mapped length says the same thing as the column it describes.
+    ///
+    /// This file's premise bites hardest here. DSQL has no ALTER COLUMN, so a VARCHAR is the width
+    /// its CREATE TABLE gave it for as long as the table exists, and a HasMaxLength that disagrees
+    /// is a mistake no migration can undo: claiming the smaller number refuses writes the database
+    /// would have taken, and claiming the larger one sends writes the database will refuse.
+    /// </summary>
+    [Fact]
+    public void EveryMappedLength_MatchesTheColumnItDescribes()
+    {
+        var tables = ParseTables();
+        var mismatched = new List<string>();
+        var compared = 0;
+
+        foreach (var entity in BuildModel().GetEntityTypes())
+        {
+            var tableName = entity.GetTableName();
+            if (tableName is null || !tables.TryGetValue(tableName, out var columns)) continue;
+
+            var storeObject = StoreObjectIdentifier.Table(tableName, entity.GetSchema());
+
+            foreach (var property in entity.GetProperties())
+            {
+                var maxLength = property.GetMaxLength();
+                var columnName = property.GetColumnName(storeObject);
+
+                if (maxLength is null || columnName is null || !columns.TryGetValue(columnName, out var definition))
+                    continue;
+
+                var declared = VarcharLength().Match(definition);
+
+                if (!declared.Success)
+                {
+                    mismatched.Add(
+                        $"{entity.ClrType.Name}.{property.Name} is mapped with a maximum length, but "
+                        + $"{tableName}.{columnName} is not a VARCHAR");
+                    continue;
+                }
+
+                compared++;
+
+                if (int.Parse(declared.Groups[1].Value) != maxLength)
+                    mismatched.Add(
+                        $"{entity.ClrType.Name}.{property.Name} is mapped as {maxLength} and "
+                        + $"{tableName}.{columnName} is {declared.Groups[1].Value}");
+            }
+        }
+
+        // Guards the guard: a parse that matched nothing would agree with everything.
+        compared.Should().BeGreaterThan(0, "some columns should have been compared");
+
+        mismatched.Should().BeEmpty();
+    }
+
+    [GeneratedRegex(@"VARCHAR\s*\(\s*(\d+)\s*\)", RegexOptions.IgnoreCase)]
+    private static partial Regex VarcharLength();
 
     /// <summary>
     /// Replays the migrations far enough to know which tables survive and which columns each of
