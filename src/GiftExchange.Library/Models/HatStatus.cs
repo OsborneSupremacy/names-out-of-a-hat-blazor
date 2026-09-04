@@ -42,4 +42,15 @@ public static class HatStatuses
         HatStatus.CooledOff,
         HatStatus.Closed
     ];
+
+    /// <summary>
+    /// Everything before invitations go out, which is as far as an exchange can be taken back to
+    /// the beginning. Past this point people have been told things, and undoing the draw would make
+    /// what they were told wrong.
+    /// </summary>
+    public static readonly ImmutableList<string> BeforeInvitationsSent = [
+        HatStatus.InProgress,
+        HatStatus.ReadyForAssignment,
+        HatStatus.NamesAssigned
+    ];
 }

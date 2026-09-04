@@ -1,0 +1,186 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "formatVersion": {
+            "type": "string",
+            "description": "The shape of this document. Bumped when a field changes meaning or leaves; adding a field does not bump it."
+        },
+        "exportedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the export was taken. The gift exchange it describes has moved on since."
+        },
+        "hat": {
+            "$ref": "#/definitions/exportedhat",
+            "description": "The gift exchange, as stored"
+        }
+    },
+    "required": [
+        "formatVersion",
+        "exportedAt",
+        "hat"
+    ],
+    "additionalProperties": false,
+    "definitions": {
+        "exportedhat": {
+            "type": "object",
+            "properties": {
+                "hatId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique identifier of the gift exchange"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 50,
+                    "description": "The name of the gift exchange"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "The status of the gift exchange at the moment of export"
+                },
+                "additionalInformation": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "Additional details about the gift exchange"
+                },
+                "priceRange": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "description": "The suggested price range for gifts"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the gift exchange was created"
+                },
+                "invitationsQueuedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When invitations were queued for sending, or the minimum date when they have not been"
+                },
+                "copiedFromHatId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The gift exchange this one was copied from, or the all-zero uuid when it was not a copy"
+                },
+                "organizer": {
+                    "$ref": "#/definitions/exportedperson",
+                    "description": "The organizer of the gift exchange"
+                },
+                "participants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/exportedparticipant"
+                    },
+                    "description": "Everybody taking part, ordered by name"
+                }
+            },
+            "required": [
+                "hatId",
+                "name",
+                "status",
+                "additionalInformation",
+                "priceRange",
+                "createdAt",
+                "invitationsQueuedAt",
+                "copiedFromHatId",
+                "organizer",
+                "participants"
+            ],
+            "additionalProperties": false
+        },
+        "exportedperson": {
+            "type": "object",
+            "properties": {
+                "personId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique identifier of the person"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100,
+                    "description": "The name of the person"
+                },
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "minLength": 5,
+                    "maxLength": 254,
+                    "description": "The email address of the person"
+                }
+            },
+            "required": [
+                "personId",
+                "name",
+                "email"
+            ],
+            "additionalProperties": false
+        },
+        "exportedparticipant": {
+            "type": "object",
+            "properties": {
+                "participantId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The unique identifier of this participant within this gift exchange"
+                },
+                "person": {
+                    "$ref": "#/definitions/exportedperson",
+                    "description": "The person who is participating"
+                },
+                "pickedRecipient": {
+                    "$ref": "#/definitions/exportedparticipantreference",
+                    "description": "Who this participant drew. The empty reference until the picks are revealed, since the gift exchange keeps the draw from its own organizer until then."
+                },
+                "eligibleRecipients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/exportedparticipantreference"
+                    },
+                    "description": "Who this participant was allowed to draw, ordered by name"
+                },
+                "deliveryStatus": {
+                    "type": "string",
+                    "description": "How far the last email sent to this participant is known to have got: SENT, DELIVERED, DELAYED, BOUNCED, COMPLAINED, REJECTED or FAILED. Empty when nothing has been heard yet, which is not the same as not delivered."
+                },
+                "deliveryDetail": {
+                    "type": "string",
+                    "description": "Why, for the statuses that have a why: the bounce subtype and the receiving server's diagnostic. Empty otherwise. Written by a remote mail server, so it is neither moderated nor trusted."
+                }
+            },
+            "required": [
+                "participantId",
+                "person",
+                "pickedRecipient",
+                "eligibleRecipients",
+                "deliveryStatus",
+                "deliveryDetail"
+            ],
+            "additionalProperties": false
+        },
+        "exportedparticipantreference": {
+            "type": "object",
+            "properties": {
+                "participantId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The participant being pointed at, or the all-zero uuid for nobody"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The name that participant goes by, or empty for nobody"
+                }
+            },
+            "required": [
+                "participantId",
+                "name"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

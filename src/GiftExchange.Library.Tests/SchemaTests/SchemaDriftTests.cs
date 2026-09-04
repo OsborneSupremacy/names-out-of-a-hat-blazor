@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 
 namespace GiftExchange.Library.Tests.SchemaTests;
@@ -42,6 +42,13 @@ public class SchemaDriftTests
         { nameof(EditParticipantAddressRequest), "EditParticipantAddressRequest.schema.json", "" },
         { nameof(EditParticipantAddressResponse), "EditParticipantAddressResponse.schema.json", "" },
         { nameof(ErrorResponse), "ErrorResponse.schema.json", "" },
+        { nameof(ResetHatRequest), "ResetHatRequest.schema.json", "" },
+
+        { nameof(ExportHatResponse), "ExportHatResponse.schema.json", "" },
+        { nameof(ExportedHat), "ExportHatResponse.schema.json", "definitions/exportedhat" },
+        { nameof(ExportedPerson), "ExportHatResponse.schema.json", "definitions/exportedperson" },
+        { nameof(ExportedParticipant), "ExportHatResponse.schema.json", "definitions/exportedparticipant" },
+        { nameof(ExportedParticipantReference), "ExportHatResponse.schema.json", "definitions/exportedparticipantreference" },
         { nameof(PreviewInvitationsRequest), "PreviewInvitationsRequest.schema.json", "" },
         { nameof(PreviewInvitationsResponse), "PreviewInvitationsResponse.schema.json", "" },
         { nameof(RemoveParticipantRequest), "RemoveParticipantRequest.schema.json", "" },

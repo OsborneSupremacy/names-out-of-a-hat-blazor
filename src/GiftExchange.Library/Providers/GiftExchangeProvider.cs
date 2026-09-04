@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Npgsql;
 
 namespace GiftExchange.Library.Providers;
@@ -333,6 +333,124 @@ public class GiftExchangeProvider
                 group => group.Key,
                 group => group.MaxBy(delivery => delivery.OccurredAt)!);
     }
+
+    /// <summary>
+    /// The whole of one exchange, identifiers and all, for the organizer to take away.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="GetHatAsync"/> rather than a flag on it, because the two want
+    /// different things. The domain <see cref="Hat"/> identifies people by display name, which is
+    /// what every screen and every email needs; an export wants the ids underneath, so that the
+    /// document can say who drew whom without leaning on names being unique.
+    ///
+    /// Nothing is withheld here. What may leave is <c>ExportHatService</c>'s decision, and this is
+    /// the read it decides about.
+    /// </remarks>
+    internal async Task<ExportHatDataResponse> ExportHatAsync(ExportHatRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.OrganizerEmail) || request.HatId == Guid.Empty)
+            return new ExportHatDataResponse { Exists = false, Hat = ExportedHats.Empty };
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var hat = await context.Hats
+            .AsNoTracking()
+            .Include(entity => entity.Organizer)
+            .Include(entity => entity.Participants).ThenInclude(participant => participant.Person)
+            .Include(entity => entity.Participants).ThenInclude(participant => participant.EligibleRecipients)
+            .ThenInclude(eligible => eligible.EligibleParticipant).ThenInclude(participant => participant.Person)
+            .SingleOrDefaultAsync(entity => entity.HatId == request.HatId
+                                            && entity.Organizer.Email == request.OrganizerEmail)
+            .ConfigureAwait(false);
+
+        if (hat is null)
+            return new ExportHatDataResponse { Exists = false, Hat = ExportedHats.Empty };
+
+        var deliveries = await LatestDeliveriesAsync(context, hat.Participants).ConfigureAwait(false);
+
+        // A pick is a participant id with no navigation behind it, so what it stands for comes from
+        // the rest of the hat -- the same lookup ToDomain builds, for the same reason.
+        var participantsById = hat.Participants
+            .ToDictionary(participant => participant.ParticipantId);
+
+        return new ExportHatDataResponse
+        {
+            Exists = true,
+            Hat = new ExportedHat
+            {
+                HatId = hat.HatId,
+                Name = hat.Name,
+                Status = hat.Status,
+                AdditionalInformation = hat.AdditionalInformation,
+                PriceRange = hat.PriceRange,
+                CreatedAt = hat.CreatedAt,
+                InvitationsQueuedAt = hat.InvitationsQueuedAt,
+                CopiedFromHatId = hat.CopiedFromHatId,
+                Organizer = ToExported(hat.Organizer),
+                // Ordered so that two exports of an unchanged exchange are the same document. The
+                // row order a query happens to return is not something to hand somebody diffing
+                // last week's file against this week's.
+                Participants =
+                [
+                    .. hat.Participants
+                        .OrderBy(participant => participant.Person.Name, StringComparer.OrdinalIgnoreCase)
+                        .Select(participant => ToExported(participant, participantsById, deliveries))
+                ]
+            }
+        };
+    }
+
+    private static ExportedPerson ToExported(PersonEntity person) =>
+        new()
+        {
+            PersonId = person.PersonId,
+            Name = person.Name,
+            Email = person.Email
+        };
+
+    private static ExportedParticipant ToExported(
+        ParticipantEntity participant,
+        IReadOnlyDictionary<Guid, ParticipantEntity> participantsById,
+        IReadOnlyDictionary<Guid, ParticipantEmailDeliveryEntity> deliveries
+    )
+    {
+        var delivery = deliveries.GetValueOrDefault(participant.ParticipantId);
+
+        return new ExportedParticipant
+        {
+            ParticipantId = participant.ParticipantId,
+            Person = ToExported(participant.Person),
+            PickedRecipient = ToReference(participant.PickedRecipientParticipantId, participantsById),
+            EligibleRecipients =
+            [
+                .. participant.EligibleRecipients
+                    .Select(row => new ExportedParticipantReference
+                    {
+                        ParticipantId = row.EligibleParticipantId,
+                        Name = row.EligibleParticipant.Person.Name
+                    })
+                    .OrderBy(reference => reference.Name, StringComparer.OrdinalIgnoreCase)
+            ],
+            DeliveryStatus = delivery?.Status ?? Models.DeliveryStatus.Unknown,
+            DeliveryDetail = delivery?.Detail ?? string.Empty
+        };
+    }
+
+    /// <summary>
+    /// Guid.Empty is in no hat, so an undrawn participant falls through to the empty reference
+    /// without being asked about separately.
+    /// </summary>
+    private static ExportedParticipantReference ToReference(
+        Guid participantId,
+        IReadOnlyDictionary<Guid, ParticipantEntity> participantsById
+    ) =>
+        participantsById.TryGetValue(participantId, out var participant)
+            ? new ExportedParticipantReference
+            {
+                ParticipantId = participant.ParticipantId,
+                Name = participant.Person.Name
+            }
+            : ExportedParticipantReferences.Empty;
 
     public async Task EditHatAsync(EditHatRequest request)
     {
@@ -1538,6 +1656,95 @@ public class GiftExchangeProvider
             .Where(hat => hat.HatId == hatId && hat.OrganizerPersonId == organizerPersonId)
             .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, newStatus))
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Puts an exchange back to where a newly created one starts: the same people, everybody
+    /// allowed to draw everybody, nobody holding a name, and the status at the beginning again.
+    /// </summary>
+    /// <remarks>
+    /// The status is read inside the transaction rather than taken on trust from the caller's
+    /// earlier check. An organizer with two tabs can send invitations and reset at the same moment,
+    /// and half of this having run would leave invitations naming picks that no longer exist.
+    /// Answering false rather than throwing lets the caller report the race as the conflict it is.
+    ///
+    /// Nothing is deleted but the eligibility rows, which are immediately rewritten. Gift ideas,
+    /// tokens and delivery history belong to invitations that, by the status check above, have not
+    /// been sent.
+    /// </remarks>
+    internal async Task<bool> ResetHatAsync(ResetHatRequest request)
+    {
+        var wasReset = false;
+
+        await InTransactionAsync(async context =>
+        {
+            var organizerPersonId = await FindPersonIdByEmailAsync(context, request.OrganizerEmail)
+                .ConfigureAwait(false);
+
+            if (organizerPersonId == Guid.Empty)
+            {
+                _logger.LogError(
+                    "Hat {HatId} was not reset: {OrganizerEmail} is not a known organizer.",
+                    request.HatId,
+                    request.OrganizerEmail);
+                return;
+            }
+
+            var status = await context.Hats
+                .AsNoTracking()
+                .Where(hat => hat.HatId == request.HatId && hat.OrganizerPersonId == organizerPersonId)
+                .Select(hat => hat.Status)
+                .SingleOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            if (status is null || !HatStatuses.BeforeInvitationsSent.Contains(status))
+            {
+                _logger.LogError(
+                    "Hat {HatId} was not reset: it is at {HatStatus}, which is past the point where resetting is possible.",
+                    request.HatId,
+                    status ?? "(no such hat)");
+                return;
+            }
+
+            var participantIds = await context.Participants
+                .Where(participant => participant.HatId == request.HatId)
+                .Select(participant => participant.ParticipantId)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            await context.ParticipantEligibleRecipients
+                .Where(row => participantIds.Contains(row.ParticipantId))
+                .ExecuteDeleteAsync()
+                .ConfigureAwait(false);
+
+            // Everybody may draw everybody but themselves, which is what a hat looks like before an
+            // organizer narrows it -- the same wiring AddParticipantService gives a new arrival.
+            foreach (var participantId in participantIds)
+            foreach (var eligibleId in participantIds.Where(candidate => candidate != participantId))
+                context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
+                {
+                    ParticipantEligibleRecipientId = Guid.CreateVersion7(),
+                    ParticipantId = participantId,
+                    EligibleParticipantId = eligibleId
+                });
+
+            await context.Participants
+                .Where(participant => participant.HatId == request.HatId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(participant => participant.PickedRecipientParticipantId, Guid.Empty))
+                .ConfigureAwait(false);
+
+            await context.Hats
+                .Where(hat => hat.HatId == request.HatId && hat.OrganizerPersonId == organizerPersonId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, HatStatus.InProgress))
+                .ConfigureAwait(false);
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+
+            wasReset = true;
+        }).ConfigureAwait(false);
+
+        return wasReset;
     }
 
     /// <summary>

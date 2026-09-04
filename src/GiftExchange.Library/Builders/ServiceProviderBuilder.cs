@@ -135,6 +135,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
                 .AddSingleton<IValidator<PreviewInvitationsRequest>, PreviewInvitationsRequestValidator>()
+                .AddSingleton<IValidator<ResetHatRequest>, ResetHatRequestValidator>()
                 .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantAddressRequest>, EditParticipantAddressRequestValidator>()
                 .AddSingleton<IValidator<SubmitFeedbackRequest>, SubmitFeedbackRequestValidator>()
@@ -165,6 +166,7 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, LeaveGiftExchangeService>("post/leave/{token}")
 
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatService>("get/hat/{email}/{id}")
+                .AddKeyedSingleton<IApiGatewayHandler, ExportHatService>("get/hat/{email}/export/{id}")
                 .AddKeyedSingleton<IApiGatewayHandler, GetHatsService>("get/hats/{email}")
 
                 .AddKeyedSingleton<IApiGatewayHandler, CreateHatService>("post/hat")
@@ -198,6 +200,11 @@ internal static class ServiceProviderBuilder
                 .AddKeyedSingleton<IApiGatewayHandler, EnqueueInvitationsService>("post/hat/sendinvitations")
                 .AddKeyedSingleton<IApiGatewayHandler, CloseHatService>("post/hat/close")
                 .AddKeyedSingleton<IApiGatewayHandler, CopyHatService>("post/hat/copy")
+
+                // Its own endpoint rather than a flavour of put/hat, which edits the details
+                // an organizer typed. This throws away the eligibility rules and the draw, and
+                // an edit that could do that by omission would be the wrong shape entirely.
+                .AddKeyedSingleton<IApiGatewayHandler, ResetHatService>("post/hat/reset")
 
                 .AddSingleton<ValidationService>() // registered separately for direct use
                 .AddSingleton<EmailCompositionService>()

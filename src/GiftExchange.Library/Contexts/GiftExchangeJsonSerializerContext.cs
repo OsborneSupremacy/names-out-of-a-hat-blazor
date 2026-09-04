@@ -1,4 +1,4 @@
-using Amazon.Lambda.SimpleEmailEvents;
+﻿using Amazon.Lambda.SimpleEmailEvents;
 using Amazon.Lambda.SimpleEmailEvents.Actions;
 using Amazon.Lambda.SQSEvents;
 using System.Text.Json.Serialization;
@@ -25,6 +25,8 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(EditParticipantAddressRequest))]
 [JsonSerializable(typeof(EditParticipantAddressResponse))]
 [JsonSerializable(typeof(ErrorResponse))]
+[JsonSerializable(typeof(ExportHatRequest))]
+[JsonSerializable(typeof(ExportHatResponse))]
 [JsonSerializable(typeof(GetHatRequest))]
 [JsonSerializable(typeof(GetHatsRequest))]
 [JsonSerializable(typeof(GetHatsResponse))]
@@ -41,6 +43,7 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(RedeemMagicLinkRequest))]
 [JsonSerializable(typeof(RedeemMagicLinkResponse))]
 [JsonSerializable(typeof(RemoveParticipantRequest))]
+[JsonSerializable(typeof(ResetHatRequest))]
 [JsonSerializable(typeof(SendInvitationsRequest))]
 // What SNS delivers to the delivery events queue. Deserialized by DeliveryEventsService rather
 // than by the Lambda serializer -- the event this function is invoked with is an SQSEvent, and
