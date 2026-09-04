@@ -1,3 +1,12 @@
+/* Padding and borders count against a declared width. Without this, anything sized `width: 100%`
+   with its own padding — the page's `.content-wrapper` most visibly — renders wider than its
+   parent and pushes the whole document sideways. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
