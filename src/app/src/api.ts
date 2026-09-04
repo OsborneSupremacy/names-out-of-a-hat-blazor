@@ -136,6 +136,62 @@ export interface CloseHatRequest {
   hatId: string
 }
 
+export interface ExportHatRequest {
+  organizerEmail: string
+  hatId: string
+}
+
+/** One participant, pointed at from another. The all-zero uuid and an empty name mean nobody. */
+export interface ExportedParticipantReference {
+  participantId: string
+  name: string
+}
+
+export interface ExportedPerson {
+  personId: string
+  name: string
+  email: string
+}
+
+export interface ExportedParticipant {
+  participantId: string
+  person: ExportedPerson
+  /**
+   * Who this participant drew. The empty reference until the picks are revealed — the exchange
+   * keeps the draw from its own organizer until they close it, and the export answers that
+   * question the same way the detail view does.
+   */
+  pickedRecipient: ExportedParticipantReference
+  eligibleRecipients: ExportedParticipantReference[]
+  deliveryStatus: string
+  deliveryDetail: string
+}
+
+export interface ExportedHat {
+  hatId: string
+  name: string
+  status: string
+  additionalInformation: string
+  priceRange: string
+  createdAt: string
+  invitationsQueuedAt: string
+  /** The exchange this one was copied from, or the all-zero uuid when it was not a copy. */
+  copiedFromHatId: string
+  organizer: ExportedPerson
+  participants: ExportedParticipant[]
+}
+
+export interface ExportHatResponse {
+  formatVersion: string
+  exportedAt: string
+  hat: ExportedHat
+}
+
+export interface ResetHatRequest {
+  organizerEmail: string
+  hatId: string
+}
+
 export interface Participant {
   person: {
     name: string
@@ -426,6 +482,48 @@ export async function copyHat(request: CopyHatRequest): Promise<CopyHatResponse>
   }
 
   return response.json()
+}
+
+/**
+ * The whole gift exchange as data, for the organizer to keep.
+ *
+ * A GET like the other reads, and the response is handed to the caller rather than saved here:
+ * turning it into a file is the browser's business, not the API client's.
+ */
+export async function exportHat(request: ExportHatRequest): Promise<ExportHatResponse> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(
+    `${apiConfig.endpoint}/hat/${encodeURIComponent(request.organizerEmail)}/export/${request.hatId}`,
+    {
+      method: 'GET',
+      headers,
+    }
+  )
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to export gift exchange')
+  }
+
+  return response.json()
+}
+
+/**
+ * Takes the gift exchange back to the beginning: the same people, everybody allowed to draw
+ * everybody, nobody holding a name. Refused once invitations have gone out.
+ */
+export async function resetHat(request: ResetHatRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/hat/reset`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to reset gift exchange')
+  }
 }
 
 export async function updateProfile(request: UpdateProfileRequest): Promise<void> {

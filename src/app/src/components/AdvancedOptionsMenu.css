@@ -1,0 +1,154 @@
+/*
+  The dropdown shares its shape with the profile menu in the header, deliberately: two menus on the
+  same page that disagree about what a menu looks like is one design too many.
+*/
+.advanced-options {
+  position: relative;
+}
+
+.advanced-options-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 0.6875rem;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.advanced-options-button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.advanced-options-button:focus-visible {
+  outline: 2px solid #2f5d8a;
+  outline-offset: 2px;
+}
+
+.advanced-options-bar {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background-color: #4b5563;
+}
+
+.advanced-options-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 1500;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  min-width: 20rem;
+  padding: 0.375rem;
+  animation: advancedOptionsSlideDown 0.2s ease-out;
+}
+
+/* Named locally rather than borrowing the header's identically shaped keyframe: a stylesheet that
+   only works because another one happens to be imported is a stylesheet waiting to break. */
+@keyframes advancedOptionsSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.advanced-options-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.advanced-options-item:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.advanced-options-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.advanced-options-item-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.advanced-options-item-hint {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: #6b7280;
+}
+
+/* Reset throws work away, so it is coloured like the other things that do. */
+.advanced-options-item-danger .advanced-options-item-label {
+  color: #b91c1c;
+}
+
+.advanced-options-item-danger:disabled .advanced-options-item-label {
+  color: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  .advanced-options-button {
+    border-color: #4b5563;
+  }
+
+  .advanced-options-button:hover {
+    background-color: #374151;
+    border-color: #6b7280;
+  }
+
+  .advanced-options-button:focus-visible {
+    outline-color: #9ec5e8;
+  }
+
+  .advanced-options-bar {
+    background-color: #d1d5db;
+  }
+
+  .advanced-options-menu {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .advanced-options-item:hover:not(:disabled) {
+    background-color: #374151;
+  }
+
+  .advanced-options-item-label {
+    color: #d1d5db;
+  }
+
+  .advanced-options-item-hint {
+    color: #9ca3af;
+  }
+
+  .advanced-options-item-danger .advanced-options-item-label {
+    color: #fca5a5;
+  }
+
+  .advanced-options-item-danger:disabled .advanced-options-item-label {
+    color: #9ca3af;
+  }
+}

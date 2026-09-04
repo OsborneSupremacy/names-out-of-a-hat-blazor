@@ -1,0 +1,119 @@
+import { useEffect, useRef, useState } from 'react'
+import './AdvancedOptionsMenu.css'
+
+interface AdvancedOptionsMenuProps {
+  /** False once invitations have gone out, which is as far as a reset can reach back. */
+  canReset: boolean
+  /** Why not, shown under the disabled item. Only read when {@link canReset} is false. */
+  resetUnavailableReason: string
+  isExporting: boolean
+  onExport: () => void
+  onReset: () => void
+}
+
+/**
+ * The things an organizer needs rarely and would not want to meet by accident.
+ *
+ * Behind a menu rather than beside the buttons that move an exchange forward, because these two do
+ * not: one takes a copy away and the other throws the setup out. Putting them in the same row as
+ * "Shake the Hat" would make the row a place to be careful, which is the opposite of what the rest
+ * of that page is for.
+ */
+export function AdvancedOptionsMenu({
+  canReset,
+  resetUnavailableReason,
+  isExporting,
+  onExport,
+  onReset,
+}: AdvancedOptionsMenuProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // The same dismissal the profile menu has, and for the same reason: a menu that only closes by
+  // choosing something from it is a menu somebody is stuck in.
+  useEffect(() => {
+    if (!isOpen) return
+
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen])
+
+  const choose = (action: () => void) => {
+    setIsOpen(false)
+    action()
+  }
+
+  return (
+    <div className="advanced-options" ref={menuRef}>
+      <button
+        type="button"
+        className="advanced-options-button"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Advanced options"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+      >
+        {/* Drawn rather than typed, so it is the same three bars at every font size. */}
+        <span className="advanced-options-bar" aria-hidden="true"></span>
+        <span className="advanced-options-bar" aria-hidden="true"></span>
+        <span className="advanced-options-bar" aria-hidden="true"></span>
+      </button>
+
+      {isOpen && (
+        <div className="advanced-options-menu" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            className="advanced-options-item"
+            onClick={() => choose(onExport)}
+            disabled={isExporting}
+          >
+            <span className="advanced-options-item-label">
+              {isExporting ? 'Exporting...' : 'Export Gift Exchange'}
+            </span>
+            <span className="advanced-options-item-hint">
+              Download everything in this gift exchange as a JSON file.
+            </span>
+          </button>
+
+          {/*
+            Shown disabled rather than removed once invitations are out. An option that vanishes
+            reads as one that was never there, and the organizer looking for it deserves to be told
+            why it has gone rather than left to wonder whether they imagined it.
+          */}
+          <button
+            type="button"
+            role="menuitem"
+            className="advanced-options-item advanced-options-item-danger"
+            onClick={() => choose(onReset)}
+            disabled={!canReset}
+          >
+            <span className="advanced-options-item-label">Reset</span>
+            <span className="advanced-options-item-hint">
+              {canReset
+                ? 'Keep everybody, and start the setup again from scratch.'
+                : resetUnavailableReason}
+            </span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}

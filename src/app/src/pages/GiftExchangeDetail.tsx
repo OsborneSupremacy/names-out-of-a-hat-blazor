@@ -14,6 +14,8 @@ import {
   closeHat,
   copyHat,
   editParticipantAddress,
+  exportHat,
+  resetHat,
   Hat,
   Participant,
   PreviewInvitationsResponse,
@@ -29,6 +31,9 @@ import { InvitationsPreviewModal } from '../components/InvitationsPreviewModal'
 import { SendConfirmationModal } from '../components/SendConfirmationModal'
 import { CopyHatModal } from '../components/CopyHatModal'
 import { ShakeHatModal } from '../components/ShakeHatModal'
+import { AdvancedOptionsMenu } from '../components/AdvancedOptionsMenu'
+import { ResetHatModal } from '../components/ResetHatModal'
+import { downloadExport } from '../hatExport'
 import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
@@ -63,6 +68,8 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [isClosing, setIsClosing] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
   const [showShakeModal, setShowShakeModal] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [editingAddressFor, setEditingAddressFor] = useState<Participant | null>(null)
   const [savingAddress, setSavingAddress] = useState(false)
   // Kept apart from the page-level `error`, which replaces the whole view when it is set. A failed
@@ -524,6 +531,56 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     }
   }
 
+  /**
+   * Downloads the whole exchange as a file.
+   *
+   * The notice rather than the page-level `error` on the way out: an export that failed has changed
+   * nothing, and replacing the exchange with an error message would be a far bigger reaction than
+   * the failure deserves.
+   */
+  const handleExportHat = async () => {
+    if (!hatId || !hat) return
+
+    setIsExporting(true)
+    setParticipantsNotice('')
+
+    try {
+      downloadExport(await exportHat({ organizerEmail: userEmail, hatId }))
+    } catch (err) {
+      console.error('Error exporting gift exchange:', err)
+      setParticipantsNotice(
+        err instanceof Error ? err.message : 'Failed to export the gift exchange'
+      )
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  /**
+   * Puts the exchange back to the beginning, keeping everybody in it.
+   *
+   * Errors are rethrown rather than set on the page, as the shake does: the dialog is still open,
+   * it is where the organizer is looking, and a reset refused because invitations went out in
+   * another tab is something they need to read beside the button they just pressed.
+   */
+  const handleResetHat = async () => {
+    if (!hatId || !hat) return
+
+    try {
+      await resetHat({ organizerEmail: userEmail, hatId })
+
+      setValidationErrors([])
+      setEditingEligibleFor(null)
+      setHat(await getHat(userEmail, hatId))
+      setParticipantsNotice(
+        'The gift exchange has been reset. Everybody is in it still, and everybody can draw everybody else again.'
+      )
+    } catch (err) {
+      console.error('Error resetting gift exchange:', err)
+      throw err
+    }
+  }
+
   const isEditableStatus = hat
     ? ['IN_PROGRESS', 'READY_FOR_ASSIGNMENT', 'NAMES_ASSIGNED'].includes(hat.status)
     : false
@@ -531,6 +588,13 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   // Eligibility is about who somebody may draw, so with only the organizer in the hat there is
   // nothing to edit. Offering the row anyway opened an editor with nothing in it.
   const canEditEligibility = isEditableStatus && (hat?.participants.length ?? 0) > 1
+
+  // Mirrors HatStatuses.BeforeInvitationsSent on the server, which is what actually decides. Once
+  // invitations are out, people have been told who they drew, and undoing the draw would make what
+  // they were told wrong with no way to tell them so.
+  const canReset = hat
+    ? ['IN_PROGRESS', 'READY_FOR_ASSIGNMENT', 'NAMES_ASSIGNED'].includes(hat.status)
+    : false
 
   return (
     <div className="app-container">
@@ -565,9 +629,9 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                 ) : (
                   <h2>{hat.name}</h2>
                 )}
-                {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'READY_TO_CLOSE' && hat.status !== 'CLOSED' && (
-                  <div className="hat-actions">
-                    {isEditing ? (
+                <div className="hat-actions">
+                  {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'READY_TO_CLOSE' && hat.status !== 'CLOSED' && (
+                    isEditing ? (
                       <>
                         <button
                           className="secondary-button"
@@ -588,9 +652,22 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                       <button className="primary-button" onClick={handleEdit}>
                         Edit
                       </button>
-                    )}
-                  </div>
-                )}
+                    )
+                  )}
+
+                  {/*
+                    Here at every status, unlike Edit. Exporting is a read and always makes sense;
+                    resetting stops making sense once invitations are out, and the menu says so
+                    rather than quietly dropping the option.
+                  */}
+                  <AdvancedOptionsMenu
+                    canReset={canReset}
+                    resetUnavailableReason="Invitations have gone out, so this can no longer be reset."
+                    isExporting={isExporting}
+                    onExport={handleExportHat}
+                    onReset={() => setShowResetModal(true)}
+                  />
+                </div>
               </div>
 
               <div className="hat-info-grid">
@@ -1036,6 +1113,16 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           participantCount={hat.participants.length}
           onClose={() => setShowShakeModal(false)}
           onSubmit={handleShakeHat}
+        />
+      )}
+
+      {showResetModal && hat && (
+        <ResetHatModal
+          hatName={hat.name}
+          participantCount={hat.participants.length}
+          hasBeenShaken={hat.status === 'NAMES_ASSIGNED'}
+          onClose={() => setShowResetModal(false)}
+          onSubmit={handleResetHat}
         />
       )}
 
