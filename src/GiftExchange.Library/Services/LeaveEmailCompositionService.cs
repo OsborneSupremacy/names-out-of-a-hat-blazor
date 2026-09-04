@@ -64,7 +64,6 @@ public class LeaveEmailCompositionService
             $"{organizerName} will need to shake the hat again, and everybody will be sent a new name. You don't need to do anything until that arrives.",
             $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
             "<i>We're not saying who left, and please don't ask around. Working it out between you is the one thing that would make this worse for them.</i>",
-            EmailBranding.SignOff(),
             BuildSmallPrint(organizerEmail)
         };
 
@@ -108,7 +107,6 @@ public class LeaveEmailCompositionService
 
         lines.AddRange([
             "<i>Worth doing next time: check with somebody before you add them to a gift exchange. Almost everybody who leaves does it because the first they heard of it was the invitation, and a quick word beforehand saves everyone the redraw.</i>",
-            EmailBranding.SignOff(),
             BuildSmallPrint(organizerEmail)
         ]);
 

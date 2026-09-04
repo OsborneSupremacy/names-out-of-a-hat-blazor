@@ -1,11 +1,11 @@
 namespace GiftExchange.Library.Services;
 
 /// <summary>
-/// The masthead and sign-off every outgoing email carries.
+/// The masthead every outgoing email carries.
 /// </summary>
 /// <remarks>
-/// One place, because the sign-off was previously written out twice and the two copies had to stay
-/// character-for-character identical to read as the same product.
+/// One place, because the markup below is fiddly enough that a second copy of it would drift, and
+/// every email has to read as the same product.
 /// </remarks>
 internal static class EmailBranding
 {
@@ -24,8 +24,4 @@ internal static class EmailBranding
         $"""
          <a href="{Branding.SiteUrl}"><img src="{Branding.LogoUrl}" alt="{Branding.LogoAltText}" width="260" height="87" style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;" /></a>
          """;
-
-    /// <summary>The text link every email closes on.</summary>
-    internal static string SignOff() =>
-        $"""<a href="{Branding.SiteUrl}"><b>{Branding.LogoAltText}</b></a>""";
 }

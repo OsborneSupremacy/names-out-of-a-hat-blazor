@@ -497,6 +497,5 @@ public class GiftIdeaEmailCompositionService
         + string.Join(
             "<br /><br />",
             lines.Where(line => !string.IsNullOrWhiteSpace(line)))
-        + "<br /><br />"
-        + EmailBranding.SignOff();
+        + "<br /><br />";
 }

@@ -48,7 +48,6 @@ public class CompletionEmailCompositionService
 
         lines.AddRange([
             $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
-            EmailBranding.SignOff(),
             BuildSmallPrint(organizerEmail)
         ]);
 

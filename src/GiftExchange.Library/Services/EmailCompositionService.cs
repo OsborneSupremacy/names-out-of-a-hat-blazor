@@ -53,7 +53,6 @@ public class EmailCompositionService
         lines.AddRange([
             $"""If you have any questions, contact <a href="mailto:{HttpUtility.HtmlAttributeEncode(hat.Organizer.Email)}">{organizerName}</a>.""",
             "<i>Please do not reply to this email or share it with anyone else in the gift exchange. Only you know whose name you were assigned!</i>",
-            EmailBranding.SignOff(),
             BuildSmallPrint(organizerEmail, request.LeaveToken)
         ]);
 
