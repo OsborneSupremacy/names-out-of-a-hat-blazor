@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, FormEvent } from 'react'
-import { DRAW_TYPE_OPTIONS, DEFAULT_DRAW_TYPE, DrawType, DrawTypeOption } from '../drawType'
+import { useState, FormEvent } from 'react'
+import { DRAW_TYPE_OPTIONS, DEFAULT_DRAW_TYPE, DrawType } from '../drawType'
 // Shares the modal chrome with the other dialogs; see the note in EditNameModal.
 import './CreateHatModal.css'
 import './ShakeHatModal.css'
@@ -29,7 +29,6 @@ export function ShakeHatModal({
   onSubmit,
 }: ShakeHatModalProps) {
   const [drawType, setDrawType] = useState<DrawType>(DEFAULT_DRAW_TYPE)
-  const [openExplanation, setOpenExplanation] = useState<DrawType | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -78,19 +77,19 @@ export function ShakeHatModal({
             <legend>How should the names be drawn?</legend>
 
             {DRAW_TYPE_OPTIONS.map((option) => (
-              <DrawTypeChoice
-                key={option.value}
-                option={option}
-                isSelected={drawType === option.value}
-                isExplanationOpen={openExplanation === option.value}
-                onSelect={() => setDrawType(option.value)}
-                onToggleExplanation={() =>
-                  setOpenExplanation((current) =>
-                    current === option.value ? null : option.value
-                  )
-                }
-                onCloseExplanation={() => setOpenExplanation(null)}
-              />
+              <label className="shake-option" key={option.value}>
+                <input
+                  type="radio"
+                  name="drawType"
+                  value={option.value}
+                  checked={drawType === option.value}
+                  onChange={() => setDrawType(option.value)}
+                />
+                <span>
+                  <strong>{option.label}</strong>
+                  <span className="shake-option-hint">{option.summary}</span>
+                </span>
+              </label>
             ))}
           </fieldset>
 
@@ -129,96 +128,6 @@ export function ShakeHatModal({
           </div>
         </form>
       </div>
-    </div>
-  )
-}
-
-interface DrawTypeChoiceProps {
-  option: DrawTypeOption
-  isSelected: boolean
-  isExplanationOpen: boolean
-  onSelect: () => void
-  onToggleExplanation: () => void
-  onCloseExplanation: () => void
-}
-
-/**
- * One draw type: the radio and its plain summary, an information button, and the technical reading
- * behind that button.
- *
- * The explanation is a card that appears under the option rather than floating over it. It looks
- * like a popover and behaves like one — opens on click (not hover, which strands touch users and
- * anybody reading with a keyboard), closes on Escape or a click elsewhere — but it takes up space
- * instead of being positioned on top of things. The dialog it lives in scrolls its own content,
- * and an absolutely positioned panel inside a scrolling box is clipped by it: the third option's
- * would have been cut off at the bottom edge of the dialog. Sitting in the flow means the dialog
- * grows or scrolls to fit it, which is also the only version of this that works on a phone.
- */
-function DrawTypeChoice({
-  option,
-  isSelected,
-  isExplanationOpen,
-  onSelect,
-  onToggleExplanation,
-  onCloseExplanation,
-}: DrawTypeChoiceProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!isExplanationOpen) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseExplanation()
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) onCloseExplanation()
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('mousedown', handlePointerDown)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('mousedown', handlePointerDown)
-    }
-  }, [isExplanationOpen, onCloseExplanation])
-
-  return (
-    <div className="shake-option-block" ref={containerRef}>
-      <div className="shake-option-row">
-        <label className="shake-option">
-          <input
-            type="radio"
-            name="drawType"
-            value={option.value}
-            checked={isSelected}
-            onChange={onSelect}
-          />
-          <span>
-            <strong>{option.label}</strong>
-            <span className="shake-option-hint">{option.summary}</span>
-          </span>
-        </label>
-
-        {/* Outside the label on purpose: asking what an option means is not the same as choosing
-            it, and a button inside a label would do both. */}
-        <button
-          type="button"
-          className="shake-explain-trigger"
-          onClick={onToggleExplanation}
-          aria-expanded={isExplanationOpen}
-          aria-label={`What "${option.label}" means, in technical terms`}
-        >
-          i
-        </button>
-      </div>
-
-      {isExplanationOpen && (
-        <p className="shake-explanation" role="note">
-          {option.technical}
-        </p>
-      )}
     </div>
   )
 }

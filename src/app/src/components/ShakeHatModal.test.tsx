@@ -56,48 +56,6 @@ describe('ShakeHatModal', () => {
     expect(screen.queryByText(/may not be possible at all/)).not.toBeInTheDocument()
   })
 
-  describe('the technical popover', () => {
-    it('stays shut until it is asked for', () => {
-      renderModal()
-
-      expect(screen.queryByText(/Hamiltonian cycle/)).not.toBeInTheDocument()
-    })
-
-    it('opens on the option it belongs to without selecting it', async () => {
-      const user = userEvent.setup()
-      renderModal()
-
-      await user.click(screen.getByRole('button', { name: /What "Single cycle" means/ }))
-
-      expect(screen.getByText(/Hamiltonian cycle/)).toBeInTheDocument()
-      // The trigger sits outside the label on purpose: asking what an option means is not the same
-      // as choosing it.
-      expect(screen.getByRole('radio', { name: /Single cycle/ })).not.toBeChecked()
-      expect(screen.getByRole('radio', { name: /Anything goes/ })).toBeChecked()
-    })
-
-    it('shows one at a time', async () => {
-      const user = userEvent.setup()
-      renderModal()
-
-      await user.click(screen.getByRole('button', { name: /What "Single cycle" means/ }))
-      await user.click(screen.getByRole('button', { name: /What "No mutual pairs" means/ }))
-
-      expect(screen.getByText(/no 2-cycle/)).toBeInTheDocument()
-      expect(screen.queryByText(/Hamiltonian cycle/)).not.toBeInTheDocument()
-    })
-
-    it('closes on Escape', async () => {
-      const user = userEvent.setup()
-      renderModal()
-
-      await user.click(screen.getByRole('button', { name: /What "Single cycle" means/ }))
-      await user.keyboard('{Escape}')
-
-      expect(screen.queryByText(/Hamiltonian cycle/)).not.toBeInTheDocument()
-    })
-  })
-
   // Names are already out, so this dialog is also where the previous draw is thrown away. It used
   // to be a browser confirm() before the options existed.
   it('says what a re-shake costs, and only when it is one', () => {

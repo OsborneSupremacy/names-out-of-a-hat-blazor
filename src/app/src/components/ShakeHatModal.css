@@ -1,7 +1,7 @@
 /* The option rows are laid out like the copy dialog's checkbox row, so the two do not disagree
    about what an option with an explanation under it looks like. Colours follow that dialog too:
-   inherit and dim with opacity wherever it will do, and state a colour only where the dark
-   override at the bottom states one as well. */
+   inherit and dim with opacity rather than stating a colour, which is what saves this file from
+   needing a dark-mode block at all. */
 .shake-options {
   border: none;
   margin: 0 0 1.25rem;
@@ -15,24 +15,11 @@
   font-weight: 600;
 }
 
-/* One option: the row, and the explanation card that appears under it when asked for. */
-.shake-option-block {
-  margin-bottom: 0.875rem;
-}
-
-/* The radio and its information button side by side. The button sits outside the label so that
-   clicking it opens the explanation instead of selecting the option. */
-.shake-option-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
 .shake-option {
   display: flex;
   gap: 0.625rem;
   align-items: flex-start;
-  flex: 1;
+  margin-bottom: 0.875rem;
   cursor: pointer;
   font-size: 0.9rem;
   line-height: 1.4;
@@ -48,45 +35,6 @@
   margin-top: 0.25rem;
   font-size: 0.85rem;
   opacity: 0.75;
-}
-
-.shake-explain-trigger {
-  flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.1rem;
-  padding: 0;
-  border: 1px solid #9ca3af;
-  border-radius: 50%;
-  background: transparent;
-  color: #4b5563;
-  font-size: 0.75rem;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-style: italic;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.shake-explain-trigger:hover,
-.shake-explain-trigger[aria-expanded='true'] {
-  border-color: #4b5563;
-  background: #f3f4f6;
-  color: #1f2937;
-}
-
-/* Styled as a card so it reads as something that was revealed rather than as more body text, but
-   laid out in the flow -- see the note on DrawTypeChoice for why it does not float. Indented to
-   line up with the summary above it, so it is obvious which option it belongs to. */
-.shake-explanation {
-  margin: 0.5rem 0 0 1.375rem;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-left: 3px solid #9ca3af;
-  border-radius: 0.375rem;
-  background: #f9fafb;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: #374151;
 }
 
 /* True of every option, so it reads as a statement rather than as a caveat about the selection. */
@@ -120,27 +68,4 @@
 
 .shake-error {
   margin-bottom: 1rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .shake-explain-trigger {
-    border-color: #6b7280;
-    color: #9ca3af;
-  }
-
-  .shake-explain-trigger:hover,
-  .shake-explain-trigger[aria-expanded='true'] {
-    border-color: #9ca3af;
-    background: #374151;
-    color: #f9fafb;
-  }
-
-  /* One step darker than the dialog rather than one step lighter, which is how the organizer info
-     panel in CreateHatModal.css distinguishes an inset block from the dialog it sits in. */
-  .shake-explanation {
-    border-color: #374151;
-    border-left-color: #6b7280;
-    background: #111827;
-    color: #d1d5db;
-  }
 }
