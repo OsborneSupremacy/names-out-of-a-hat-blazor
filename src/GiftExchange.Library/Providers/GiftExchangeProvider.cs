@@ -91,6 +91,10 @@ public class GiftExchangeProvider
 
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
+        // Creation is where the hat takes its first status, so the two timestamps are the same
+        // reading rather than two calls to the clock a few microseconds apart.
+        var createdAt = DateTimeOffset.UtcNow;
+
         context.Hats.Add(new HatEntity
         {
             HatId = hatDataModel.HatId,
@@ -98,11 +102,12 @@ public class GiftExchangeProvider
             Name = hatDataModel.HatName,
             NameNormalized = Normalize(hatDataModel.HatName),
             Status = hatDataModel.Status,
+            StatusUpdatedAt = createdAt,
             AdditionalInformation = hatDataModel.AdditionalInformation,
             PriceRange = hatDataModel.PriceRange,
             InvitationsQueuedAt = DateTimeOffset.MinValue,
             InvitationsSentFromIp = string.Empty,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = createdAt,
             CopiedFromHatId = Guid.Empty
         });
 
@@ -169,6 +174,10 @@ public class GiftExchangeProvider
                                           || !request.RefusedEmails.Contains(participant.Person.Email.ToNormalizedEmail()))
                     .ToList();
 
+                // As in CreateHatAsync: the copy takes its first status as it is written, so both
+                // timestamps are the one reading.
+                var copiedAt = DateTimeOffset.UtcNow;
+
                 context.Hats.Add(new HatEntity
                 {
                     HatId = newHat.HatId,
@@ -176,11 +185,12 @@ public class GiftExchangeProvider
                     Name = newHat.HatName,
                     NameNormalized = Normalize(newHat.HatName),
                     Status = newHat.Status,
+                    StatusUpdatedAt = copiedAt,
                     AdditionalInformation = newHat.AdditionalInformation,
                     PriceRange = newHat.PriceRange,
                     InvitationsQueuedAt = DateTimeOffset.MinValue,
                     InvitationsSentFromIp = string.Empty,
-                    CreatedAt = DateTimeOffset.UtcNow,
+                    CreatedAt = copiedAt,
                     // Copying a copy records the hat it came from, not the one at the head of the
                     // chain, so the chain stays walkable one link at a time.
                     CopiedFromHatId = sourceHatId
@@ -1652,9 +1662,16 @@ public class GiftExchangeProvider
         if (organizerPersonId == Guid.Empty)
             return;
 
+        // Read here rather than left in the expression tree, where Npgsql would translate it to
+        // now() and the stamp would come from the cluster's clock instead of this one. The same
+        // reading is what MarkInvitationsAsQueuedAsync writes and returns.
+        var statusUpdatedAt = DateTimeOffset.UtcNow;
+
         await context.Hats
             .Where(hat => hat.HatId == hatId && hat.OrganizerPersonId == organizerPersonId)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, newStatus))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(hat => hat.Status, newStatus)
+                .SetProperty(hat => hat.StatusUpdatedAt, statusUpdatedAt))
             .ConfigureAwait(false);
     }
 
@@ -1734,9 +1751,13 @@ public class GiftExchangeProvider
                     .SetProperty(participant => participant.PickedRecipientParticipantId, Guid.Empty))
                 .ConfigureAwait(false);
 
+            var statusUpdatedAt = DateTimeOffset.UtcNow;
+
             await context.Hats
                 .Where(hat => hat.HatId == request.HatId && hat.OrganizerPersonId == organizerPersonId)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, HatStatus.InProgress))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(hat => hat.Status, HatStatus.InProgress)
+                    .SetProperty(hat => hat.StatusUpdatedAt, statusUpdatedAt))
                 .ConfigureAwait(false);
 
             await context.SaveChangesAsync().ConfigureAwait(false);
@@ -2133,6 +2154,7 @@ public class GiftExchangeProvider
                           && hat.Status == HatStatus.NamesAssigned)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(hat => hat.Status, HatStatus.InvitationsSent)
+                .SetProperty(hat => hat.StatusUpdatedAt, invitationsQueuedAt)
                 .SetProperty(hat => hat.InvitationsQueuedAt, invitationsQueuedAt)
                 .SetProperty(hat => hat.InvitationsSentFromIp, sentFromIpAddress))
             .ConfigureAwait(false);
@@ -2155,11 +2177,15 @@ public class GiftExchangeProvider
             return;
         }
 
+        var statusUpdatedAt = DateTimeOffset.UtcNow;
+
         var updated = await context.Hats
             .Where(hat => hat.HatId == hatId
                           && hat.OrganizerPersonId == organizerPersonId
                           && hat.Status == HatStatus.InvitationsSent)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(hat => hat.Status, HatStatus.CooledOff))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(hat => hat.Status, HatStatus.CooledOff)
+                .SetProperty(hat => hat.StatusUpdatedAt, statusUpdatedAt))
             .ConfigureAwait(false);
 
         if (updated == 0)

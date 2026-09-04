@@ -40,6 +40,7 @@ public static class NoRecord
             Name = string.Empty,
             NameNormalized = string.Empty,
             Status = string.Empty,
+            StatusUpdatedAt = DateTimeOffset.MinValue,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             InvitationsQueuedAt = DateTimeOffset.MinValue,

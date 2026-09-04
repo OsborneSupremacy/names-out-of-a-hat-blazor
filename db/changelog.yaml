@@ -988,3 +988,48 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: REVOKE SELECT, INSERT, UPDATE, DELETE ON do_not_add_to_exchange, do_not_add_by_organizer, do_not_add_anywhere, participant_leave_token FROM giftexchange_user
+
+  # Two changesets for one column again: add it, then fill in the rows that already exist. As with
+  # hat--0003, there is no third making it NOT NULL.
+  - changeSet:
+      id: hat--0005
+      author: ben
+      comment: >
+        When the hat last changed status. Every write that moves status now writes this alongside
+        it, so "how long has this sat where it is" is a column rather than something inferred from
+        invitations_queued_at and created_at.
+
+        Stays nullable, for the reasons hat--0003 gives: DSQL rejects ALTER COLUMN ... SET NOT
+        NULL, and a column cannot be added as NOT NULL to a table that already holds rows without a
+        default to fill them -- and this schema has none. hat--0006 fills in the rows that existed;
+        HatEntity.StatusUpdatedAt being non-nullable is what keeps every row written after that
+        filled.
+      changes:
+        - sql:
+            sql: ALTER TABLE hat ADD COLUMN status_updated_at TIMESTAMPTZ
+      rollback:
+        - sql:
+            sql: ALTER TABLE hat DROP COLUMN status_updated_at
+
+  - changeSet:
+      id: hat--0006
+      author: ben
+      comment: >
+        The best available guess at when each existing row last moved: invitations_queued_at if it
+        is set, since queuing invitations is a status change, and created_at otherwise -- which is
+        when a hat took the status it was created with.
+
+        The two NULLIFs drop the infinite timestamps. Npgsql writes DateTimeOffset.MinValue as
+        -infinity and DateTimeOffset.MaxValue as infinity, so a hat whose invitations were never
+        queued carries -infinity rather than 0001-01-01, and GREATEST ignores the NULL they become.
+        Dropping -infinity changes nothing on its own -- created_at already beats it -- but
+        infinity would otherwise win over every real date, and neither belongs in an answer to
+        "when".
+
+        Unconditional on purpose: the column was only just added, so no row has it set.
+      changes:
+        - sql:
+            sql: UPDATE hat SET status_updated_at = GREATEST(created_at, NULLIF(NULLIF(invitations_queued_at, 'infinity'::TIMESTAMPTZ), '-infinity'::TIMESTAMPTZ))
+      rollback:
+        - sql:
+            sql: UPDATE hat SET status_updated_at = NULL

@@ -38,6 +38,7 @@ public partial class NoRecordTests
         hat.Name.Should().BeEmpty();
         hat.NameNormalized.Should().BeEmpty();
         hat.Status.Should().BeEmpty();
+        hat.StatusUpdatedAt.Should().Be(DateTimeOffset.MinValue);
         hat.AdditionalInformation.Should().BeEmpty();
         hat.PriceRange.Should().BeEmpty();
         hat.InvitationsQueuedAt.Should().Be(DateTimeOffset.MinValue);

@@ -60,6 +60,7 @@ public class EntityRoundTripTests : IDisposable
                 Name = "Family Christmas",
                 NameNormalized = "family christmas",
                 Status = HatStatus.InProgress,
+                StatusUpdatedAt = DateTimeOffset.UtcNow,
                 AdditionalInformation = string.Empty,
                 PriceRange = string.Empty,
                 InvitationsQueuedAt = DateTimeOffset.MinValue,
@@ -274,6 +275,7 @@ public class EntityRoundTripTests : IDisposable
         {
             var hat = await context.Hats.SingleAsync(h => h.HatId == hatId);
             hat.Status = HatStatus.Closed;
+            hat.StatusUpdatedAt = DateTimeOffset.UtcNow;
             hat.InvitationsQueuedAt = DateTimeOffset.UtcNow;
             hat.InvitationsSentFromIp = "203.0.113.7";
             await context.SaveChangesAsync();
@@ -283,6 +285,7 @@ public class EntityRoundTripTests : IDisposable
         {
             var hat = await context.Hats.SingleAsync(h => h.HatId == hatId);
             hat.Status.Should().Be(HatStatus.Closed);
+            hat.StatusUpdatedAt.Should().NotBe(DateTimeOffset.MinValue);
             hat.InvitationsQueuedAt.Should().NotBe(DateTimeOffset.MinValue);
             hat.InvitationsSentFromIp.Should().Be("203.0.113.7");
         }
@@ -299,6 +302,7 @@ public class EntityRoundTripTests : IDisposable
             Name = name,
             NameNormalized = name.ToLowerInvariant(),
             Status = status,
+            StatusUpdatedAt = DateTimeOffset.UtcNow,
             AdditionalInformation = string.Empty,
             PriceRange = string.Empty,
             InvitationsQueuedAt = DateTimeOffset.MinValue,

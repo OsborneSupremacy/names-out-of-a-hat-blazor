@@ -16,6 +16,11 @@ internal class HatEntityConfiguration : IEntityTypeConfiguration<HatEntity>
         builder.Property(hat => hat.Name).HasColumnName("name").HasMaxLength(50).IsRequired();
         builder.Property(hat => hat.NameNormalized).HasColumnName("name_normalized").HasMaxLength(50).IsRequired();
         builder.Property(hat => hat.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+
+        // Mapped as a plain column added by hat--0005. See the remarks on the property for why it
+        // is required here and nullable there.
+        builder.Property(hat => hat.StatusUpdatedAt).HasColumnName("status_updated_at").IsRequired();
+
         builder.Property(hat => hat.AdditionalInformation).HasColumnName("additional_information").HasMaxLength(2000).IsRequired();
         builder.Property(hat => hat.PriceRange).HasColumnName("price_range").HasMaxLength(50).IsRequired();
         builder.Property(hat => hat.InvitationsQueuedAt).HasColumnName("invitations_queued_at").IsRequired();

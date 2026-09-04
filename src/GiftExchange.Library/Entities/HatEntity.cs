@@ -31,6 +31,19 @@ public class HatEntity
     /// </summary>
     public required string Status { get; set; }
 
+    /// <summary>
+    /// When <see cref="Status"/> last changed, including the moment the hat was created and took
+    /// its first one. Every write that moves the status writes this alongside it.
+    /// </summary>
+    /// <remarks>
+    /// Non-nullable here and nullable in the database, for the same reason
+    /// <see cref="CopiedFromHatId"/> is: the column was added to a table that already had rows, and
+    /// DSQL will neither take a default nor accept ALTER COLUMN ... SET NOT NULL afterwards. This
+    /// property is the guarantee. hat--0006 filled in the rows that existed, from the latest of
+    /// invitations_queued_at and created_at.
+    /// </remarks>
+    public required DateTimeOffset StatusUpdatedAt { get; set; }
+
     public required string AdditionalInformation { get; set; }
 
     public required string PriceRange { get; set; }

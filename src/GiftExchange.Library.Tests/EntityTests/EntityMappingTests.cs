@@ -146,7 +146,11 @@ public partial class EntityMappingTests
     [
         // Added by hat--0003. HatEntity.CopiedFromHatId is non-nullable, which is what actually
         // keeps it filled.
-        "hat.copied_from_hat_id"
+        "hat.copied_from_hat_id",
+
+        // Added by hat--0005, backfilled by hat--0006. HatEntity.StatusUpdatedAt is non-nullable,
+        // and every write that moves hat.status writes it alongside.
+        "hat.status_updated_at"
     ];
 
     /// <summary>

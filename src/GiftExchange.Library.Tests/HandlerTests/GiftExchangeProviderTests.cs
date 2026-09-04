@@ -681,6 +681,119 @@ public class GiftExchangeProviderTests
     }
 
     /// <summary>
+    /// Creating a hat is where it takes its first status, so the two timestamps agree exactly
+    /// rather than by a hair -- one reading of the clock writes both.
+    /// </summary>
+    [Fact]
+    public async Task CreateHatAsync_StampsStatusUpdatedAtWithTheCreationTime()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+
+        // act
+        await using var context = _contextFactory.CreateDbContext();
+
+        var stored = await context.Hats.SingleAsync(candidate => candidate.HatId == hat.HatId);
+
+        // assert
+        stored.StatusUpdatedAt.Should().Be(stored.CreatedAt);
+        stored.StatusUpdatedAt.Should().NotBe(DateTimeOffset.MinValue);
+    }
+
+    /// <summary>
+    /// The point of the column: every route that moves the status moves this with it, so how long
+    /// a hat has sat where it is can be read rather than inferred.
+    /// </summary>
+    [Fact]
+    public async Task UpdateHatStatusAsync_MovesStatusUpdatedAt()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+        var createdAt = await StatusUpdatedAtOf(hat.HatId);
+
+        // act
+        await _sut.UpdateHatStatusAsync(hat.OrganizerEmail, hat.HatId, HatStatus.ReadyForAssignment);
+
+        // assert
+        (await StatusUpdatedAtOf(hat.HatId)).Should().BeAfter(createdAt);
+    }
+
+    /// <summary>
+    /// Queuing invitations is a status change like any other, and it writes the same reading into
+    /// both timestamps rather than calling the clock twice.
+    /// </summary>
+    [Fact]
+    public async Task MarkInvitationsAsQueuedAsync_MovesStatusUpdatedAtWithTheStatus()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+        await _sut.UpdateHatStatusAsync(hat.OrganizerEmail, hat.HatId, HatStatus.NamesAssigned);
+
+        // act
+        await _sut.MarkInvitationsAsQueuedAsync(hat.OrganizerEmail, hat.HatId, "203.0.113.7");
+
+        // assert
+        await using var context = _contextFactory.CreateDbContext();
+
+        var stored = await context.Hats.SingleAsync(candidate => candidate.HatId == hat.HatId);
+
+        stored.Status.Should().Be(HatStatus.InvitationsSent);
+        stored.StatusUpdatedAt.Should().Be(stored.InvitationsQueuedAt);
+    }
+
+    /// <summary>
+    /// The scheduled transition runs without an organizer present, and stamps the column all the
+    /// same.
+    /// </summary>
+    [Fact]
+    public async Task TryTransitionHatToCooledOffAsync_MovesStatusUpdatedAt()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+        await _sut.UpdateHatStatusAsync(hat.OrganizerEmail, hat.HatId, HatStatus.NamesAssigned);
+        await _sut.MarkInvitationsAsQueuedAsync(hat.OrganizerEmail, hat.HatId, "203.0.113.7");
+
+        var queuedAt = await StatusUpdatedAtOf(hat.HatId);
+
+        // act
+        await _sut.TryTransitionHatToCooledOffAsync(hat.OrganizerEmail, hat.HatId);
+
+        // assert
+        (await StatusUpdatedAtOf(hat.HatId)).Should().BeAfter(queuedAt);
+    }
+
+    /// <summary>
+    /// Resetting puts the status back to the beginning, which is a change like any other.
+    /// </summary>
+    [Fact]
+    public async Task ResetHatAsync_MovesStatusUpdatedAt()
+    {
+        // arrange
+        var hat = await CreateHatAsync();
+        await _sut.UpdateHatStatusAsync(hat.OrganizerEmail, hat.HatId, HatStatus.NamesAssigned);
+
+        var assignedAt = await StatusUpdatedAtOf(hat.HatId);
+
+        // act
+        var wasReset = await _sut.ResetHatAsync(new ResetHatRequest
+        {
+            HatId = hat.HatId,
+            OrganizerEmail = hat.OrganizerEmail
+        });
+
+        // assert
+        wasReset.Should().BeTrue();
+        (await StatusUpdatedAtOf(hat.HatId)).Should().BeAfter(assignedAt);
+    }
+
+    private async Task<DateTimeOffset> StatusUpdatedAtOf(Guid hatId)
+    {
+        await using var context = _contextFactory.CreateDbContext();
+
+        return (await context.Hats.SingleAsync(hat => hat.HatId == hatId)).StatusUpdatedAt;
+    }
+
+    /// <summary>
     /// Participants belong to a hat. DynamoDB tolerated orphans; a relational schema does not, so
     /// the hat has to exist first.
     /// </summary>
