@@ -125,6 +125,7 @@ internal static class ServiceProviderBuilder
         internal IServiceCollection AddValidators() =>
             services
                 .AddSingleton<IValidator<AddParticipantRequest>, AddParticipantRequestValidator>()
+                .AddSingleton<IValidator<AssignRecipientsRequest>, AssignRecipientsRequestValidator>()
                 .AddSingleton<IValidator<UpdateProfileRequest>, UpdateProfileRequestValidator>()
                 .AddSingleton<IValidator<RequestMagicLinkRequest>, RequestMagicLinkRequestValidator>()
                 .AddSingleton<IValidator<RedeemMagicLinkRequest>, RedeemMagicLinkRequestValidator>()

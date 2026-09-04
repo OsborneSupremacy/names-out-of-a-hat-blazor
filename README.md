@@ -87,6 +87,26 @@ So the draw shuffles, assigns, and retries with a fresh seed if it deadlocks, up
 
 Validation is the other half of this: rather than solving hard shapes silently, the app tells the organizer their shape is hard while they can still change it.
 
+### The organizer chooses the shape of the draw
+
+A draw is a permutation of the participants with no fixed point — a derangement — and every permutation decomposes into disjoint cycles. Most of what organizers actually argue about is cycle length. James draws Mary and Mary draws James: a 2-cycle, a mutual pair, two people who have quietly become their own gift exchange. Some groups don't mind. Some mind a lot, and the same people usually mind about a closed triangle inside a group of ten for the same reason.
+
+So the shake asks, in three options that are one setting rather than three:
+
+| Option           | What it means to an organizer                     | What it is                                  |
+|------------------|---------------------------------------------------|---------------------------------------------|
+| Anything goes    | Any draw where nobody draws themselves            | Any derangement; any cycle structure        |
+| No mutual pairs  | Nobody draws the person who drew them             | A derangement with no 2-cycle               |
+| Single cycle     | Everybody in one unbroken chain                   | A cyclic permutation — one cycle of length n |
+
+Two things follow from the brute-force decision above. The mutual-pair rule is enforced while the draw is built rather than checked afterwards — a pair needs both halves, so refusing the second half is enough to make 2-cycles unreachable rather than merely unlikely. The single cycle is *constructed*, by walking a random Hamiltonian path and closing it, because filtering for one degrades with the size of the exchange: the share of derangements that are a single cycle falls off as roughly e/n, so at fifty people you would be discarding nineteen draws in twenty for a property you could have built in.
+
+The two constrained options get an order of magnitude more retries than the default, because their failures are more often bad luck than impossibility. When they do exhaust them the organizer is told which rule was in the way, since relaxing it is the one fix that doesn't involve editing anybody's exclusions.
+
+The exclusions themselves are untouched by any of this. They apply to every draw; a draw type can only add to them, which is what the dialog says and what the tests assert for all three options.
+
+The setting belongs to the draw, not to the exchange, so it isn't stored. Once names are out the rule is baked into the assignment and there is nothing left for a stored value to govern — a re-shake is a new draw and gets asked again.
+
 ### Cool-off before closing
 
 Closing reveals every pick, permanently, to everybody. It's the only irreversible action in the application, so it isn't available immediately — an exchange has to sit in `INVITATIONS_SENT` for a while before it can be closed, which is enough to stop a mis-click from spoiling everyone's surprise. The transition is made by a scheduled job, not by a timestamp check on read, so the state is a real one rather than a computed one.

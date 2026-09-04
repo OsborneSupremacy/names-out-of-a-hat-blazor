@@ -10,9 +10,30 @@ internal class AssignRecipientsService : IApiGatewayHandler
 
     private readonly GiftExchangeProvider _giftExchangeProvider;
 
+    /// <summary>
+    /// Attempts for a draw with nothing on it but the organizer's exclusions. Unchanged from when
+    /// that was the only kind of draw there was.
+    /// </summary>
     private const int ShakeAttempts = 25;
 
+    /// <summary>
+    /// Attempts for the draw types that add a rule of their own. They fail more often for reasons
+    /// that are luck rather than impossibility — a walk that boxed itself in, a chain that could
+    /// not close — and each attempt costs a few thousand operations on a list that is almost always
+    /// under thirty people, so trying an order of magnitude harder before declaring a configuration
+    /// unsatisfiable is nearly free and much less likely to be wrong.
+    /// </summary>
+    private const int ConstrainedShakeAttempts = 250;
+
     private const string NonViableConfigurationMessage = "We've tried shaking the hat multiple times but we could not find a valid distribution (i.e. everyone is assigned to exactly one other participant). This can sometimes happen with certain configurations of participants and their eligible recipients. You can try shaking the hat again, but if the issue persists please review the list of participants and their eligible recipients to ensure that a valid distribution is possible.";
+
+    /// <summary>
+    /// What to say when a draw that had a rule on it could not be made. Names the rule, because it
+    /// is the most likely thing standing in the way and the one thing the organizer can relax
+    /// without editing anybody's exclusions.
+    /// </summary>
+    private static string ConstrainedNonViableConfigurationMessage(string drawType) =>
+        $"We've tried shaking the hat multiple times but we could not find a valid distribution with the \"{DrawTypes.Describe(drawType)}\" rule applied on top of who each participant is allowed to draw. That combination may not be possible for this group. You can try shaking the hat again, choose \"Anything goes\" instead, or review the list of participants and their eligible recipients.";
 
     public AssignRecipientsService(
         ILogger<AssignRecipientsService> logger,
@@ -57,18 +78,30 @@ internal class AssignRecipientsService : IApiGatewayHandler
 
         var hat = hatPreconditionResult.Hat;
 
-        var (shakeSuccess, participantsOut) = HatShakerService
-            .ShakeMultiple(hat.Participants, ShakeAttempts);
+        var isConstrained = DrawTypes.IsConstrained(request.DrawType);
+        var attempts = isConstrained ? ConstrainedShakeAttempts : ShakeAttempts;
 
-        if (!shakeSuccess)
+        var shakeResponse = HatShakerService.Shake(new ShakeHatRequest
         {
-            _logger.LogWarning("Hat Id {HatId} for organizer {OrganizerEmail} could not be shaken successfully after {ShakeAttempts} attempts. This likely indicates a non-viable configuration of participants and eligible recipients.", request.HatId, request.OrganizerEmail, ShakeAttempts);
-            return new Result<StatusCodeOnlyResponse>(new OperationCanceledException(NonViableConfigurationMessage), HttpStatusCode.ServiceUnavailable);
+            Participants = hat.Participants,
+            DrawType = request.DrawType,
+            Attempts = attempts
+        });
+
+        if (!shakeResponse.Success)
+        {
+            _logger.LogWarning("Hat Id {HatId} for organizer {OrganizerEmail} could not be shaken successfully as a {DrawType} draw after {ShakeAttempts} attempts. This likely indicates a non-viable configuration of participants and eligible recipients.", request.HatId, request.OrganizerEmail, request.DrawType, attempts);
+
+            var message = isConstrained
+                ? ConstrainedNonViableConfigurationMessage(request.DrawType)
+                : NonViableConfigurationMessage;
+
+            return new Result<StatusCodeOnlyResponse>(new OperationCanceledException(message), HttpStatusCode.ServiceUnavailable);
         }
 
         var updateParticipantsTasks = new List<Task>();
 
-        foreach (var participant in participantsOut)
+        foreach (var participant in shakeResponse.Participants)
             updateParticipantsTasks.Add(_giftExchangeProvider
                 .UpdateParticipantPickedRecipientAsync(
                     request.OrganizerEmail,

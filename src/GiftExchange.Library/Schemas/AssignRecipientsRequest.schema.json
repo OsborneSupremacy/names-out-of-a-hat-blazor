@@ -13,10 +13,19 @@
             "type": "string",
             "format": "uuid",
             "description": "The unique identifier of the hat"
+        },
+        "drawType": {
+            "type": "string",
+            "enum": [
+                "ANYTHING_GOES",
+                "NO_MUTUAL_PAIRS",
+                "SINGLE_CYCLE"
+            ],
+            "description": "What shape the draw has to come out in. ANYTHING_GOES applies only the organizer's exclusions. NO_MUTUAL_PAIRS additionally forbids two people drawing each other. SINGLE_CYCLE requires everybody in one unbroken chain. Exclusions apply to all three."
         }
     },
     "required": [
-        "organizerEmail", "hatId"
+        "organizerEmail", "hatId", "drawType"
     ],
     "additionalProperties": false
 }

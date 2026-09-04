@@ -1,81 +1,187 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Bogus;
 
 namespace GiftExchange.Library.Services;
 
+/// <summary>
+/// Draws the names. Given the participants and their eligible recipients, produces an assignment in
+/// which everybody gives to exactly one person and receives from exactly one person — a derangement
+/// of the participants — subject to whichever <see cref="DrawType"/> the organizer chose.
+/// </summary>
+/// <remarks>
+/// Randomized and without backtracking, on purpose. A draw has to look arbitrary to the people in
+/// it, and a solver that fills the hardest slot first would produce a defensible assignment that
+/// is also, year after year, the same assignment. So each attempt walks the participants in a
+/// random order taking random eligible picks, and an attempt that strands somebody is thrown away
+/// and reseeded rather than unwound. That trade is only affordable because the graphs are dense:
+/// a real exchange excludes a handful of pairs out of n squared, so almost every attempt succeeds
+/// and the retries are there for the configurations that are merely tight rather than impossible.
+/// A genuinely unsatisfiable set of exclusions exhausts the attempts and is reported as a failure,
+/// which is the same outcome the caller would want from an exact solver, arrived at without one.
+/// </remarks>
 internal static class HatShakerService
 {
-    public static (bool success, ImmutableList<Participant> participantsOut) ShakeMultiple(ImmutableList<Participant> participantsIn, int count)
+    internal static ShakeHatResponse Shake(ShakeHatRequest request)
     {
-        var randomSeeds = new List<int>();
-
-        for (int x = 0; x <= count; x++)
-            randomSeeds.Add(new Randomizer().Int());
-
-        return ShakeMultiple(participantsIn, randomSeeds);
-    }
-
-    private static (bool success, ImmutableList<Participant> participantsOut) ShakeMultiple(ImmutableList<Participant> participantsIn, List<int> randomSeeds)
-    {
-        foreach (var seed in randomSeeds)
+        for (var attempt = 0; attempt < request.Attempts; attempt++)
         {
+            var seed = new Randomizer().Int();
 #if DEBUG
             Debug.WriteLine(seed);
 #endif
-            var (success, participantsOut) = Shake(participantsIn, seed);
-            if (success)
-                return (true, participantsOut);
+            var response = ShakeOnce(request.Participants, request.DrawType, seed);
+
+            if (response.Success)
+                return response;
         }
 
-        return (false, []);
+        return ShakeHatResponse.Failed;
     }
 
-    private static (bool success, ImmutableList<Participant> participantsOut) Shake(ImmutableList<Participant> participantsIn, int randomSeed)
+    private static ShakeHatResponse ShakeOnce(
+        ImmutableList<Participant> participants,
+        string drawType,
+        int seed
+    )
     {
-        Randomizer.Seed = new Random(randomSeed);
+        Randomizer.Seed = new Random(seed);
         var faker = new Faker();
 
-        participantsIn = participantsIn
-            .Select(p => p with { PickedRecipient = Persons.Empty.Name }) // clear any previous picks
+        // Clear any previous picks. A re-shake arrives with last shake's assignment still on the
+        // records, and nothing below reads PickedRecipient, but leaving it set would mean the
+        // failure paths return participants carrying a stale draw.
+        var cleared = participants
+            .Select(participant => participant with { PickedRecipient = Persons.Empty.Name })
             .ToImmutableList();
 
-        var participantsOut = new List<Participant>();
+        return drawType switch
+        {
+            var value when value == DrawType.SingleCycle => ShakeSingleCycle(cleared, faker),
+            var value when value == DrawType.NoMutualPairs => ShakeCycleCover(cleared, faker, forbidMutualPairs: true),
+            _ => ShakeCycleCover(cleared, faker, forbidMutualPairs: false)
+        };
+    }
 
+    /// <summary>
+    /// The general draw: hand out recipients until everybody has one, taking each giver in random
+    /// order and giving them a random recipient nobody has taken yet. What comes out is a set of
+    /// disjoint cycles of whatever lengths fall out — which is exactly what "anything goes" means.
+    /// </summary>
+    /// <param name="forbidMutualPairs">
+    /// When true, a giver may not be given the one person who has already been given them. That
+    /// single check is enough to rule out 2-cycles entirely rather than merely usually: a mutual
+    /// pair needs both halves, and whichever half is assigned second is the one this refuses. There
+    /// is no need to inspect the finished assignment for pairs, because none can have been built.
+    /// </param>
+    private static ShakeHatResponse ShakeCycleCover(
+        ImmutableList<Participant> participants,
+        Faker faker,
+        bool forbidMutualPairs
+    )
+    {
         var assignedGivers = new HashSet<string>();
         var assignedRecipients = new HashSet<string>();
 
-        var errors = new List<string>();
+        // Giver name to the name they drew, for the mutual-pair check. Keyed by name because
+        // eligibility is expressed in names; participants are keyed by email everywhere else,
+        // and names are unique within a hat, which is what makes both keys workable.
+        var pickedByGiverName = new Dictionary<string, string>();
 
-        foreach (var _ in participantsIn)
+        var assigned = new List<Participant>();
+
+        foreach (var _ in participants)
         {
-            var participantIn = faker.
-                PickRandom(
-                    participantsIn
-                        .Where(p => !assignedGivers.Contains(p.Person.Email))
-                        .Where(p => string.IsNullOrWhiteSpace(p.PickedRecipient))
-                );
+            var giver = faker.PickRandom(
+                participants.Where(participant => !assignedGivers.Contains(participant.Person.Email))
+            );
 
-            var eligibleRecipients = participantIn.EligibleRecipients
-                .Where(r => !assignedRecipients.Contains(r))
+            var eligibleRecipients = giver.EligibleRecipients
+                .Where(name => !assignedRecipients.Contains(name))
+                .Where(name => !forbidMutualPairs || !HasDrawn(pickedByGiverName, name, giver.Person.Name))
                 .ToList();
 
-            if (!eligibleRecipients.Any())
-            {
-                errors.Add($"Could not find an eligible recipient for {participantIn.Person.Name} that was not already taken");
-                break;
-            }
+            if (eligibleRecipients.Count == 0)
+                return ShakeHatResponse.Failed;
 
-            var participantOut = participantIn with
-            {
-                PickedRecipient = faker.PickRandom(eligibleRecipients)
-            };
+            var pick = faker.PickRandom(eligibleRecipients);
 
-            participantsOut.Add(participantOut);
+            assigned.Add(giver with { PickedRecipient = pick });
 
-            assignedGivers.Add(participantIn.Person.Email);
-            assignedRecipients.Add(participantOut.PickedRecipient);
+            assignedGivers.Add(giver.Person.Email);
+            assignedRecipients.Add(pick);
+            pickedByGiverName[giver.Person.Name] = pick;
         }
 
-        return !errors.Any() ? (true, participantsOut.ToImmutableList()) : (false, []);
+        return new ShakeHatResponse { Success = true, Participants = assigned.ToImmutableList() };
     }
+
+    /// <summary>
+    /// Everybody in one chain. Starts somewhere at random and walks to a random eligible person
+    /// nobody has been to yet, until the walk has been everywhere, then closes the loop back to
+    /// where it started.
+    /// </summary>
+    /// <remarks>
+    /// Built rather than filtered for. The obvious alternative — draw as usual and discard anything
+    /// that came out in more than one piece — degrades with the size of the exchange, because the
+    /// share of derangements that are a single cycle falls away as roughly e/n: about a quarter at
+    /// ten people, a twentieth at fifty. Constructing the cycle keeps the odds tied to the
+    /// exclusions instead, which is the thing that actually makes a draw hard.
+    ///
+    /// Two ways to fail, and they are different. The walk can arrive somewhere with nobody
+    /// unvisited left to go to, or it can visit everybody and find the last person is not allowed
+    /// to draw the first. Both are the same answer to the caller — try again with another seed.
+    /// </remarks>
+    private static ShakeHatResponse ShakeSingleCycle(ImmutableList<Participant> participants, Faker faker)
+    {
+        var byName = participants.ToDictionary(participant => participant.Person.Name);
+
+        // The type argument is stated because Bogus also has a params overload, which an
+        // ImmutableList<T> otherwise binds to as a single item.
+        var start = faker.PickRandom<Participant>(participants);
+        var current = start;
+
+        var chain = new List<Participant> { start };
+        var visited = new HashSet<string> { start.Person.Name };
+
+        while (chain.Count < participants.Count)
+        {
+            var candidates = current.EligibleRecipients
+                .Where(name => !visited.Contains(name))
+                .ToList();
+
+            if (candidates.Count == 0)
+                return ShakeHatResponse.Failed;
+
+            var nextName = faker.PickRandom(candidates);
+
+            // An eligible recipient naming somebody who is not in the hat would be a data fault
+            // rather than a tight draw. Failing the attempt reports it the same way as any other
+            // dead end instead of throwing out of the shaker.
+            if (!byName.TryGetValue(nextName, out var next))
+                return ShakeHatResponse.Failed;
+
+            chain.Add(next);
+            visited.Add(nextName);
+            current = next;
+        }
+
+        if (!current.EligibleRecipients.Contains(start.Person.Name))
+            return ShakeHatResponse.Failed;
+
+        var assigned = chain
+            .Select((participant, position) => participant with
+            {
+                PickedRecipient = chain[(position + 1) % chain.Count].Person.Name
+            })
+            .ToImmutableList();
+
+        return new ShakeHatResponse { Success = true, Participants = assigned };
+    }
+
+    private static bool HasDrawn(
+        Dictionary<string, string> pickedByGiverName,
+        string giverName,
+        string recipientName
+    ) =>
+        pickedByGiverName.TryGetValue(giverName, out var theirPick) && theirPick == recipientName;
 }

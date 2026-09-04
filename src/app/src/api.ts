@@ -1,5 +1,6 @@
 import { apiConfig } from './config'
 import { getSession } from './auth'
+import { DrawType } from './drawType'
 
 export interface HatMetadata {
   hatId: string
@@ -82,6 +83,8 @@ export interface ValidateHatResponse {
 export interface AssignRecipientsRequest {
   organizerEmail: string
   hatId: string
+  /** One of the DrawType values in drawType.ts. Required: the server has no default. */
+  drawType: DrawType
 }
 
 export interface SendInvitationsRequest {

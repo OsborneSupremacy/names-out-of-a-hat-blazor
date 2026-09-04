@@ -19,6 +19,7 @@ import {
   PreviewInvitationsResponse,
 } from '../api'
 import { HAT_STATUS_STEPS, formatHatStatus } from '../hatStatus'
+import { DrawType } from '../drawType'
 import { deliveryTone, formatDeliveryStatus, showsDeliveryDetail } from '../deliveryStatus'
 import { EditAddressModal, ResendKind } from '../components/EditAddressModal'
 import { Header } from '../components/Header'
@@ -27,6 +28,7 @@ import { AddParticipantModal } from '../components/AddParticipantModal'
 import { InvitationsPreviewModal } from '../components/InvitationsPreviewModal'
 import { SendConfirmationModal } from '../components/SendConfirmationModal'
 import { CopyHatModal } from '../components/CopyHatModal'
+import { ShakeHatModal } from '../components/ShakeHatModal'
 import './GiftExchangeDetail.css'
 
 interface GiftExchangeDetailProps {
@@ -60,6 +62,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [showSendConfirmation, setShowSendConfirmation] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
+  const [showShakeModal, setShowShakeModal] = useState(false)
   const [editingAddressFor, setEditingAddressFor] = useState<Participant | null>(null)
   const [savingAddress, setSavingAddress] = useState(false)
   // Kept apart from the page-level `error`, which replaces the whole view when it is set. A failed
@@ -487,16 +490,16 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     })
   }
 
-  const handleShakeHat = async () => {
+  /**
+   * Draws the names the way the dialog was told to.
+   *
+   * Errors are rethrown rather than set on the page. A shake that could not be satisfied is the
+   * one failure the organizer can do something about immediately — by picking a looser rule — so
+   * it belongs in the dialog beside the options, not behind it. The confirmation for re-shaking
+   * lives in the dialog too, which is why there is no confirm() here any more.
+   */
+  const handleShakeHat = async (drawType: DrawType) => {
     if (!hatId || !hat) return
-
-    // If recipients are already assigned, confirm before re-shaking
-    if (hat.status === 'NAMES_ASSIGNED') {
-      const confirmed = window.confirm(
-        'The hat has already been shaken and all participants have a name picked. Are you sure you want to shake the hat again?'
-      )
-      if (!confirmed) return
-    }
 
     setIsAssigning(true)
     setValidationErrors([])
@@ -507,6 +510,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       await assignRecipients({
         organizerEmail: userEmail,
         hatId,
+        drawType,
       })
 
       // Reload the hat data
@@ -514,7 +518,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       setHat(updatedHat)
     } catch (err) {
       console.error('Error shaking hat:', err)
-      setError(err instanceof Error ? err.message : 'Failed to shake the hat')
+      throw err
     } finally {
       setIsAssigning(false)
     }
@@ -666,7 +670,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                   <div className="action-container">
                     <button
                       className="action-button shake-button"
-                      onClick={handleShakeHat}
+                      onClick={() => setShowShakeModal(true)}
                       disabled={isAssigning}
                     >
                       {isAssigning ? 'Shaking...' : 'Shake the Hat!'}
@@ -700,7 +704,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     </button>
                     <button
                       className="action-button-secondary shake-again-button"
-                      onClick={handleShakeHat}
+                      onClick={() => setShowShakeModal(true)}
                       disabled={isAssigning}
                     >
                       {isAssigning ? 'Shaking...' : 'Shake the Hat Again'}
@@ -1023,6 +1027,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           isSending={isSendingInvitations}
           onBack={handleBackFromInvitationsPreview}
           onSend={handleProceedToSendConfirmation}
+        />
+      )}
+
+      {showShakeModal && hat && (
+        <ShakeHatModal
+          isReshake={hat.status === 'NAMES_ASSIGNED'}
+          participantCount={hat.participants.length}
+          onClose={() => setShowShakeModal(false)}
+          onSubmit={handleShakeHat}
         />
       )}
 

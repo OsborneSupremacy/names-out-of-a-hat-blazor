@@ -43,16 +43,24 @@ internal class EmailQueue : IEmailQueue
         // Carries the caller's trace onto the message, so the send that happens later joins the
         // request that asked for it instead of starting a trace of its own. The X-Ray SDK
         // instruments this SendMessage call but puts nothing on the message itself, so without
-        // these three lines the journey from an organizer pressing Send to SES accepting each
-        // invitation is one trace per hop with nothing connecting them.
+        // this the journey from an organizer pressing Send to SES accepting each invitation is one
+        // trace per hop with nothing connecting them.
         //
         // A system attribute rather than a message attribute: Lambda's event source mapping reads
         // AWSTraceHeader from the system set specifically to continue a trace, and system
         // attributes do not count against the message's own attribute limit or change its body.
+        //
+        // Assigned as a whole dictionary rather than written through the indexer. In AWS SDK for
+        // .NET v4 the collection properties on a request start as null instead of empty, so
+        // indexing into this one throws a NullReferenceException — and it throws only where a trace
+        // is actually present, which is to say only in Lambda and never in a test.
         var traceHeader = TracePropagation.CurrentTraceHeader;
+
         if (traceHeader is not null)
-            request.MessageSystemAttributes["AWSTraceHeader"] =
-                new MessageSystemAttributeValue { DataType = "String", StringValue = traceHeader };
+            request.MessageSystemAttributes = new Dictionary<string, MessageSystemAttributeValue>
+            {
+                ["AWSTraceHeader"] = new() { DataType = "String", StringValue = traceHeader }
+            };
 
         return _sqsClient.SendMessageAsync(request);
     }
