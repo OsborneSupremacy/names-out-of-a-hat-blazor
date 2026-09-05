@@ -278,6 +278,31 @@ public class CopyHatTests
     }
 
     /// <summary>
+    /// A copy is another gift exchange, so it spends the same allowance one created from scratch
+    /// does — including when the organizer spent the rest of it elsewhere.
+    /// </summary>
+    [Fact]
+    public async Task CopyHat_GivenTheOrganizerHasSpentTheirDailyLimit_TooManyRequests()
+    {
+        // arrange
+        var source = await CreateRevealedHatAsync();
+
+        // The source hat is the first of the day; these bring the organizer up to the limit.
+        for (var created = 1; created < HatCreationLimiter.DailyLimit; created++)
+            await _giftExchangeProvider.CreateHatAsync(_hatDataModelFaker.Generate() with
+            {
+                OrganizerName = source.Hat.OrganizerName,
+                OrganizerEmail = source.Hat.OrganizerEmail
+            });
+
+        // act
+        var (statusCode, _) = await CopyAsync(source, excludePreviousRecipients: false, expectSuccess: false);
+
+        // assert
+        statusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    /// <summary>
     /// A revealed hat with three participants, one eligibility rule of its own, and everybody
     /// holding a pick — enough for the copy to have something to carry over and something to drop.
     /// </summary>

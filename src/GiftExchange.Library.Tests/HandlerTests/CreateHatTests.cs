@@ -62,4 +62,41 @@ public class CreateHatTests
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
     }
+
+    /// <summary>
+    /// The allowance is per organizer, so a whole day's worth from one address spends it and the
+    /// next one has to be refused. Everything up to the limit is asserted too: a limit that also
+    /// refused the fifth would pass a test that only looked at the sixth.
+    /// </summary>
+    [Fact]
+    public async Task CreateHat_DailyLimitSpent_TooManyRequestsResponse()
+    {
+        // arrange
+        var organizer = _requestFaker.Generate();
+
+        for (var created = 0; created < HatCreationLimiter.DailyLimit; created++)
+        {
+            var allowed = await _sut.FunctionHandler(AnotherHatFor(organizer), _context);
+            allowed.StatusCode.Should().Be((int)HttpStatusCode.Created);
+        }
+
+        // act
+        var response = await _sut.FunctionHandler(AnotherHatFor(organizer), _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.TooManyRequests);
+    }
+
+    /// <summary>
+    /// The organizer's next exchange: a freshly faked one carrying their name and address, so it
+    /// differs from the last only in the ways that do not matter to the limit.
+    /// </summary>
+    private APIGatewayProxyRequest AnotherHatFor(CreateHatRequest organizer) =>
+        _jsonService
+            .SerializeDefault(_requestFaker.Generate() with
+            {
+                OrganizerName = organizer.OrganizerName,
+                OrganizerEmail = organizer.OrganizerEmail
+            })
+            .ToApiGatewayProxyRequest();
 }

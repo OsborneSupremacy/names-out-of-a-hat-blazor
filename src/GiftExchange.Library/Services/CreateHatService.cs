@@ -6,16 +6,20 @@ internal class CreateHatService : IApiGatewayHandler
 
     private readonly IContentModerationService _contentModerationService;
 
+    private readonly HatCreationLimiter _hatCreationLimiter;
+
     private readonly ApiGatewayAdapter _adapter;
 
     public CreateHatService(
         GiftExchangeProvider giftExchangeProvider,
         IContentModerationService contentModerationService,
+        HatCreationLimiter hatCreationLimiter,
         ApiGatewayAdapter adapter
         )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _contentModerationService = contentModerationService ?? throw new ArgumentNullException(nameof(contentModerationService));
+        _hatCreationLimiter = hatCreationLimiter ?? throw new ArgumentNullException(nameof(hatCreationLimiter));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
     }
 
@@ -47,6 +51,18 @@ internal class CreateHatService : IApiGatewayHandler
 
         if (hatExists)
             return new Result<CreateHatResponse>(new InvalidOperationException("A gift exchange with this name already exists. If this is the same gift exchange for a different year, try adding the year in the name to differentiate it from previous exchanges."), HttpStatusCode.Conflict);
+
+        // After the duplicate name rather than before it, so that a request which was never going
+        // to create anything is answered with the reason it was not, instead of a limit it did not
+        // reach.
+        var limit = await _hatCreationLimiter
+            .CheckAsync(request.OrganizerEmail)
+            .ConfigureAwait(false);
+
+        if (!limit.WithinLimit)
+            return new Result<CreateHatResponse>(
+                new InvalidOperationException(HatCreationLimiter.RefusalMessage(limit.NextAllowedAt)),
+                HttpStatusCode.TooManyRequests);
 
         var newHat = new HatDataModel
         {

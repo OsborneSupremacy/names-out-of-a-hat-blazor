@@ -273,6 +273,56 @@ public class GiftExchangeProvider
         return hatId == Guid.Empty ? (false, Guid.Empty) : (true, hatId);
     }
 
+    /// <summary>
+    /// How many exchanges this organizer has created since a given moment, and when the first of
+    /// them was made.
+    /// </summary>
+    /// <remarks>
+    /// Counted from the rows the organizer owns rather than from a tally kept somewhere else, which
+    /// has one consequence worth naming: deleting an exchange gives the slot back. That is the
+    /// right answer for what this limit is for. It exists to bound how much an account can pile up,
+    /// not to ration attempts, and somebody who deletes a mistake and makes it again has piled up
+    /// nothing.
+    ///
+    /// The timestamps come back rather than a COUNT and a MIN, because the window holds a handful
+    /// of rows and one round trip that returns them is cheaper than two aggregates that can
+    /// disagree with each other.
+    /// </remarks>
+    internal async Task<CountHatsCreatedSinceResponse> CountHatsCreatedSinceAsync(
+        CountHatsCreatedSinceRequest request
+    )
+    {
+        if (string.IsNullOrWhiteSpace(request.OrganizerEmail))
+            return NoneCreated;
+
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var organizerPersonId = await FindPersonIdByEmailAsync(context, request.OrganizerEmail)
+            .ConfigureAwait(false);
+
+        // Nobody by that address has ever been written, so they have created nothing. The first
+        // exchange of a new organizer's life comes through here.
+        if (organizerPersonId == Guid.Empty)
+            return NoneCreated;
+
+        var createdAt = await context.Hats
+            .AsNoTracking()
+            .Where(hat => hat.OrganizerPersonId == organizerPersonId && hat.CreatedAt >= request.Since)
+            .Select(hat => hat.CreatedAt)
+            .ToListAsync()
+            .ConfigureAwait(false);
+
+        return new CountHatsCreatedSinceResponse
+        {
+            Count = createdAt.Count,
+            EarliestCreatedAt = createdAt.Count == 0 ? DateTimeOffset.MinValue : createdAt.Min()
+        };
+    }
+
+    /// <summary>An organizer with nothing inside the window.</summary>
+    private static CountHatsCreatedSinceResponse NoneCreated =>
+        new() { Count = 0, EarliestCreatedAt = DateTimeOffset.MinValue };
+
     public async Task<(bool exists, Hat hat)> GetHatAsync(string organizerEmail, Guid hatId)
     {
         if (string.IsNullOrWhiteSpace(organizerEmail) || hatId == Guid.Empty)

@@ -149,6 +149,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<SessionTokenService>()
                 .AddSingleton<IContentModerationService, ContentModerationService>()
                 .AddSingleton<HatPreconditionValidator>()
+                .AddSingleton<HatCreationLimiter>()
 
                 .AddKeyedSingleton<IApiGatewayHandler, RequestMagicLinkService>("post/auth/requestlink")
                 .AddKeyedSingleton<IApiGatewayHandler, RedeemMagicLinkService>("post/auth/redeem")

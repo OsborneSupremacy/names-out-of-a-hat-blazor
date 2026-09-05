@@ -18,17 +18,21 @@ internal class CopyHatService : IApiGatewayHandler
 
     private readonly DoNotAddService _doNotAddService;
 
+    private readonly HatCreationLimiter _hatCreationLimiter;
+
     public CopyHatService(
         GiftExchangeProvider giftExchangeProvider,
         HatPreconditionValidator hatPreconditionValidator,
         ApiGatewayAdapter adapter,
-        DoNotAddService doNotAddService
+        DoNotAddService doNotAddService,
+        HatCreationLimiter hatCreationLimiter
     )
     {
         _giftExchangeProvider = giftExchangeProvider ?? throw new ArgumentNullException(nameof(giftExchangeProvider));
         _hatPreconditionValidator = hatPreconditionValidator ?? throw new ArgumentNullException(nameof(hatPreconditionValidator));
         _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         _doNotAddService = doNotAddService ?? throw new ArgumentNullException(nameof(doNotAddService));
+        _hatCreationLimiter = hatCreationLimiter ?? throw new ArgumentNullException(nameof(hatCreationLimiter));
     }
 
     public Task<APIGatewayProxyResponse> FunctionHandler(
@@ -67,6 +71,18 @@ internal class CopyHatService : IApiGatewayHandler
             return new Result<CopyHatResponse>(
                 new InvalidOperationException(NameTakenMessage),
                 HttpStatusCode.Conflict);
+
+        // A copy spends the same daily allowance as an exchange created from scratch, and is
+        // checked at the same point in the sequence: once everything that would have refused this
+        // request on its own terms has passed.
+        var limit = await _hatCreationLimiter
+            .CheckAsync(request.OrganizerEmail)
+            .ConfigureAwait(false);
+
+        if (!limit.WithinLimit)
+            return new Result<CopyHatResponse>(
+                new InvalidOperationException(HatCreationLimiter.RefusalMessage(limit.NextAllowedAt)),
+                HttpStatusCode.TooManyRequests);
 
         var sourceHat = hatPreconditionResult.Hat;
 
