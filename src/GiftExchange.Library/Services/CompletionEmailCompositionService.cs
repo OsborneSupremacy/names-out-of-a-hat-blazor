@@ -55,13 +55,19 @@ public class CompletionEmailCompositionService
     }
 
     /// <summary>
-    /// The whole draw, one participant per line.
+    /// The whole draw, one row per participant.
     /// </summary>
     /// <remarks>
-    /// The emoji sits against the picked name, the same way round as in the invitation, so somebody
+    /// A table rather than lines of running text because the names in a row have to line up with
+    /// the names above them, and neither a name nor a face is a fixed width in any font this is
+    /// read in. Every name and every face gets a cell of its own, so the columns are as wide as
+    /// the longest thing in them and each row turns in the same place.
+    ///
+    /// Both people in a row are marked, the same way round as in the invitation, so somebody
     /// reading this next to the invitation they were sent sees the same person marked the same way.
     /// It is the face that person wears in this hat, looked up rather than derived from the name,
-    /// which is what makes the two messages agree even after an organizer has changed one.
+    /// which is what makes the two messages agree even after an organizer has changed one. A
+    /// participant with no face to show leaves that cell empty and the row still lines up.
     ///
     /// Not encoded, and it does not need to be: a face is one of a closed list this application
     /// owns. The names around it are the organizer's words and are encoded.
@@ -71,14 +77,24 @@ public class CompletionEmailCompositionService
         var rows = hat.Participants
             .Where(participant => !string.IsNullOrWhiteSpace(participant.PickedRecipient))
             .Select(participant =>
-                $"{HttpUtility.HtmlEncode(participant.Person.Name)} &rarr; {hat.EmojiFor(participant.PickedRecipient)} <b>{HttpUtility.HtmlEncode(participant.PickedRecipient)}</b>")
+                $"""
+                 <tr>
+                 <td style="padding:0 6px 4px 0;">{participant.Emoji}</td>
+                 <td style="padding:0 10px 4px 0;">{HttpUtility.HtmlEncode(participant.Person.Name)}</td>
+                 <td style="padding:0 10px 4px 0;">&rarr;</td>
+                 <td style="padding:0 6px 4px 0;">{hat.EmojiFor(participant.PickedRecipient)}</td>
+                 <td style="padding:0 0 4px 0;"><b>{HttpUtility.HtmlEncode(participant.PickedRecipient)}</b></td>
+                 </tr>
+                 """)
             .ToList();
 
         return rows.Count == 0
             ? string.Empty
             : $"""
                <div style="border-left:3px solid #cccccc;padding-left:12px;color:#333333;">
-               {string.Join("<br />", rows)}
+               <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+               {string.Join("\n", rows)}
+               </table>
                </div>
                """;
     }

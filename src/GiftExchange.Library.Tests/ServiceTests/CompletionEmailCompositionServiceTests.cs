@@ -1,4 +1,6 @@
-﻿namespace GiftExchange.Library.Tests.ServiceTests;
+﻿using System.Text.RegularExpressions;
+
+namespace GiftExchange.Library.Tests.ServiceTests;
 
 /// <summary>
 /// The email that goes out once the organizer says the exchange has happened. It is the only one
@@ -56,9 +58,9 @@ public class CompletionEmailCompositionServiceTests
         // assert: every pairing, not only the reader's own. Nothing is secret once the organizer
         // has revealed the picks, and the list is the record participants are being sent.
         body.Should().Contain("Here's who picked whose name, for the record:");
-        body.Should().Contain("Alice &rarr;").And.Contain("<b>Bob</b>");
-        body.Should().Contain("Bob &rarr;").And.Contain("<b>Charlie</b>");
-        body.Should().Contain("Charlie &rarr;").And.Contain("<b>Alice</b>");
+        ReadAsSent(body).Should().Contain("Alice &rarr; 😀 Bob");
+        ReadAsSent(body).Should().Contain("Bob &rarr; 😀 Charlie");
+        ReadAsSent(body).Should().Contain("Charlie &rarr; 😀 Alice");
     }
 
     [Fact]
@@ -161,7 +163,7 @@ public class CompletionEmailCompositionServiceTests
     /// message is written now, and the invitation was written then.
     /// </summary>
     [Fact]
-    public void ComposeEmail_MarksEachPickedNameWithThatPersonsOwnFace()
+    public void ComposeEmail_MarksBothNamesInARowWithThatPersonsOwnFace()
     {
         // arrange: everybody wears something different, so a line carrying the wrong face is a
         // failure rather than a coincidence.
@@ -178,11 +180,35 @@ public class CompletionEmailCompositionServiceTests
         // act
         var body = _sut.ComposeEmail(hat, "Alice");
 
-        // assert: the face sits against the picked name, not the picker's.
-        body.Should().Contain("Alice &rarr; 🤠 <b>Bob</b>");
-        body.Should().Contain("Bob &rarr; 🥳 <b>Charlie</b>");
-        body.Should().Contain("Charlie &rarr; 😀 <b>Alice</b>");
+        // assert: each name carries its own face, on whichever side of the arrow it falls.
+        ReadAsSent(body).Should().Contain("😀 Alice &rarr; 🤠 Bob");
+        ReadAsSent(body).Should().Contain("🤠 Bob &rarr; 🥳 Charlie");
+        ReadAsSent(body).Should().Contain("🥳 Charlie &rarr; 😀 Alice");
     }
+
+    /// <summary>
+    /// Names of very different lengths, which is the case the table is for: read as running text
+    /// the arrows would start in three different places.
+    /// </summary>
+    [Fact]
+    public void ComposeEmail_GivesEveryNameAndFaceACellOfItsOwnSoTheRowsLineUp()
+    {
+        // act
+        var body = _sut.ComposeEmail(HatFor("Family Christmas"), "Alice");
+
+        // assert: one row per pairing, and five cells in each — a face and a name on both sides of
+        // the arrow, with the arrow between them.
+        body.Should().Contain("<table");
+        Regex.Matches(body, "<tr>").Count.Should().Be(3);
+        Regex.Matches(body, "<td").Count.Should().Be(15);
+    }
+
+    /// <summary>
+    /// The email as a reader sees it: tags replaced by a space and whitespace collapsed, so an
+    /// assertion about what a row says is not also an assertion about the padding lining it up.
+    /// </summary>
+    private static string ReadAsSent(string body) =>
+        Regex.Replace(Regex.Replace(body, "<[^>]+>", " "), @"\s+", " ").Trim();
 
     private static Participant ParticipantFor(
         string name,
