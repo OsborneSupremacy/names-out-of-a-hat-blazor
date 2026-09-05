@@ -7,9 +7,12 @@ function renderMenu(overrides: Partial<Parameters<typeof AdvancedOptionsMenu>[0]
   const props = {
     canReset: true,
     resetUnavailableReason: 'Invitations have gone out, so this can no longer be reset.',
+    canDelete: true,
+    deleteUnavailableReason: 'Invitations have gone out, so this can no longer be deleted.',
     isExporting: false,
     onExport: vi.fn(),
     onReset: vi.fn(),
+    onDelete: vi.fn(),
     ...overrides,
   }
 
@@ -27,14 +30,29 @@ describe('AdvancedOptionsMenu', () => {
     expect(screen.queryByRole('menuitem', { name: /Export Gift Exchange/ })).not.toBeInTheDocument()
   })
 
-  it('offers both options once opened', async () => {
+  it('offers every option once opened', async () => {
     const user = userEvent.setup()
     renderMenu()
 
     await openMenu(user)
 
     expect(screen.getByRole('menuitem', { name: /Export Gift Exchange/ })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /Reset/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /^Reset/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Delete Gift Exchange/ })).toBeInTheDocument()
+  })
+
+  // Worst last: somebody scanning down the menu should not meet delete before reset.
+  it('puts the delete under the reset', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+
+    await openMenu(user)
+
+    const labels = screen.getAllByRole('menuitem').map((item) => item.textContent)
+
+    expect(labels).toHaveLength(3)
+    expect(labels[1]).toMatch(/^Reset/)
+    expect(labels[2]).toMatch(/^Delete Gift Exchange/)
   })
 
   it('exports and closes', async () => {
@@ -59,10 +77,22 @@ describe('AdvancedOptionsMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
-  // Exporting always makes sense; it is a read. Only the reset has a point past which it does not.
-  it('still offers the export once the exchange can no longer be reset', async () => {
+  it('deletes and closes', async () => {
     const user = userEvent.setup()
-    renderMenu({ canReset: false })
+    const { onDelete } = renderMenu()
+
+    await openMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: /Delete Gift Exchange/ }))
+
+    expect(onDelete).toHaveBeenCalled()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  // Exporting always makes sense; it is a read. Only the two destructive ones have a point past
+  // which they do not.
+  it('still offers the export once nothing else can be done', async () => {
+    const user = userEvent.setup()
+    renderMenu({ canReset: false, canDelete: false })
 
     await openMenu(user)
 
@@ -88,6 +118,21 @@ describe('AdvancedOptionsMenu', () => {
     expect(onReset).not.toHaveBeenCalled()
   })
 
+  it('shows the delete disabled, with the reason, once invitations have gone out', async () => {
+    const user = userEvent.setup()
+    const { onDelete, deleteUnavailableReason } = renderMenu({ canDelete: false })
+
+    await openMenu(user)
+
+    const deleteItem = screen.getByRole('menuitem', { name: /Delete Gift Exchange/ })
+
+    expect(deleteItem).toBeDisabled()
+    expect(screen.getByText(deleteUnavailableReason)).toBeInTheDocument()
+
+    await user.click(deleteItem)
+    expect(onDelete).not.toHaveBeenCalled()
+  })
+
   it('says it is exporting while it is', async () => {
     const user = userEvent.setup()
     renderMenu({ isExporting: true })
@@ -100,7 +145,7 @@ describe('AdvancedOptionsMenu', () => {
   // A menu that only closes by choosing something from it is a menu somebody is stuck in.
   it('closes on Escape without choosing anything', async () => {
     const user = userEvent.setup()
-    const { onExport, onReset } = renderMenu()
+    const { onExport, onReset, onDelete } = renderMenu()
 
     await openMenu(user)
     await user.keyboard('{Escape}')
@@ -108,6 +153,7 @@ describe('AdvancedOptionsMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(onExport).not.toHaveBeenCalled()
     expect(onReset).not.toHaveBeenCalled()
+    expect(onDelete).not.toHaveBeenCalled()
   })
 
   it('closes when something else is clicked', async () => {

@@ -831,14 +831,6 @@
   color: #9ca3af;
 }
 
-.delete-section {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .danger-button {
   background-color: #dc2626;
   color: white;
@@ -857,14 +849,6 @@
 
 .danger-button:active {
   background-color: #991b1b;
-}
-
-/* Deleting is the rarest thing an organizer does here, so it is sized and placed to be found rather
- * than noticed. */
-.delete-hat-button {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  padding: 0.375rem 0.75rem;
 }
 
 /* Smaller than .danger-button's page-level sizing. This one lives inside a table row next to the
@@ -1115,10 +1099,6 @@
 
   .row-edit-indicator {
     color: #a5b4fc;
-  }
-
-  .delete-section {
-    border-top-color: #374151;
   }
 }
 

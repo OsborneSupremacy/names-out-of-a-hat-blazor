@@ -100,7 +100,7 @@
   color: #6b7280;
 }
 
-/* Reset throws work away, so it is coloured like the other things that do. */
+/* Reset and delete throw work away, so they are coloured like the other things that do. */
 .advanced-options-item-danger .advanced-options-item-label {
   color: #b91c1c;
 }

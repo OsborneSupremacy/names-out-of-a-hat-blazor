@@ -42,6 +42,7 @@ import { CopyHatModal } from '../components/CopyHatModal'
 import { ShakeHatModal } from '../components/ShakeHatModal'
 import { AdvancedOptionsMenu } from '../components/AdvancedOptionsMenu'
 import { ResetHatModal } from '../components/ResetHatModal'
+import { DeleteHatModal } from '../components/DeleteHatModal'
 import { DeliveryHelpModal } from '../components/DeliveryHelpModal'
 import { downloadExport } from '../hatExport'
 import './GiftExchangeDetail.css'
@@ -79,6 +80,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [showCopyModal, setShowCopyModal] = useState(false)
   const [showShakeModal, setShowShakeModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [editingAddressFor, setEditingAddressFor] = useState<Participant | null>(null)
@@ -380,14 +382,15 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     setTempEligibleRecipients([])
   }
 
+  /**
+   * Throws the exchange away, and leaves for the list once it is gone.
+   *
+   * Errors are rethrown rather than set on the page, as the reset does: the dialog is still open and
+   * is where the organizer is looking. The page behind it is about to be navigated away from in the
+   * success case anyway, so a message left there would be a message nobody reads.
+   */
   const handleDeleteHat = async () => {
     if (!hatId || !hat) return
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${hat.name}"?\n\nThis action cannot be undone.`
-    )
-
-    if (!confirmed) return
 
     try {
       await deleteHat({
@@ -395,11 +398,11 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
         hatId,
       })
 
-      // Navigate back to home after successful deletion
+      // Nothing left here to look at, so back to the list.
       navigate('/')
     } catch (err) {
       console.error('Error deleting gift exchange:', err)
-      setError(err instanceof Error ? err.message : 'Failed to delete gift exchange')
+      throw err
     }
   }
 
@@ -655,6 +658,12 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
     ? ['IN_PROGRESS', 'READY_FOR_ASSIGNMENT', 'NAMES_ASSIGNED'].includes(hat.status)
     : false
 
+  // The same line, for the same reason, one step harsher: once invitations are out there are people
+  // waiting on this exchange, and deleting it would leave them waiting on nothing.
+  const canDelete = hat
+    ? ['IN_PROGRESS', 'READY_FOR_ASSIGNMENT', 'NAMES_ASSIGNED'].includes(hat.status)
+    : false
+
   return (
     <div className="app-container">
       <Header
@@ -716,15 +725,18 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
 
                   {/*
                     Here at every status, unlike Edit. Exporting is a read and always makes sense;
-                    resetting stops making sense once invitations are out, and the menu says so
-                    rather than quietly dropping the option.
+                    resetting and deleting stop making sense once invitations are out, and the menu
+                    says so rather than quietly dropping the options.
                   */}
                   <AdvancedOptionsMenu
                     canReset={canReset}
                     resetUnavailableReason="Invitations have gone out, so this can no longer be reset."
+                    canDelete={canDelete}
+                    deleteUnavailableReason="Invitations have gone out, so this can no longer be deleted."
                     isExporting={isExporting}
                     onExport={handleExportHat}
                     onReset={() => setShowResetModal(true)}
+                    onDelete={() => setShowDeleteModal(true)}
                   />
                 </div>
               </div>
@@ -1211,17 +1223,6 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                   <p className="text-muted">No participants yet</p>
                 )}
               </div>
-
-              {hat.status !== 'INVITATIONS_SENT' && hat.status !== 'READY_TO_CLOSE' && hat.status !== 'CLOSED' && (
-                <div className="delete-section">
-                  <button
-                    className="danger-button delete-hat-button"
-                    onClick={handleDeleteHat}
-                  >
-                    Delete Gift Exchange
-                  </button>
-                </div>
-              )}
             </div>
           ) : (
             <p className="error-message">Gift exchange not found</p>
@@ -1287,6 +1288,16 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           hasBeenShaken={hat.status === 'NAMES_ASSIGNED'}
           onClose={() => setShowResetModal(false)}
           onSubmit={handleResetHat}
+        />
+      )}
+
+      {showDeleteModal && hat && (
+        <DeleteHatModal
+          hatName={hat.name}
+          participantCount={hat.participants.length}
+          hasBeenShaken={hat.status === 'NAMES_ASSIGNED'}
+          onClose={() => setShowDeleteModal(false)}
+          onSubmit={handleDeleteHat}
         />
       )}
 

@@ -3,30 +3,33 @@ import { useState, FormEvent } from 'react'
 import './CreateHatModal.css'
 import './DestructiveModal.css'
 
-interface ResetHatModalProps {
+interface DeleteHatModalProps {
   hatName: string
   participantCount: number
-  /** True when names are already out, so the reset throws a draw away as well as the rules. */
+  /** True when names are already out, so the delete takes a finished draw with it. */
   hasBeenShaken: boolean
   onClose: () => void
   onSubmit: () => Promise<void>
 }
 
 /**
- * Confirms a reset, and says what is about to be lost before it is lost.
+ * Confirms a delete, and says what is about to be lost before it is lost.
  *
- * A dialog rather than a confirm(), for the reason the shake dialog gives: what a reset throws away
- * depends on how far the exchange has got, and a browser prompt cannot tell the organizer that. The
- * exchange itself, its name and its people all survive — which is the part somebody about to press
- * this most needs to hear, since "Reset" on its own sounds like it might mean "Delete".
+ * The sibling of {@link ResetHatModal}, and deliberately its mirror image: the reset dialog leads
+ * with what survives, because the thing an organizer fears there is losing their people. Here they
+ * do lose them, so the dialog says so first and offers the way out — the export sitting directly
+ * above this in the same menu — rather than leaving them to think of it afterwards.
+ *
+ * A dialog rather than the confirm() this used to be: what a delete takes depends on how far the
+ * exchange has got, and a browser prompt can neither say that nor point at the export.
  */
-export function ResetHatModal({
+export function DeleteHatModal({
   hatName,
   participantCount,
   hasBeenShaken,
   onClose,
   onSubmit,
-}: ResetHatModalProps) {
+}: DeleteHatModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -40,7 +43,7 @@ export function ResetHatModal({
       await onSubmit()
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset the gift exchange')
+      setError(err instanceof Error ? err.message : 'Failed to delete the gift exchange')
     } finally {
       setIsSubmitting(false)
     }
@@ -50,7 +53,7 @@ export function ResetHatModal({
     <div className="modal-overlay" onClick={isSubmitting ? undefined : onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Reset Gift Exchange</h2>
+          <h2>Delete Gift Exchange</h2>
           <button
             className="close-button"
             onClick={onClose}
@@ -63,19 +66,22 @@ export function ResetHatModal({
 
         <form onSubmit={handleSubmit}>
           <p className="modal-note">
-            This takes <strong>{hatName}</strong> back to how it started. Nothing is deleted — the
-            gift exchange keeps its name, its details, and all{' '}
-            {participantCount === 1 ? 'one person' : `${participantCount} people`} in it.
+            This throws <strong>{hatName}</strong> away for good. It will not be on your list of gift
+            exchanges any more, and nobody will be able to open it again.
           </p>
 
           <ul className="destructive-effects">
-            <li>Everybody will be allowed to draw everybody else again.</li>
+            <li>
+              {participantCount === 1 ? 'The one person' : `All ${participantCount} people`} in it
+              will be gone, along with everything you typed in about them.
+            </li>
             <li>Any rules you set about who can draw whom will be gone.</li>
-            {hasBeenShaken && <li>The names that have been drawn will be thrown away.</li>}
+            {hasBeenShaken && <li>The names that have been drawn will be gone.</li>}
           </ul>
 
           <p className="destructive-warning">
-            This cannot be undone. You will need to set the rules up again and shake the hat afresh.
+            This cannot be undone, and no copy is kept. If you might want one, close this and export
+            the gift exchange first — it is in the same menu you came from.
           </p>
 
           {error && <div className="error-text destructive-error">{error}</div>}
@@ -90,7 +96,7 @@ export function ResetHatModal({
               Cancel
             </button>
             <button type="submit" className="danger-button" disabled={isSubmitting}>
-              {isSubmitting ? 'Resetting...' : 'Reset Gift Exchange'}
+              {isSubmitting ? 'Deleting...' : 'Delete Gift Exchange'}
             </button>
           </div>
         </form>

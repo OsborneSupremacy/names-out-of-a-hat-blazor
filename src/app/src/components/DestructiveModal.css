@@ -1,0 +1,40 @@
+/*
+  Shared by the two dialogs that throw work away: reset and delete. They ask the same shape of
+  question — here is what you are about to lose, are you sure — and when they were styled separately
+  the two answers to that question started drifting apart.
+*/
+
+/* What the action will do, as a list rather than a paragraph: these are separate consequences and
+   somebody deciding needs to be able to read them one at a time. */
+.destructive-effects {
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.destructive-effects li {
+  margin-bottom: 0.25rem;
+}
+
+.destructive-warning {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(185, 28, 28, 0.4);
+  border-radius: 0.375rem;
+  background: rgba(185, 28, 28, 0.08);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.destructive-error {
+  margin-bottom: 1rem;
+}
+
+/* .danger-button carries no disabled state of its own, and these dialogs are the ones that disable
+   one while its work is in flight. Scoped to the modal so the danger buttons on the page behind it
+   are left as they are. */
+.modal-content .danger-button:disabled {
+  background-color: #f87171;
+  cursor: not-allowed;
+}

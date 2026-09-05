@@ -6,25 +6,36 @@ interface AdvancedOptionsMenuProps {
   canReset: boolean
   /** Why not, shown under the disabled item. Only read when {@link canReset} is false. */
   resetUnavailableReason: string
+  /** False once invitations have gone out: there are people expecting something by then. */
+  canDelete: boolean
+  /** Why not, shown under the disabled item. Only read when {@link canDelete} is false. */
+  deleteUnavailableReason: string
   isExporting: boolean
   onExport: () => void
   onReset: () => void
+  onDelete: () => void
 }
 
 /**
  * The things an organizer needs rarely and would not want to meet by accident.
  *
- * Behind a menu rather than beside the buttons that move an exchange forward, because these two do
- * not: one takes a copy away and the other throws the setup out. Putting them in the same row as
+ * Behind a menu rather than beside the buttons that move an exchange forward, because none of these
+ * do: one takes a copy away, and the other two throw the setup out. Putting them in the same row as
  * "Shake the Hat" would make the row a place to be careful, which is the opposite of what the rest
  * of that page is for.
+ *
+ * The two destructive ones sit last and in the order they get worse — reset keeps the people,
+ * delete does not.
  */
 export function AdvancedOptionsMenu({
   canReset,
   resetUnavailableReason,
+  canDelete,
+  deleteUnavailableReason,
   isExporting,
   onExport,
   onReset,
+  onDelete,
 }: AdvancedOptionsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -110,6 +121,21 @@ export function AdvancedOptionsMenu({
               {canReset
                 ? 'Keep everybody, and start the setup again from scratch.'
                 : resetUnavailableReason}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            className="advanced-options-item advanced-options-item-danger"
+            onClick={() => choose(onDelete)}
+            disabled={!canDelete}
+          >
+            <span className="advanced-options-item-label">Delete Gift Exchange</span>
+            <span className="advanced-options-item-hint">
+              {canDelete
+                ? 'Throw the whole thing away, participants and all. This cannot be undone.'
+                : deleteUnavailableReason}
             </span>
           </button>
         </div>
