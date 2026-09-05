@@ -6,6 +6,8 @@ export interface HatMetadata {
   hatId: string
   hatName: string
   status: string
+  /** When the status last changed. The minimum date where it is not known. */
+  statusUpdatedAt: string
 }
 
 export interface GetHatsResponse {

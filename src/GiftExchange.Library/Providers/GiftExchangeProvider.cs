@@ -75,7 +75,8 @@ public class GiftExchangeProvider
             {
                 HatId = hat.HatId,
                 HatName = hat.Name,
-                Status = hat.Status
+                Status = hat.Status,
+                StatusUpdatedAt = hat.StatusUpdatedAt
             })
             .ToListAsync()
             .ConfigureAwait(false);

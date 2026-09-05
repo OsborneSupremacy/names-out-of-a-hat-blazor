@@ -74,10 +74,18 @@ public class GiftExchangeProviderTests
 
         // assert
         organizerName.Should().Be(hatOne.OrganizerName);
+
+        // Compared against anonymous expectations rather than whole records: StatusUpdatedAt is a
+        // clock reading taken during the arrange, so it is asserted below for being there rather
+        // than restated here as a value this test cannot know.
         result.Should().BeEquivalentTo([
-            new HatMetaData { HatId = hatOne.HatId, HatName = hatOne.HatName, Status = HatStatus.InProgress },
-            new HatMetaData { HatId = hatTwo.HatId, HatName = hatTwo.HatName, Status = HatStatus.InProgress }
+            new { HatId = hatOne.HatId, HatName = hatOne.HatName, Status = HatStatus.InProgress },
+            new { HatId = hatTwo.HatId, HatName = hatTwo.HatName, Status = HatStatus.InProgress }
         ]);
+
+        // The list page reads this to say how long each exchange has sat where it is, so it has to
+        // survive the projection rather than only the write.
+        result.Should().OnlyContain(hat => hat.StatusUpdatedAt != DateTimeOffset.MinValue);
     }
 
     [Fact]

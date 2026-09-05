@@ -38,12 +38,18 @@
                 "status": {
                     "type": "string",
                     "description": "The current status of the gift exchange."
+                },
+                "statusUpdatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the status last changed."
                 }
             },
             "required": [
                 "hatId",
                 "hatName",
-                "status"
+                "status",
+                "statusUpdatedAt"
             ]
         }
     }

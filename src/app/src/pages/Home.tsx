@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { getHats, createHat, HatMetadata } from '../api'
 import { formatHatStatus } from '../hatStatus'
+import { formatRelativeTime, formatAbsoluteTime } from '../relativeTime'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { CreateHatModal } from '../components/CreateHatModal'
@@ -98,20 +99,36 @@ export function Home({ userEmail, onSignOut }: HomeProps) {
                     </button>
                   </div>
                   <ul className="gift-exchanges-list">
-                    {hats.map((hat) => (
-                      <li
-                        key={hat.hatId}
-                        className="gift-exchange-item"
-                        onClick={() => handleHatClick(hat.hatId)}
-                      >
-                        <div className="gift-exchange-info">
-                          <strong>{hat.hatName}</strong>
-                        </div>
-                        <span className={`status-pill ${hat.status.toLowerCase().replace(/_/g, '-')}`}>
-                          {formatHatStatus(hat.status)}
-                        </span>
-                      </li>
-                    ))}
+                    {hats.map((hat) => {
+                      // Empty for a timestamp that cannot be phrased — the minimum date the API
+                      // uses for "not known" among them — and the line is left out entirely rather
+                      // than rendered blank, so the pill keeps its own height.
+                      const statusAge = formatRelativeTime(hat.statusUpdatedAt)
+
+                      return (
+                        <li
+                          key={hat.hatId}
+                          className="gift-exchange-item"
+                          onClick={() => handleHatClick(hat.hatId)}
+                        >
+                          <div className="gift-exchange-info">
+                            <strong>{hat.hatName}</strong>
+                          </div>
+                          <div className="gift-exchange-status">
+                            <span className={`status-pill ${hat.status.toLowerCase().replace(/_/g, '-')}`}>
+                              {formatHatStatus(hat.status)}
+                            </span>
+                            {statusAge && (
+                              // Under the pill rather than beside the name: it is how long the hat
+                              // has been at that status, not when the hat was last touched.
+                              <span className="status-age" title={formatAbsoluteTime(hat.statusUpdatedAt)}>
+                                {statusAge}
+                              </span>
+                            )}
+                          </div>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               ) : (

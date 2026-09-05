@@ -23,6 +23,7 @@ jobs:
   apply:
     name: Build & Deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -63,4 +64,25 @@ jobs:
 
       - name: Terraform Apply
         working-directory: iac/terraform
+        env:
+          TF_LOG_PROVIDER: DEBUG
+          TF_LOG_PATH: ${{ runner.temp }}/tf-provider.log
         run: terraform apply -auto-approve tfplan
+
+      # API Gateway's control plane retries TooManyRequestsException and ConflictException
+      # inside the AWS SDK, silently. At the default log level a stuck create shows as nothing
+      # but "Still creating..." forever, and aws_api_gateway_request_validator supports no
+      # timeouts block, so Terraform never gives up on its own. This surfaces the real error.
+      - name: Surface API Gateway retries
+        if: always()
+        run: |
+          grep -iE "RequestValidator|TooManyRequests|ConflictException|retrying|LimitExceeded" \
+            "${{ runner.temp }}/tf-provider.log" | tail -100 || echo "no matching log lines"
+
+      - name: Upload provider log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tf-provider-log
+          path: ${{ runner.temp }}/tf-provider.log
+          if-no-files-found: ignore
