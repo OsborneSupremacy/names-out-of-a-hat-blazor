@@ -194,4 +194,73 @@ public class AddParticipantTests
         // assert
         response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
     }
+
+    /// <summary>
+    /// An exchange holds at most <see cref="ParticipantLimit.MaxParticipants"/> people. Conflict
+    /// rather than TooManyRequests: nothing is rate limited, and the way out is removing somebody.
+    /// </summary>
+    [Fact]
+    public async Task AddParticipant_GivenTheHatIsFull_ConflictResponse()
+    {
+        // arrange
+        var hat = await _testDataService.CreateTestHatAsync();
+        await FillHatAsync(hat, ParticipantLimit.MaxParticipants);
+
+        var request = _jsonService.SerializeDefault(_requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        }).ToApiGatewayProxyRequest();
+
+        // act
+        var response = await _sut.FunctionHandler(request, _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
+        response.Body.Should().Contain($"{ParticipantLimit.MaxParticipants} participants");
+    }
+
+    /// <summary>
+    /// The boundary from the other side: the seat that takes the exchange up to the limit is still
+    /// one an organizer is allowed to fill.
+    /// </summary>
+    [Fact]
+    public async Task AddParticipant_GivenOneSeatLeft_CreatedResponse()
+    {
+        // arrange
+        var hat = await _testDataService.CreateTestHatAsync();
+        await FillHatAsync(hat, ParticipantLimit.MaxParticipants - 1);
+
+        var request = _jsonService.SerializeDefault(_requestFaker.Generate() with
+        {
+            OrganizerEmail = hat.Organizer.Email,
+            HatId = hat.Id
+        }).ToApiGatewayProxyRequest();
+
+        // act
+        var response = await _sut.FunctionHandler(request, _context);
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Created);
+    }
+
+    /// <summary>
+    /// Seeds a hat straight through the provider rather than through the handler under test. Only
+    /// the count matters to these two, and going the long way round would write an eligibility row
+    /// for every pair -- most of a thousand of them -- to establish something the handler reads as
+    /// a single number.
+    /// </summary>
+    private async Task FillHatAsync(Hat hat, int participants)
+    {
+        var existing = ImmutableList<Participant>.Empty;
+
+        for (var seat = 0; seat < participants; seat++)
+        {
+            var participant = await _testDataService.CreateParticipantAsync(
+                _requestFaker.Generate() with { OrganizerEmail = hat.Organizer.Email, HatId = hat.Id },
+                existing);
+
+            existing = existing.Add(participant);
+        }
+    }
 }

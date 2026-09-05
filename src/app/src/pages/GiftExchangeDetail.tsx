@@ -30,6 +30,7 @@ import {
   showsDeliveryDetail,
 } from '../deliveryStatus'
 import { formatRelativeTime, formatDateAndTime } from '../relativeTime'
+import { MAX_PARTICIPANTS } from '../participantLimit'
 import { EditAddressModal, ResendKind } from '../components/EditAddressModal'
 import { EditEmojiModal } from '../components/EditEmojiModal'
 import { Header } from '../components/Header'
@@ -896,14 +897,25 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                     )}
                   </div>
                   {hat.status !== 'CLOSED' && hat.status !== 'INVITATIONS_SENT' && hat.status !== 'READY_TO_CLOSE' && (
+                    /*
+                     * Disabled at the limit rather than hidden, so the exchange still says what it
+                     * is that can no longer be done, and the hint below says why.
+                     */
                     <button
                       className="primary-button"
                       onClick={() => setShowAddParticipantModal(true)}
+                      disabled={hat.participants.length >= MAX_PARTICIPANTS}
                     >
                       Add Participant
                     </button>
                   )}
                 </div>
+                {hat.participants.length >= MAX_PARTICIPANTS && (
+                  <p className="participants-edit-hint">
+                    This exchange holds the most participants allowed ({MAX_PARTICIPANTS}). Remove
+                    somebody to make room, or run a second exchange alongside it.
+                  </p>
+                )}
                 {participantsNotice && (
                   <div className="participants-notice">
                     <span>{participantsNotice}</span>

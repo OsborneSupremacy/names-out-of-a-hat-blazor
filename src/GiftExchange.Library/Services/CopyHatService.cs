@@ -86,6 +86,15 @@ internal class CopyHatService : IApiGatewayHandler
 
         var sourceHat = hatPreconditionResult.Hat;
 
+        // Measured against the source rather than what the copy turns out to hold. The refusals
+        // read below can only make the copy smaller, so a source inside the limit cannot produce a
+        // copy outside it, and working the exact figure out here would mean keeping a second copy
+        // of the rule CopyHatAsync applies inside its own transaction.
+        if (sourceHat.Participants.Count > ParticipantLimit.MaxParticipants)
+            return new Result<CopyHatResponse>(
+                new InvalidOperationException(ParticipantLimit.CopyRefusalMessage),
+                HttpStatusCode.Conflict);
+
         var newHat = new HatDataModel
         {
             HatId = Guid.NewGuid(),

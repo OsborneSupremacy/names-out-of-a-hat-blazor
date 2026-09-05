@@ -82,6 +82,23 @@ internal class AddParticipantService : IApiGatewayHandler
                 new InvalidOperationException(DoNotAddService.RefusalMessage),
                 HttpStatusCode.Forbidden);
 
+        // Last of the refusals, after every one that is about this request in particular. A full
+        // hat is a fact about the exchange rather than anything wrong with the person being added,
+        // so an address that is also a duplicate or a refusal is told the more specific thing.
+        //
+        // Conflict rather than TooManyRequests, which is what the daily creation limit answers
+        // with: nothing here is rate limited, and waiting changes nothing. The request has
+        // collided with the state of the exchange, and removing somebody is what resolves it.
+        //
+        // Two adds arriving together can both read the same count and both be allowed, exactly as
+        // HatCreationLimiter documents for its own check. Left alone for the same reason, and with
+        // more room to be wrong in: the transaction ceiling this number is drawn from sits at 54,
+        // so an exchange that overshoots by a couple can still be copied and deleted.
+        if (existingParticipants.Count >= ParticipantLimit.MaxParticipants)
+            return new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException(ParticipantLimit.RefusalMessage),
+                HttpStatusCode.Conflict);
+
         await _giftExchangeProvider
             .CreateParticipantAsync(
                 new AddParticipantRequest

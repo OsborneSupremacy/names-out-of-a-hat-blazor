@@ -303,6 +303,29 @@ public class CopyHatTests
     }
 
     /// <summary>
+    /// An exchange created before the participant limit existed can be larger than a new one is
+    /// allowed to be. Copying it is refused with something an organizer can act on, rather than
+    /// left to arrive as a transaction too large to commit.
+    /// </summary>
+    [Fact]
+    public async Task CopyHat_GivenTheSourceHoldsMoreThanTheLimit_ConflictResponse()
+    {
+        // arrange
+        var source = await CreateRevealedHatAsync();
+
+        var participants = source.Participants;
+
+        while (participants.Count <= ParticipantLimit.MaxParticipants)
+            participants = participants.Add(await AddParticipantAsync(source.Hat, participants));
+
+        // act
+        var (statusCode, _) = await CopyAsync(source, excludePreviousRecipients: false, expectSuccess: false);
+
+        // assert
+        statusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    /// <summary>
     /// A revealed hat with three participants, one eligibility rule of its own, and everybody
     /// holding a pick — enough for the copy to have something to carry over and something to drop.
     /// </summary>
