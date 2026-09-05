@@ -17,7 +17,10 @@ public enum GiftIdeaSubmissionOutcome
     /// <summary>SES could not vouch for the message: SPF, DKIM, DMARC, spam or virus.</summary>
     DroppedFailedAuthentication,
 
-    /// <summary>An out of office or similar. Replying would start a loop between two robots.</summary>
+    /// <summary>
+    /// An out of office, a bounce, or anything else with no person behind it. Replying would start
+    /// a loop between two robots, and a bounce has no return path to reply down in any case.
+    /// </summary>
     DroppedAutomatedMessage,
 
     /// <summary>No live token matches the address it was sent to.</summary>

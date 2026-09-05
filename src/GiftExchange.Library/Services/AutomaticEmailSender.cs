@@ -50,9 +50,23 @@ internal class AutomaticEmailSender
     /// durable part of its work — stored a submission, claimed a throttle slot — and throwing here
     /// would undo none of it while causing the caller's whole event to be retried, which for
     /// inbound mail means storing the same message twice.
+    ///
+    /// That promise used to hold only from the SES call onwards, and parsing the recipient sat
+    /// above it. An empty envelope sender — which is what a bounce carries, by design — reached
+    /// here as an empty recipient and threw out of the whole handler.
     /// </remarks>
     public async Task SendAsync(string recipient, string subject, string htmlBody)
     {
+        // Checked against the address we were asked to write to rather than the one this send will
+        // actually use, so that an unusable address is refused the same way in both modes. Falling
+        // through to the test recipient would send a real message on behalf of a caller who had
+        // nobody to write to.
+        if (string.IsNullOrWhiteSpace(recipient) || !MailboxAddress.TryParse(recipient, out _))
+        {
+            _logger.LogWarning("Declined to send an automatic email: the recipient is not an address.");
+            return;
+        }
+
         var destination = _liveMode ? recipient : TestRecipient;
 
         var message = new MimeMessage

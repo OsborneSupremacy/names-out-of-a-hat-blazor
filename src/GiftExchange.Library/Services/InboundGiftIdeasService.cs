@@ -1,4 +1,5 @@
 using Amazon.S3;
+using MimeKit;
 
 // The SES event library nests its record and receipt types inside the event and makes each of them
 // generic over the same action type again, so spelled out in full they are unreadable. Aliased once
@@ -337,9 +338,23 @@ internal class InboundGiftIdeasService
     /// The one reply sent to an address that is not a known participant's, which is why it is the
     /// one that needs the throttle. Its own header marks it as automatic, so another autoresponder
     /// on the far end will not answer it back.
+    ///
+    /// It is also the one reply whose recipient comes from the envelope rather than from a
+    /// participant record, and the envelope is allowed to be empty. Everything else here reaches a
+    /// known participant's stored address, so nothing else has to ask whether it has one.
     /// </remarks>
     private async Task<GiftIdeaSubmissionOutcome> AnswerDoNotReplyAsync(string source)
     {
+        // A bounce or a delivery notification, which RFC 5321 has carry an empty return path for
+        // exactly this reason: there is nothing at the far end that wants an answer, and answering
+        // is how two mail systems start talking to each other and do not stop. Checked before the
+        // throttle, since a slot spent here would be a slot held against no address at all.
+        if (!HasAReturnPath(source))
+        {
+            _logger.LogInformation("Dropped a message to the do-not-reply address with no return path.");
+            return GiftIdeaSubmissionOutcome.DroppedAutomatedMessage;
+        }
+
         if (!await _replyThrottleProvider.TryReserveReplySlotAsync("DONOTREPLY", source).ConfigureAwait(false))
         {
             _logger.LogInformation("Suppressed a do-not-reply response inside the throttle window.");
@@ -351,6 +366,12 @@ internal class InboundGiftIdeasService
 
         return GiftIdeaSubmissionOutcome.RedirectedFromDoNotReply;
     }
+
+    /// <summary>
+    /// Whether the envelope names somebody who could be written back to.
+    /// </summary>
+    private static bool HasAReturnPath(string source) =>
+        !string.IsNullOrWhiteSpace(source) && MailboxAddress.TryParse(source, out _);
 
     /// <summary>
     /// Tells the sender why their message could not be used, and how to send another.

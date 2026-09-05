@@ -459,6 +459,25 @@ public class InboundGiftIdeasServiceTests
         await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("<>")]
+    public async Task ProcessRecordAsync_GivenMailToTheDoNotReplyAddressWithNoReturnPath_StaysQuiet(string source)
+    {
+        // arrange: a bounce, which carries an empty envelope sender so that nothing answers it.
+        var exchange = await SeedAsync();
+        GivenTheMessageIs(exchange, "Delivery to the following recipient failed permanently.");
+
+        // act
+        var outcome = await _sut.ProcessRecordAsync(RecordFor(exchange, recipient: DoNotReply, source: source));
+
+        // assert
+        outcome.Should().Be(GiftIdeaSubmissionOutcome.DroppedAutomatedMessage);
+        await _throttle.DidNotReceive().TryReserveReplySlotAsync(Arg.Any<string>(), Arg.Any<string>());
+        await _ses.DidNotReceive().SendRawEmailAsync(Arg.Any<SendRawEmailRequest>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task ProcessRecordAsync_GivenAContribution_SendsItToTheAskerAndNotToTheirOwnGiver()
     {
