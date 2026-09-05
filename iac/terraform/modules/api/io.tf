@@ -16,6 +16,16 @@ variable "gateway_http_operation_name" {
   type        = string
 }
 
+variable "request_validator_id" {
+  description = <<-EOT
+    Id of a request validator on this REST API, from the shared pair in
+    api-gateway-request-validators.tf. Validators are per-API objects and are meant to be shared
+    across methods: API Gateway caps how many an API may have, and this module used to create one
+    per endpoint, which walked the API into that cap.
+  EOT
+  type        = string
+}
+
 variable "gateway_method_request_parameters" {
   description = "Request parameters for the API Gateway method"
   type        = map(string)

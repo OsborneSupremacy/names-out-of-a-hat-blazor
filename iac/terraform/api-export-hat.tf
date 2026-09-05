@@ -4,6 +4,7 @@ module "lambda-export-hat" {
   gateway_resource_id         = aws_api_gateway_resource.hat-email-export-id-resource.id
   gateway_http_method         = "GET"
   gateway_http_operation_name = "ExportHat"
+  request_validator_id        = aws_api_gateway_request_validator.params.id
   gateway_method_request_parameters = {
     "method.request.path.email" = true,
     "method.request.path.id"    = true,

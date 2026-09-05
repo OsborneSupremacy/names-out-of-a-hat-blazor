@@ -4,6 +4,7 @@ module "lambda-edit-hat" {
   gateway_resource_id                               = aws_api_gateway_resource.hat-resource.id
   gateway_http_method                               = "PUT"
   gateway_http_operation_name                       = "Edit"
+  request_validator_id                              = aws_api_gateway_request_validator.body.id
   gateway_method_request_parameters                 = {}
   gateway_method_request_model_name                 = "EditHatRequest"
   gateway_method_request_model_description          = "A request to edit a hat."

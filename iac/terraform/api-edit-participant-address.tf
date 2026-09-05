@@ -9,6 +9,7 @@ module "lambda-edit-participant-address" {
   gateway_resource_id                               = aws_api_gateway_resource.participant-address-resource.id
   gateway_http_method                               = "PUT"
   gateway_http_operation_name                       = "EditParticipantAddress"
+  request_validator_id                              = aws_api_gateway_request_validator.body.id
   gateway_method_request_parameters                 = {}
   gateway_method_request_model_name                 = "EditParticipantAddressRequest"
   gateway_method_request_model_description          = "A request to correct the email address a participant was invited at."

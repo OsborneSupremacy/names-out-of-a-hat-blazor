@@ -4,6 +4,7 @@ module "lambda-submit-feedback" {
   gateway_resource_id                               = aws_api_gateway_resource.feedback-resource.id
   gateway_http_method                               = "POST"
   gateway_http_operation_name                       = "SubmitFeedback"
+  request_validator_id                              = aws_api_gateway_request_validator.body.id
   gateway_method_request_parameters                 = {}
   gateway_method_request_model_name                 = "SubmitFeedbackRequest"
   gateway_method_request_model_description          = "A question, feature request, or other feedback sent from the contact form in the footer."

@@ -4,6 +4,7 @@ module "lambda-reset-hat" {
   gateway_resource_id                               = aws_api_gateway_resource.hat-reset-resource.id
   gateway_http_method                               = "POST"
   gateway_http_operation_name                       = "ResetHat"
+  request_validator_id                              = aws_api_gateway_request_validator.body.id
   gateway_method_request_parameters                 = {}
   gateway_method_request_model_name                 = "ResetHatRequest"
   gateway_method_request_model_description          = "A request to take a gift exchange back to the beginning, keeping its participants."

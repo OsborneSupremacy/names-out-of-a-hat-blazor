@@ -4,6 +4,7 @@ module "lambda-validate-hat" {
   gateway_resource_id                               = aws_api_gateway_resource.hat-validate-resource.id
   gateway_http_method                               = "POST"
   gateway_http_operation_name                       = "ValidateHat"
+  request_validator_id                              = aws_api_gateway_request_validator.body.id
   gateway_method_request_parameters                 = {}
   gateway_method_request_model_name                 = "ValidateHatRequest"
   gateway_method_request_model_description          = "A request to validate a hat."

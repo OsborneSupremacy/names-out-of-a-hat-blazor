@@ -4,6 +4,7 @@ module "lambda-update-profile" {
   gateway_resource_id                               = aws_api_gateway_resource.profile-resource.id
   gateway_http_method                               = "PUT"
   gateway_http_operation_name                       = "UpdateProfile"
+  request_validator_id                              = aws_api_gateway_request_validator.body.id
   gateway_method_request_parameters                 = {}
   gateway_method_request_model_name                 = "UpdateProfileRequest"
   gateway_method_request_model_description          = "A request to change the signed-in organizer's display name."
