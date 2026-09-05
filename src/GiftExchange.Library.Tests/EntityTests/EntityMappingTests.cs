@@ -150,26 +150,13 @@ public partial class EntityMappingTests
 
         // Added by hat--0005, backfilled by hat--0006. HatEntity.StatusUpdatedAt is non-nullable,
         // and every write that moves hat.status writes it alongside.
-        "hat.status_updated_at"
-    ];
+        "hat.status_updated_at",
 
-    /// <summary>
-    /// Columns carrying a DEFAULT, and why each one is worth the exception.
-    ///
-    /// The rule this suspends is stated on <see cref="NoSurvivingColumn_HasADefault"/>: every field
-    /// is named by whoever writes the row, so what the application believes it wrote is what is
-    /// there. A default is a second author.
-    ///
-    /// It is suspended here to buy something the entries in
-    /// <see cref="ColumnsDsqlCannotConstrain"/> could not: a column added to a table that already
-    /// holds rows can be NOT NULL only if it arrives with a default to fill them, and DSQL will
-    /// never let it be tightened afterwards. One statement's worth of second authorship, in
-    /// exchange for the constraint being the database's rather than the application's.
-    /// </summary>
-    private static readonly ImmutableHashSet<string> ColumnsWithADefault =
-    [
-        // Added NOT NULL DEFAULT '' by participant--0003; participant--0004 turns that empty string
-        // into a face on every row that is somebody.
+        // Added by participant--0003, backfilled by participant--0004. It was written to arrive
+        // NOT NULL DEFAULT '', on the theory that a default is what lets a column be added
+        // constrained to a table already holding rows -- DSQL took neither half, which is where the
+        // second clause of the summary above comes from. ParticipantEntity.Emoji is non-nullable
+        // and a face is chosen when a participant is added, so every row written since carries one.
         "participant.emoji"
     ];
 
@@ -219,28 +206,15 @@ public partial class EntityMappingTests
     [Fact]
     public void NoSurvivingColumn_HasADefault()
     {
-        var defaulted = DefaultedColumns();
-
-        defaulted.Should().BeSubsetOf(ColumnsWithADefault);
-    }
-
-    /// <summary>
-    /// An entry naming a column that no longer carries a default is stale, and would quietly excuse
-    /// the next column to take its place — the same guard
-    /// <see cref="EveryDocumentedNullableColumn_IsStillNullable"/> puts on the other list.
-    /// </summary>
-    [Fact]
-    public void EveryDocumentedDefault_IsStillADefault() =>
-        ColumnsWithADefault.Should().BeSubsetOf(DefaultedColumns());
-
-    private static IEnumerable<string> DefaultedColumns() =>
-        ParseTables()
+        var defaulted = ParseTables()
             .SelectMany(
                 table => table.Value,
                 (table, column) => new { table, column })
             .Where(declared => declared.column.Value.Contains("DEFAULT", StringComparison.OrdinalIgnoreCase))
-            .Select(declared => $"{declared.table.Key}.{declared.column.Key}")
-            .ToImmutableList();
+            .Select(declared => $"{declared.table.Key}.{declared.column.Key}");
+
+        defaulted.Should().BeEmpty();
+    }
 
     /// <summary>
     /// A primary key is named for the table it identifies, never a bare "id", so a column keeps

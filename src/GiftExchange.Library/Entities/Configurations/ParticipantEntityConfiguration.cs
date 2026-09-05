@@ -20,10 +20,13 @@ internal class ParticipantEntityConfiguration : IEntityTypeConfiguration<Partici
             .HasColumnName("picked_recipient_participant_id")
             .IsRequired();
 
-        // Added by participant--0003, which declares it NOT NULL -- so unlike hat.status_updated_at
-        // this is required on both sides rather than only here. Eight characters against faces that
-        // are one code point each: enough for any of them, and far short of anything that could be
-        // mistaken for a text field.
+        // Required here and nowhere else: participant--0003 adds the column to a table that
+        // already holds rows, and DSQL takes neither a NOT NULL nor a DEFAULT on an ADD COLUMN, so
+        // the column is nullable in the database forever -- the same arrangement as
+        // hat.status_updated_at. This IsRequired, and a face being chosen when a participant is
+        // added, are what keep it filled. Eight characters against faces that are one code point
+        // each: enough for any of them, and far short of anything that could be mistaken for a
+        // text field.
         builder
             .Property(participant => participant.Emoji)
             .HasColumnName("emoji")

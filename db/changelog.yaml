@@ -6,12 +6,12 @@
 #     here rather than in files.
 #   * No foreign keys, so referential cleanup on delete lives in the application.
 #   * ALTER TABLE ... ALTER COLUMN ... SET NOT NULL is rejected outright, so a column cannot be
-#     tightened after the fact: whatever it arrives as, it stays. It can arrive NOT NULL, but only
-#     alongside a DEFAULT to fill the rows the table already holds -- participant--0003 does that,
-#     and is the one column in this schema carrying a default. A column added without one is
-#     nullable forever and the application is what keeps it filled, which is the arrangement
-#     hat--0003 and hat--0005 are stuck with -- the same division of labour as the missing foreign
-#     keys.
+#     tightened after the fact: whatever it arrives as, it stays. Nor will a column arrive
+#     constrained -- neither NOT NULL nor a DEFAULT to fill the rows the table already holds is
+#     accepted on an ADD COLUMN, which participant--0003 was written to do and could not. A column
+#     added to a table that already exists is nullable forever, and the application is what keeps
+#     it filled: the arrangement hat--0003, hat--0005 and participant--0003 are all stuck with, and
+#     the same division of labour as the missing foreign keys.
 #
 # Files are named <object>--<nnnn>.sql so every change to an object sorts together. When
 # this file gets long, move the settled changesets into an archive changelog.
@@ -1037,10 +1037,10 @@ databaseChangeLog:
         - sql:
             sql: UPDATE hat SET status_updated_at = NULL
 
-  # Two changesets for one column, as with hat--0005 and hat--0006: add it, then fill in the rows
-  # that already exist. Unlike those two it arrives NOT NULL, because it arrives with a default to
-  # fill the existing rows with -- see the note in the file. What the header rules out is tightening
-  # a column after the fact, not adding a constrained one.
+  # Two changesets for one column, exactly as with hat--0005 and hat--0006: add it, then fill in
+  # the rows that already exist. It was written to arrive NOT NULL DEFAULT '' instead, on the
+  # reading that the header only ruled out tightening a column after the fact -- DSQL rejected both
+  # the constraint and the default, so this is one more column the application owns.
   - changeSet:
       id: participant--0003
       author: ben
@@ -1053,9 +1053,11 @@ databaseChangeLog:
         across emails without storing anything and left the organizer no way to change it. A column
         is what an edit needs.
 
-        NOT NULL DEFAULT '', which is the one shape in which a column can be added to a table that
-        already holds rows and still be constrained by the database. participant--0004 turns that
-        empty string into a face.
+        Stays nullable, for the reasons hat--0005 gives: DSQL rejects ALTER COLUMN ... SET NOT
+        NULL, and will not take a NOT NULL or a DEFAULT on an ADD COLUMN either, so nothing fills
+        the rows this table already holds except a statement of its own. participant--0004 is that
+        statement; ParticipantEntity.Emoji being non-nullable is what keeps every row written after
+        it filled.
       changes:
         - sqlFile:
             path: tables/participant--0003.sql
@@ -1070,10 +1072,10 @@ databaseChangeLog:
       author: ben
       comment: >
         A face for every row that predates the column, spread across the list by a byte of the
-        participant id's digest, and the empty string kept for the sentinel participant.
+        participant id's digest, and the empty string for the sentinel participant.
 
-        Unconditional on purpose: the column was only just added, so every row is holding the empty
-        string it defaulted to.
+        Unconditional on purpose: the column was only just added, so every row is holding the NULL
+        it arrived as.
       changes:
         - sqlFile:
             path: tables/participant--0004.sql
