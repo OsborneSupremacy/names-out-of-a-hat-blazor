@@ -167,6 +167,8 @@ export interface ExportedParticipant {
   eligibleRecipients: ExportedParticipantReference[]
   deliveryStatus: string
   deliveryDetail: string
+  deliveryMessageType: string
+  deliveryOccurredAt: string
 }
 
 export interface ExportedHat {
@@ -208,6 +210,19 @@ export interface Participant {
   deliveryStatus: string
   /** Why, for the statuses that have a why. Written by a remote mail server, so never trusted as markup. */
   deliveryDetail: string
+  /**
+   * Which of our emails the status above is about — INVITATION, COMPLETION, PARTICIPANT_LEFT or
+   * ORGANIZER_LEFT_NOTE. Empty when nothing has been heard.
+   *
+   * An exchange sends more than one thing to the same person and the status is the newest of them,
+   * so without this "Delivered" cannot be read as being about the invitation.
+   */
+  deliveryMessageType: string
+  /**
+   * When that happened, as SES reported it. The minimum date when nothing has been heard, which is
+   * what relativeTime.ts renders as nothing at all.
+   */
+  deliveryOccurredAt: string
 }
 
 export interface Hat {

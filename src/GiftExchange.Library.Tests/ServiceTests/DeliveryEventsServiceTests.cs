@@ -68,7 +68,15 @@ public class DeliveryEventsServiceTests
         // and it reaches the organizer's view rather than only the table
         var (exists, stored) = await _provider.GetHatAsync(hat.OrganizerEmail, hat.HatId);
         exists.Should().BeTrue();
-        stored.Participants.Single().DeliveryStatus.Should().Be(DeliveryStatus.Delivered);
+
+        var participant = stored.Participants.Single();
+        participant.DeliveryStatus.Should().Be(DeliveryStatus.Delivered);
+
+        // The two facts that make "delivered" mean something to an organizer whose participant says
+        // they never saw it: which message arrived, and when. SES's own delivery timestamp rather
+        // than the mail one -- four seconds later here, which is the point of preferring it.
+        participant.DeliveryMessageType.Should().Be(EmailMessageType.Invitation);
+        participant.DeliveryOccurredAt.Should().Be(DateTimeOffset.Parse("2026-08-28T10:00:04.000Z"));
     }
 
     [Fact]
@@ -84,6 +92,11 @@ public class DeliveryEventsServiceTests
         exists.Should().BeTrue();
         stored.Participants.Single().DeliveryStatus.Should().Be(DeliveryStatus.Unknown);
         stored.Participants.Single().DeliveryDetail.Should().BeEmpty();
+        stored.Participants.Single().DeliveryMessageType.Should().BeEmpty();
+
+        // The minimum date rather than now, so that whatever renders it can tell "no timestamp"
+        // from a real one and leave the line out rather than dating it to the first century.
+        stored.Participants.Single().DeliveryOccurredAt.Should().Be(DateTimeOffset.MinValue);
     }
 
     [Fact]

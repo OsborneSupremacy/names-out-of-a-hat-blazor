@@ -22,7 +22,13 @@ import {
 } from '../api'
 import { HAT_STATUS_STEPS, formatHatStatus } from '../hatStatus'
 import { DrawType } from '../drawType'
-import { deliveryTone, formatDeliveryStatus, showsDeliveryDetail } from '../deliveryStatus'
+import {
+  deliveryTone,
+  formatDeliveryMessageType,
+  formatDeliveryStatus,
+  showsDeliveryDetail,
+} from '../deliveryStatus'
+import { formatRelativeTime, formatAbsoluteTime } from '../relativeTime'
 import { EditAddressModal, ResendKind } from '../components/EditAddressModal'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
@@ -33,6 +39,7 @@ import { CopyHatModal } from '../components/CopyHatModal'
 import { ShakeHatModal } from '../components/ShakeHatModal'
 import { AdvancedOptionsMenu } from '../components/AdvancedOptionsMenu'
 import { ResetHatModal } from '../components/ResetHatModal'
+import { DeliveryHelpModal } from '../components/DeliveryHelpModal'
 import { downloadExport } from '../hatExport'
 import './GiftExchangeDetail.css'
 
@@ -69,6 +76,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [showCopyModal, setShowCopyModal] = useState(false)
   const [showShakeModal, setShowShakeModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+  const [showDeliveryHelp, setShowDeliveryHelp] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [editingAddressFor, setEditingAddressFor] = useState<Participant | null>(null)
   const [savingAddress, setSavingAddress] = useState(false)
@@ -866,51 +874,92 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                         <tr>
                           <th>Name</th>
                           <th>Picked Recipient</th>
-                          <th>Email</th>
+                          {/*
+                            * "Email Status" rather than "Email": the addresses are in the first
+                            * column, and this one says what became of the mail sent to them.
+                            *
+                            * The explanation hangs off the header rather than off each row. What
+                            * needs explaining is the column — and in particular that "Delivered"
+                            * is a claim about a mail server rather than about a person — which is
+                            * the same explanation for every participant in the table.
+                            */}
+                          <th>
+                            Email Status
+                            <button
+                              type="button"
+                              className="delivery-help-trigger"
+                              onClick={() => setShowDeliveryHelp(true)}
+                              aria-label="What do these email statuses mean?"
+                              title="What do these email statuses mean?"
+                            >
+                              ?
+                            </button>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {hat.participants.map((participant, index) => (
-                          <tr key={index}>
-                            <td>
-                              <div className="participant-name-cell">
-                                <strong>{participant.person.name}</strong>
-                                <span className="participant-email">{participant.person.email}</span>
-                                {/*
-                                  * Only here, on the table shown once invitations have gone out.
-                                  * This is where a wrong address is discovered — the delivery
-                                  * column is right beside it — and where removing and re-adding
-                                  * somebody would break the draw instead of fixing anything.
-                                  */}
-                                <button
-                                  type="button"
-                                  className="edit-address-button"
-                                  onClick={() => handleOpenAddressModal(participant)}
-                                >
-                                  Edit Address
-                                </button>
-                              </div>
-                            </td>
-                            <td>
-                              <strong>{participant.pickedRecipient || 'Not assigned'}</strong>
-                            </td>
-                            <td>
-                              <div className="delivery-cell">
-                                <span
-                                  className={`delivery-status delivery-status-${deliveryTone(participant.deliveryStatus)}`}
-                                >
-                                  {formatDeliveryStatus(participant.deliveryStatus)}
-                                </span>
-                                {showsDeliveryDetail(participant.deliveryStatus, participant.deliveryDetail) && (
-                                  // Rendered as text, never as markup. This sentence was written by
-                                  // whichever mail server refused the message and has passed through
-                                  // no moderation of any kind.
-                                  <span className="delivery-detail">{participant.deliveryDetail}</span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                        {hat.participants.map((participant, index) => {
+                          // Empty when nothing has been heard, since the API spells a missing
+                          // timestamp with the minimum date. Both are left out rather than
+                          // rendered blank, so a row nothing is known about says only that.
+                          const deliveredAge = formatRelativeTime(participant.deliveryOccurredAt)
+                          const deliveredAt = formatAbsoluteTime(participant.deliveryOccurredAt)
+                          const messageLabel = formatDeliveryMessageType(participant.deliveryMessageType)
+
+                          // What the status is about and when it happened, which together are what
+                          // an organizer hands to somebody who cannot find their invitation. The
+                          // absolute time is the tooltip rather than the line: "2 days ago" is
+                          // what a column is scanned for, and the exact minute is what it is
+                          // checked against once one row matters.
+                          const deliveryMeta = [messageLabel, deliveredAge].filter(Boolean).join(' · ')
+
+                          return (
+                            <tr key={index}>
+                              <td>
+                                <div className="participant-name-cell">
+                                  <strong>{participant.person.name}</strong>
+                                  <span className="participant-email">{participant.person.email}</span>
+                                  {/*
+                                    * Only here, on the table shown once invitations have gone out.
+                                    * This is where a wrong address is discovered — the delivery
+                                    * column is right beside it — and where removing and re-adding
+                                    * somebody would break the draw instead of fixing anything.
+                                    */}
+                                  <button
+                                    type="button"
+                                    className="edit-address-button"
+                                    onClick={() => handleOpenAddressModal(participant)}
+                                  >
+                                    Edit Address
+                                  </button>
+                                </div>
+                              </td>
+                              <td>
+                                <strong>{participant.pickedRecipient || 'Not assigned'}</strong>
+                              </td>
+                              <td>
+                                <div className="delivery-cell">
+                                  <span
+                                    className={`delivery-status delivery-status-${deliveryTone(participant.deliveryStatus)}`}
+                                  >
+                                    {formatDeliveryStatus(participant.deliveryStatus)}
+                                  </span>
+                                  {showsDeliveryDetail(participant.deliveryStatus, participant.deliveryDetail) && (
+                                    // Rendered as text, never as markup. This sentence was written by
+                                    // whichever mail server refused the message and has passed through
+                                    // no moderation of any kind.
+                                    <span className="delivery-detail">{participant.deliveryDetail}</span>
+                                  )}
+                                  {deliveryMeta && (
+                                    <span className="delivery-meta" title={deliveredAt || undefined}>
+                                      {deliveryMeta}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   ) : (
@@ -1132,6 +1181,13 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           participants={hat.participants}
           onClose={() => setShowCopyModal(false)}
           onSubmit={handleCopyHat}
+        />
+      )}
+
+      {showDeliveryHelp && hat && (
+        <DeliveryHelpModal
+          organizerName={hat.organizer.name}
+          onClose={() => setShowDeliveryHelp(false)}
         />
       )}
 

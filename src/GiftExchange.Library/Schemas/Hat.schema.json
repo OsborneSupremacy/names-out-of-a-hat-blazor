@@ -104,6 +104,15 @@
         "deliveryDetail": {
           "type": "string",
           "description": "Why, for the statuses that have a why: the bounce subtype and the receiving server's diagnostic. Empty otherwise. Written by a remote mail server, so it is neither moderated nor trusted."
+        },
+        "deliveryMessageType": {
+          "type": "string",
+          "description": "Which of this application's emails the status above is about: INVITATION, COMPLETION, PARTICIPANT_LEFT, ORGANIZER_LEFT_NOTE or UNSPECIFIED. Empty when nothing has been heard yet."
+        },
+        "deliveryOccurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When SES says the event behind the status happened, or the minimum date when nothing has been heard yet."
         }
       },
       "required": [
@@ -111,7 +120,9 @@
         "person",
         "eligibleRecipients",
         "deliveryStatus",
-        "deliveryDetail"
+        "deliveryDetail",
+        "deliveryMessageType",
+        "deliveryOccurredAt"
       ],
       "additionalProperties": false
     }

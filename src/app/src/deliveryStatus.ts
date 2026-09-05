@@ -22,6 +22,34 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
 }
 
 /**
+ * What to call each of the things this application sends, when saying which one a status is about.
+ *
+ * An exchange sends more than one message to the same person and the status shown is the newest of
+ * them, so an organizer reading "Delivered" beside somebody who says they never saw their
+ * invitation is owed the answer to "delivered what". After an exchange closes that word is often
+ * about the announcement, sent weeks after the invitation that went astray.
+ *
+ * INVITATION and COMPLETION borrow the words EditAddressModal already uses for the same two
+ * emails. The two leave notices are named as one thing on purpose: they are the same event told to
+ * different people, and the distinction between them is ours rather than the reader's.
+ *
+ * UNSPECIFIED is deliberately absent. It means a send reached SES without a type tag, which is a
+ * mistake in this codebase rather than a fact about the participant, and naming it in the table
+ * would ask an organizer to make sense of it.
+ */
+const MESSAGE_TYPE_LABELS: Record<string, string> = {
+  INVITATION: 'Invitation',
+  COMPLETION: 'Announcement',
+  PARTICIPANT_LEFT: 'Someone-left notice',
+  ORGANIZER_LEFT_NOTE: 'Someone-left notice',
+}
+
+/** The empty string for anything unnamed above, which is the signal to render nothing. */
+export function formatDeliveryMessageType(messageType: string): string {
+  return MESSAGE_TYPE_LABELS[messageType] ?? ''
+}
+
+/**
  * Which statuses the organizer can actually do something about.
  *
  * Only these show the detail underneath. For the rest the detail is either empty or says nothing

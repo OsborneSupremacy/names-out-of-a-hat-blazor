@@ -47,7 +47,9 @@ public class ValidationServiceTests
                     Person = _personFaker.Generate(),
                     EligibleRecipients = [],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -55,7 +57,9 @@ public class ValidationServiceTests
                     Person = _personFaker.Generate(),
                     EligibleRecipients = [],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -90,7 +94,9 @@ public class ValidationServiceTests
                     Person = people[0],
                     EligibleRecipients = [ people[1].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -98,7 +104,9 @@ public class ValidationServiceTests
                     Person = people[1],
                     EligibleRecipients = [ people[0].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -106,7 +114,9 @@ public class ValidationServiceTests
                     Person = people[2],
                     EligibleRecipients = [],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -141,7 +151,9 @@ public class ValidationServiceTests
                     Person = people[0],
                     EligibleRecipients = [ people[1].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -149,7 +161,9 @@ public class ValidationServiceTests
                     Person = people[1],
                     EligibleRecipients = [ people[0].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -157,7 +171,9 @@ public class ValidationServiceTests
                     Person = people[2],
                     EligibleRecipients = [ people[0].Name, people[1].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -165,7 +181,9 @@ public class ValidationServiceTests
                     Person = people[3],
                     EligibleRecipients = [ people[1].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -200,7 +218,9 @@ public class ValidationServiceTests
                     Person = people[0],
                     EligibleRecipients = [ people[1].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -208,7 +228,9 @@ public class ValidationServiceTests
                     Person = people[1],
                     EligibleRecipients = [ people[0].Name, people[3].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -216,7 +238,9 @@ public class ValidationServiceTests
                     Person = people[2],
                     EligibleRecipients = [ people[0].Name, people[3].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -224,7 +248,9 @@ public class ValidationServiceTests
                     Person = people[3],
                     EligibleRecipients = [ people[1].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue
@@ -258,7 +284,9 @@ public class ValidationServiceTests
                     Person = people[0],
                     EligibleRecipients = [ people[1].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -266,7 +294,9 @@ public class ValidationServiceTests
                     Person = people[1],
                     EligibleRecipients = [ people[0].Name, people[3].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -274,7 +304,9 @@ public class ValidationServiceTests
                     Person = people[2],
                     EligibleRecipients = [ people[0].Name, people[1].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 },
                 new Participant
                 {
@@ -282,7 +314,9 @@ public class ValidationServiceTests
                     Person = people[3],
                     EligibleRecipients = [ people[0].Name, people[2].Name ],
                     DeliveryStatus = DeliveryStatus.Unknown,
-                    DeliveryDetail = string.Empty
+                    DeliveryDetail = string.Empty,
+                    DeliveryMessageType = string.Empty,
+                    DeliveryOccurredAt = DateTimeOffset.MinValue
                 }
             ],
             InvitationsQueuedDate = DateTimeOffset.MinValue

@@ -17,6 +17,9 @@ function participant(
     // from, so these stay empty here.
     deliveryStatus: '',
     deliveryDetail: '',
+    deliveryMessageType: '',
+    // The minimum date, which is how the API spells a timestamp it does not have.
+    deliveryOccurredAt: '0001-01-01T00:00:00+00:00',
   }
 }
 

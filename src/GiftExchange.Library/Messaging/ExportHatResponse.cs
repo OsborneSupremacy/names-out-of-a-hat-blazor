@@ -1,4 +1,4 @@
-namespace GiftExchange.Library.Messaging;
+﻿namespace GiftExchange.Library.Messaging;
 
 /// <summary>
 /// One gift exchange, whole, in the shape an organizer downloads it.
@@ -112,6 +112,18 @@ public record ExportedParticipant
     /// moderated nor trusted — whatever renders it encodes it.
     /// </summary>
     public required string DeliveryDetail { get; init; }
+
+    /// <summary>
+    /// Which of this application's emails the status above is about — one of
+    /// <see cref="Models.EmailMessageType"/>. Empty when nothing has been heard.
+    /// </summary>
+    public required string DeliveryMessageType { get; init; }
+
+    /// <summary>
+    /// When SES says that happened, or <see cref="DateTimeOffset.MinValue"/> when nothing has been
+    /// heard. The same absence <see cref="ExportedHat.InvitationsQueuedAt"/> uses.
+    /// </summary>
+    public required DateTimeOffset DeliveryOccurredAt { get; init; }
 }
 
 /// <summary>

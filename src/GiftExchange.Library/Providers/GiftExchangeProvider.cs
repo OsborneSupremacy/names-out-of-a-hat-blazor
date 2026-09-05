@@ -493,7 +493,9 @@ public class GiftExchangeProvider
                     .OrderBy(reference => reference.Name, StringComparer.OrdinalIgnoreCase)
             ],
             DeliveryStatus = delivery?.Status ?? Models.DeliveryStatus.Unknown,
-            DeliveryDetail = delivery?.Detail ?? string.Empty
+            DeliveryDetail = delivery?.Detail ?? string.Empty,
+            DeliveryMessageType = delivery?.MessageType ?? string.Empty,
+            DeliveryOccurredAt = delivery?.OccurredAt ?? DateTimeOffset.MinValue
         };
     }
 
@@ -1925,6 +1927,8 @@ public class GiftExchangeProvider
             // Nothing has been sent to somebody who was added a moment ago.
             DeliveryStatus = Models.DeliveryStatus.Unknown,
             DeliveryDetail = string.Empty,
+            DeliveryMessageType = string.Empty,
+            DeliveryOccurredAt = DateTimeOffset.MinValue,
             EligibleRecipients = existingParticipants
                 .Select(existing => existing.Person.Name)
                 .ToImmutableList()
@@ -2445,7 +2449,9 @@ public class GiftExchangeProvider
                 .Select(row => row.EligibleParticipant.Person.Name)
                 .ToImmutableList(),
             DeliveryStatus = delivery?.Status ?? Models.DeliveryStatus.Unknown,
-            DeliveryDetail = delivery?.Detail ?? string.Empty
+            DeliveryDetail = delivery?.Detail ?? string.Empty,
+            DeliveryMessageType = delivery?.MessageType ?? string.Empty,
+            DeliveryOccurredAt = delivery?.OccurredAt ?? DateTimeOffset.MinValue
         };
     }
 

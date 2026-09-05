@@ -1153,6 +1153,18 @@
   word-break: break-word;
 }
 
+/* Which message the status is about, and how long ago it happened.
+ *
+ * Quieter than the status itself and deliberately so: the word is what the column is scanned for,
+ * and this is what gets read once one row turns out to matter. It is also the whole point of the
+ * "delivered, but they say they never got it" conversation — a date and a time is something a
+ * participant can search their mailbox by, where "Delivered" on its own is not. The exact minute
+ * is the tooltip. */
+.delivery-meta {
+  font-size: 0.75rem;
+  color: #666666;
+}
+
 /* What happened after an address was corrected — and in particular whether that sent an email.
  * Rendered here rather than as a page-level message, which replaces the whole view. */
 .participants-notice {

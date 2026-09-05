@@ -1,4 +1,4 @@
-namespace GiftExchange.Library.Tests.ServiceTests;
+﻿namespace GiftExchange.Library.Tests.ServiceTests;
 
 /// <summary>
 /// The email that goes out once the organizer says the exchange has happened. It is the only one
@@ -161,6 +161,8 @@ public class CompletionEmailCompositionServiceTests
             PickedRecipient = pickedRecipient,
             EligibleRecipients = [],
             DeliveryStatus = DeliveryStatus.Unknown,
-            DeliveryDetail = string.Empty
+            DeliveryDetail = string.Empty,
+            DeliveryMessageType = string.Empty,
+            DeliveryOccurredAt = DateTimeOffset.MinValue
         };
 }

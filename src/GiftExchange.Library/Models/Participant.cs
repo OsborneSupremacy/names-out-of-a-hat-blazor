@@ -31,6 +31,32 @@ public record Participant
     /// renders it encodes it.
     /// </remarks>
     public required string DeliveryDetail { get; init; }
+
+    /// <summary>
+    /// Which of this application's emails <see cref="DeliveryStatus"/> is about — one of
+    /// <see cref="EmailMessageType"/>, and empty while nothing has been heard.
+    /// </summary>
+    /// <remarks>
+    /// An exchange sends more than one thing to the same person, and the status here is the newest
+    /// row rather than the invitation's. Without this an organizer reading "delivered" next to
+    /// somebody who says they never saw the invitation has no way to tell whether that word is
+    /// about the invitation at all — it may be the announcement that the exchange had finished,
+    /// sent weeks later to an address that swallowed the first message.
+    /// </remarks>
+    public required string DeliveryMessageType { get; init; }
+
+    /// <summary>
+    /// When SES says the event behind <see cref="DeliveryStatus"/> happened.
+    /// <see cref="DateTimeOffset.MinValue"/> while nothing has been heard, which is how the rest of
+    /// this API spells a timestamp it does not have.
+    /// </summary>
+    /// <remarks>
+    /// This is the fact an organizer can hand to a participant who cannot find their invitation.
+    /// "Delivered" alone gives them nothing to search for; a date and a time tells them which
+    /// morning to look in, which is the difference between finding it in a junk folder and
+    /// concluding it was never sent.
+    /// </remarks>
+    public required DateTimeOffset DeliveryOccurredAt { get; init; }
 }
 
 internal static class Participants
@@ -41,6 +67,8 @@ internal static class Participants
         PickedRecipient = string.Empty,
         EligibleRecipients = [],
         DeliveryStatus = Models.DeliveryStatus.Unknown,
-        DeliveryDetail = string.Empty
+        DeliveryDetail = string.Empty,
+        DeliveryMessageType = string.Empty,
+        DeliveryOccurredAt = DateTimeOffset.MinValue
     };
 }
