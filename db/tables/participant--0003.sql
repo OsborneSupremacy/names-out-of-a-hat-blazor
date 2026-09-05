@@ -12,4 +12,4 @@
 --
 -- VARCHAR(8) against faces that are a single code point each. Wide enough for any of them, and
 -- narrow enough that nobody will mistake this for somewhere to put text.
-ALTER TABLE participant ADD COLUMN emoji VARCHAR(8) NOT NULL DEFAULT ''
+ALTER TABLE participant ADD COLUMN emoji VARCHAR(8) DEFAULT ''
