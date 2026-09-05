@@ -132,6 +132,13 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
         await _schedulerService.CreateCooledOffScheduleAsync(request, invitationsQueuedAt)
             .ConfigureAwait(false);
 
+        // Both schedules are counted from the one timestamp above rather than from the clock, so
+        // that the cool-off and the delivery check cannot drift apart over the time these two calls
+        // take. Neither throws: the invitations are already on the queue by this point, and a
+        // failure here has to cost a schedule rather than a second round of mail.
+        await _schedulerService.CreateUndeliverableInvitationsScheduleAsync(request, invitationsQueuedAt)
+            .ConfigureAwait(false);
+
         return new Result<StatusCodeOnlyResponse>(new StatusCodeOnlyResponse { StatusCode = HttpStatusCode.OK}, HttpStatusCode.OK);
     }
 }

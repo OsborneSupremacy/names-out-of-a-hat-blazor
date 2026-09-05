@@ -228,6 +228,8 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<InboundGiftIdeasService>()
                 .AddSingleton<InvitationQueueHandlerService>()
                 .AddSingleton<DeliveryEventsService>()
+                .AddSingleton<UndeliverableInvitationsEmailCompositionService>()
+                .AddSingleton<UndeliverableInvitationsService>()
                 .AddSingleton<ISchedulerService, SchedulerService>()
             ;
     }

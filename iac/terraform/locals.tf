@@ -1,6 +1,11 @@
 locals {
   cooled_off_scheduler_group_name = "giftexchange-cooled-off"
 
+  # Kept apart from the cool-off group on purpose. Both hold one-shot schedules created by
+  # the same send, but they fire hours apart for unrelated reasons, and a single group would
+  # make either one impossible to count or clear without disturbing the other.
+  undeliverable_scheduler_group_name = "giftexchange-undeliverable-invitations"
+
   # The topic SES publishes delivery events to. Declared in email/terraform alongside the rest of
   # this domain's sending configuration, and reached the same way the inbound rules reach the
   # receipt rule set name.

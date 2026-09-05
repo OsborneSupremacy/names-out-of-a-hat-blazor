@@ -49,6 +49,35 @@ public static class DeliveryStatuses
     ];
 
     /// <summary>
+    /// The statuses that mean the message did not reach the person, and that there is something an
+    /// organizer can do about it.
+    /// </summary>
+    /// <remarks>
+    /// The same three the front end calls actionable, and deliberately the same three: the notice
+    /// this drives and the delivery column an organizer reads it beside have to agree about which
+    /// rows are a problem, or one of them is lying.
+    ///
+    /// <see cref="DeliveryStatus.Complained"/> is not here. A complaint means the message arrived
+    /// and the recipient did not want it, which is not a broken address and not something an
+    /// organizer fixes by retyping one. <see cref="DeliveryStatus.Delayed"/> is not here either --
+    /// SES is still trying, and a notice sent about a message still in flight would be wrong by the
+    /// time it was read.
+    ///
+    /// <see cref="DeliveryStatus.Unknown"/> is the important omission. Nothing heard is not the
+    /// same as not delivered, and this list is the one place a sweep over the table could quietly
+    /// turn the first into the second.
+    /// </remarks>
+    public static readonly ImmutableList<string> Undeliverable =
+    [
+        DeliveryStatus.Bounced,
+        DeliveryStatus.Rejected,
+        DeliveryStatus.Failed
+    ];
+
+    /// <summary>Whether this status says the message is known not to have arrived.</summary>
+    public static bool IsUndeliverable(string status) => Undeliverable.Contains(status);
+
+    /// <summary>
     /// How far through the message's life each status sits, so that a row only ever moves forwards.
     /// </summary>
     /// <remarks>

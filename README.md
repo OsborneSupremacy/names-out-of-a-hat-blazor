@@ -48,6 +48,8 @@ No account, no app, no link to click. The address a participant replies to is un
 
 Every invitation's delivery status is visible per participant — delivered, bounced, marked as spam, or nothing heard yet. When an address is wrong you can correct just that one and resend to just that person, without disturbing the draw. Hand somebody the wrong slip of paper and it's simply gone.
 
+And you don't have to go and look. A couple of hours after invitations go out, anything that came back is emailed to the organizer, naming the person, the address, and what the receiving server said about it.
+
 ### The details travel with the assignment
 
 The price range and any additional instructions are in every invitation, so nobody has to remember the number somebody said out loud in November.
@@ -163,6 +165,16 @@ Open tracking was considered and rejected. SES opens are a tracking pixel, and t
 
 A confidently wrong "opened" is worse than no signal at all, because it stops an organizer from chasing somebody who never saw their assignment. Delivery and bounce carry no such ambiguity. This is also why an absent status is labelled "No confirmation yet" and never "not delivered".
 
+### Bad addresses are pushed, not left to be found
+
+The delivery column made bounces visible, which is not the same as making them noticed. An organizer's last act is pressing send, and nothing afterwards brings them back to the page — so a wrong address sat there until somebody at the exchange mentioned they never got a name, by which point the shopping was done.
+
+So a schedule created alongside the cool-off one fires a couple of hours after invitations are queued, and if anything came back, the organizer is emailed once with the names, the addresses and what the receiving server said. Two hours is a compromise between two ways of being wrong. SES publishes a bounce when it stops retrying rather than when the first attempt fails, so a check run minutes after a send reports half the failures and teaches an organizer to distrust the email; a check run the next morning reaches them after somebody has already asked why they weren't invited.
+
+What it will not do is name somebody nothing has been heard about. Only the three statuses the interface already calls actionable — bounced, rejected, failed — are in it, which is the same line drawn in the same place for the same reason: an empty status means nothing was heard, and an email that read it as "did not arrive" would send an organizer to pester a person holding their invitation. A complaint is excluded too. It means the message got there.
+
+The email says nothing about the draw. An organizer who is also a participant receives it, and an administrative notice is not a place to let slip what their own invitation was written to keep from them.
+
 ### Inbound mail is silent until it knows who's writing
 
 A message arriving at a gift ideas address is checked in a deliberate order. Everything that decides whether we're willing to speak to this sender at all comes first, and every one of those failures ends in silence — at that point nothing has established who wrote in, and replying to an address we can't vouch for turns the mailbox into a way of sending mail to strangers. Once a live token and a matching From address have both been seen, there's a known participant to reply to, and from there every refusal says why.
@@ -204,7 +216,7 @@ Free-text fields go through Amazon Comprehend's toxicity detection. If the check
 - **Database** — Aurora DSQL (Postgres) via EF Core, connecting as a non-admin role with IAM auth. Migrations run as admin from their own workflow; the application role can't.
 - **Ephemeral state** — DynamoDB with TTL, for magic-link tokens and throttle windows.
 - **Email** — SES for sending and receiving, SQS for fan-out and for delivery events, SNS in between.
-- **Async work** — EventBridge Scheduler for the cool-off transition, SQS-triggered Lambdas for invitations, delivery events and inbound gift ideas.
+- **Async work** — EventBridge Scheduler for the cool-off transition and the delivery check that follows a send, SQS-triggered Lambdas for invitations, delivery events and inbound gift ideas.
 - **Infrastructure** — Terraform, in two independent roots. See below.
 
 ### Repository layout

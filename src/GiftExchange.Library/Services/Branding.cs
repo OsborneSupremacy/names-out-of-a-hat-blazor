@@ -41,6 +41,21 @@ internal static class Branding
     internal const string LeaveUrl = $"{ApiUrl}/leave";
 
     /// <summary>
+    /// The organizer's own page for one exchange, on the front end rather than on the API.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the leave and ask links, this one is not a page this API renders and not something a
+    /// mail scanner following it can act on: it is behind sign-in, and a visitor without a session
+    /// gets the sign-in page. So it can point at the application proper, where the organizer has
+    /// the delivery column and the buttons that fix an address.
+    ///
+    /// The path mirrors the route in <c>src/app/src/App.tsx</c>. Nothing in this project can check
+    /// that, which is the argument for it being written down once here rather than built inside
+    /// whichever email happens to need it.
+    /// </remarks>
+    internal static string HatUrl(Guid hatId) => $"{SiteUrl}/gift-exchange/{hatId}";
+
+    /// <summary>
     /// Served from the front end's public root, so the deployed site is what hosts it.
     /// </summary>
     internal const string LogoUrl = $"{SiteUrl}/logo-horizontal.png";

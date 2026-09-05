@@ -36,6 +36,14 @@ resource "aws_lambda_function" "giftexchange_app" {
         COOLED_OFF_SCHEDULER_TARGET_ARN = aws_lambda_function.cooled-off-scheduler-handler.arn
         COOLED_OFF_SCHEDULER_ROLE_ARN   = aws_iam_role.cooled-off-scheduler-execution-role.arn
         COOLED_OFF_SCHEDULER_GROUP_NAME = aws_scheduler_schedule_group.cooled-off.name
+
+        # The second schedule the send path creates. Only the router builds schedules, so these
+        # stay here rather than in common_environment_variables -- unlike LIVE_MODE, a function
+        # that does not have them is a function that never wanted them, and SchedulerService is
+        # only ever constructed where one is about to be made.
+        UNDELIVERABLE_SCHEDULER_TARGET_ARN = aws_lambda_function.undeliverable-invitations-handler.arn
+        UNDELIVERABLE_SCHEDULER_ROLE_ARN   = aws_iam_role.undeliverable-invitations-scheduler-execution-role.arn
+        UNDELIVERABLE_SCHEDULER_GROUP_NAME = aws_scheduler_schedule_group.undeliverable-invitations.name
       }
     )
   }

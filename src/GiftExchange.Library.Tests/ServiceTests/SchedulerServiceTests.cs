@@ -81,14 +81,79 @@ public class SchedulerServiceTests
         await act.Should().NotThrowAsync();
     }
 
-    private Task CreateScheduleAsync(Guid? hatId = null, string organizerEmail = "organizer@example.com") =>
-        _sut.CreateCooledOffScheduleAsync(
-            new SendInvitationsRequest
-            {
-                HatId = hatId ?? Guid.CreateVersion7(),
-                OrganizerEmail = organizerEmail
-            },
+    [Fact]
+    public async Task CreateUndeliverableInvitationsScheduleAsync_TargetsItsOwnHandlerAndCarriesTheHat()
+    {
+        // arrange
+        var hatId = Guid.CreateVersion7();
+
+        // act
+        await _sut.CreateUndeliverableInvitationsScheduleAsync(
+            Request(hatId, "organizer@example.com"),
             DateTimeOffset.UtcNow);
+
+        // assert: its own name, its own group and its own target. Sharing any of the three with the
+        // cool-off schedule would mean one send creating two schedules that collide by name, and
+        // only the first of them ever being created.
+        var request = CapturedRequest();
+
+        request.Name.Should().Be($"hat-undeliverable-{hatId:N}");
+        request.GroupName.Should().NotBe("test-cooled-off");
+        request.Target.Arn.Should().NotBe("arn:aws:lambda:us-east-1:000000000000:function:test-target");
+        request.ActionAfterCompletion.Should().Be(ActionAfterCompletion.DELETE);
+        request.Target.Input.Should().Contain(hatId.ToString());
+        request.Target.Input.Should().Contain("organizer@example.com");
+    }
+
+    /// <summary>
+    /// The delay is the whole design of the feature: SES publishes a bounce when it stops retrying
+    /// rather than when the first attempt fails, so a check run too soon reports half the failures.
+    /// </summary>
+    [Fact]
+    public async Task CreateUndeliverableInvitationsScheduleAsync_FiresHoursAfterTheInvitationsWereQueued()
+    {
+        // arrange
+        var queuedAt = new DateTimeOffset(2026, 12, 1, 9, 0, 0, TimeSpan.Zero);
+
+        // act
+        await _sut.CreateUndeliverableInvitationsScheduleAsync(Request(), queuedAt);
+
+        // assert: counted from when the invitations were queued rather than from now, so that this
+        // and the cool-off schedule cannot drift apart over the time the two calls take.
+        CapturedRequest().ScheduleExpression.Should().Be("at(2026-12-01T11:00:00)");
+    }
+
+    [Fact]
+    public async Task CreateUndeliverableInvitationsScheduleAsync_WhenCreationFails_DoesNotThrow()
+    {
+        // arrange: same trade as the cool-off schedule. The invitations are already on the queue,
+        // so a throw here would be reported as a failed send and invite a retry that mails
+        // everybody twice. What is lost instead is one notice about bad addresses, and the delivery
+        // column still says everything it would have said.
+        _scheduler
+            .CreateScheduleAsync(Arg.Any<CreateScheduleRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ConflictException("already exists"));
+
+        // act
+        var act = async () =>
+            await _sut.CreateUndeliverableInvitationsScheduleAsync(Request(), DateTimeOffset.UtcNow);
+
+        // assert
+        await act.Should().NotThrowAsync();
+    }
+
+    private Task CreateScheduleAsync(Guid? hatId = null, string organizerEmail = "organizer@example.com") =>
+        _sut.CreateCooledOffScheduleAsync(Request(hatId, organizerEmail), DateTimeOffset.UtcNow);
+
+    private static SendInvitationsRequest Request(
+        Guid? hatId = null,
+        string organizerEmail = "organizer@example.com"
+    ) =>
+        new()
+        {
+            HatId = hatId ?? Guid.CreateVersion7(),
+            OrganizerEmail = organizerEmail
+        };
 
     private CreateScheduleRequest CapturedRequest() =>
         (CreateScheduleRequest)_scheduler

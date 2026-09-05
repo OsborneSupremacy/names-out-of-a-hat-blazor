@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------------------------
-# The six Lambda log groups, and why they are declared at all.
+# The seven Lambda log groups, and why they are declared at all.
 #
 # A log group nobody creates still exists. Lambda makes one on the function's first invocation,
 # and a group created that way has no retention policy -- which does not mean a default, it means
@@ -27,12 +27,13 @@ locals {
   # cloudwatch-alarms.tf, which is the point: a function added here without an alarm, or alarmed
   # without a log group, is the kind of gap that is only ever noticed when it matters.
   lambda_functions = {
-    (aws_lambda_function.giftexchange_app.function_name)             = "API router"
-    (aws_lambda_function.authorizer.function_name)                   = "session authorizer"
-    (aws_lambda_function.invitation-queue-handler.function_name)     = "invitation sender"
-    (aws_lambda_function.delivery-events-handler.function_name)      = "SES delivery events"
-    (aws_lambda_function.inbound-gift-ideas-handler.function_name)   = "inbound gift ideas"
-    (aws_lambda_function.cooled-off-scheduler-handler.function_name) = "cool-off transition"
+    (aws_lambda_function.giftexchange_app.function_name)                  = "API router"
+    (aws_lambda_function.authorizer.function_name)                        = "session authorizer"
+    (aws_lambda_function.invitation-queue-handler.function_name)          = "invitation sender"
+    (aws_lambda_function.delivery-events-handler.function_name)           = "SES delivery events"
+    (aws_lambda_function.inbound-gift-ideas-handler.function_name)        = "inbound gift ideas"
+    (aws_lambda_function.cooled-off-scheduler-handler.function_name)      = "cool-off transition"
+    (aws_lambda_function.undeliverable-invitations-handler.function_name) = "undeliverable invitations"
   }
 }
 

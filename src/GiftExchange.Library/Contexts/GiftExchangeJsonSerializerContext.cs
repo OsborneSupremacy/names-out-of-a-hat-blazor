@@ -59,6 +59,7 @@ namespace GiftExchange.Library.Contexts;
 [JsonSerializable(typeof(SimpleEmailEvent<LambdaReceiptAction>))]
 [JsonSerializable(typeof(StatusCodeOnlyResponse))]
 [JsonSerializable(typeof(SubmitFeedbackRequest))]
+[JsonSerializable(typeof(UndeliverableInvitationsScheduleRequest))]
 [JsonSerializable(typeof(UpdateProfileRequest))]
 [JsonSerializable(typeof(ValidateHatRequest))]
 [JsonSerializable(typeof(ValidateHatResponse))]
