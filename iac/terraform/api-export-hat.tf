@@ -16,7 +16,6 @@ module "lambda-export-hat" {
   good_response_model_name                          = "ExportHatResponse"
   good_response_model_description                   = "A whole gift exchange, as data, for the organizer to take away."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/ExportHatResponse.schema.json"
-  api_name                                          = "giftexchange-export-hat"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
   authorizer_id                                     = aws_api_gateway_authorizer.session.id
   authorizer_type                                   = "CUSTOM"

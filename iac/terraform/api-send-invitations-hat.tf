@@ -14,7 +14,6 @@ module "lambda-send-invitations-hat" {
   good_response_model_name                          = ""
   good_response_model_description                   = ""
   good_response_model_schema_file_location          = ""
-  api_name                                          = "giftexchange-send-invitations"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
   authorizer_id                                     = aws_api_gateway_authorizer.session.id
   authorizer_type                                   = "CUSTOM"

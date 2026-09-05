@@ -17,7 +17,6 @@ module "lambda-preview-invitations-hat" {
   good_response_model_name                          = "PreviewInvitationsResponse"
   good_response_model_description                   = "A preview of the invitation email template."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/PreviewInvitationsResponse.schema.json"
-  api_name                                          = "giftexchange-preview-invitations"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
   authorizer_id                                     = aws_api_gateway_authorizer.session.id
   authorizer_type                                   = "CUSTOM"

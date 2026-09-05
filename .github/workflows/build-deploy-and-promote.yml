@@ -2,6 +2,11 @@ name: Build & Deploy Infrastructure
 
 on:
   workflow_dispatch:
+    inputs:
+      debug_provider_log:
+        description: "Capture AWS provider debug logs during apply (large artifact; use when an apply hangs)"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}
@@ -18,6 +23,7 @@ jobs:
     with:
       tfstate_bucket: bro-tfstate
       tfstate_key: giftexchange/live
+      debug_provider_log: ${{ inputs.debug_provider_log }}
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 

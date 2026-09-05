@@ -19,7 +19,6 @@ module "lambda-edit-participant-address" {
   good_response_model_name                          = "EditParticipantAddressResponse"
   good_response_model_description                   = "Says whether correcting the address also resent an email, and which one."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/EditParticipantAddressResponse.schema.json"
-  api_name                                          = "giftexchange-edit-participant-address"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
   authorizer_id                                     = aws_api_gateway_authorizer.session.id
   authorizer_type                                   = "CUSTOM"

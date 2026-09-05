@@ -14,7 +14,6 @@ module "lambda-copy-hat" {
   good_response_model_name                          = "CopyHatResponse"
   good_response_model_description                   = "A response to a request to copy a gift exchange."
   good_response_model_schema_file_location          = "../../src/GiftExchange.Library/Schemas/CopyHatResponse.schema.json"
-  api_name                                          = "giftexchange-copy-hat"
   lambda_invoke_arn                                 = aws_lambda_function.giftexchange_app.invoke_arn
   authorizer_id                                     = aws_api_gateway_authorizer.session.id
   authorizer_type                                   = "CUSTOM"

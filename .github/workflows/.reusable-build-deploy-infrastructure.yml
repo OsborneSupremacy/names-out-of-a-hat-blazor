@@ -11,6 +11,11 @@ on:
         description: "Key prefix for Terraform state files in the S3 bucket"
         required: true
         type: string
+      debug_provider_log:
+        description: "Capture AWS provider debug logs during apply. Off by default: it produces tens of MB per run."
+        required: false
+        type: boolean
+        default: false
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -65,22 +70,23 @@ jobs:
       - name: Terraform Apply
         working-directory: iac/terraform
         env:
-          TF_LOG_PROVIDER: DEBUG
-          TF_LOG_PATH: ${{ runner.temp }}/tf-provider.log
+          TF_LOG_PROVIDER: ${{ inputs.debug_provider_log && 'DEBUG' || '' }}
+          TF_LOG_PATH: ${{ inputs.debug_provider_log && format('{0}/tf-provider.log', runner.temp) || '' }}
         run: terraform apply -auto-approve tfplan
 
-      # API Gateway's control plane retries TooManyRequestsException and ConflictException
-      # inside the AWS SDK, silently. At the default log level a stuck create shows as nothing
-      # but "Still creating..." forever, and aws_api_gateway_request_validator supports no
-      # timeouts block, so Terraform never gives up on its own. This surfaces the real error.
+      # Some API Gateway refusals are indistinguishable from a hang at the default log level.
+      # A quota error answers HTTP 429 with LimitExceededException, which the AWS provider reads
+      # as throttling and retries twenty-five times with backoff; since these resources support no
+      # timeouts block, the apply just prints "Still creating..." for a quarter of an hour and
+      # never says what is wrong. Turn debug_provider_log on to see the actual response.
       - name: Surface API Gateway retries
-        if: always()
+        if: always() && inputs.debug_provider_log
         run: |
           grep -iE "RequestValidator|TooManyRequests|ConflictException|retrying|LimitExceeded" \
             "${{ runner.temp }}/tf-provider.log" | tail -100 || echo "no matching log lines"
 
       - name: Upload provider log
-        if: always()
+        if: always() && inputs.debug_provider_log
         uses: actions/upload-artifact@v4
         with:
           name: tf-provider-log
