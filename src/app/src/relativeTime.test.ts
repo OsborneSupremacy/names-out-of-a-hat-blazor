@@ -1,4 +1,4 @@
-import { formatRelativeTime, formatAbsoluteTime } from './relativeTime'
+import { formatRelativeTime, formatAbsoluteTime, formatDateAndTime } from './relativeTime'
 
 const NOW = new Date('2026-09-04T12:00:00Z')
 
@@ -55,5 +55,26 @@ describe('formatAbsoluteTime', () => {
   it('renders nothing wherever the relative phrase does not', () => {
     expect(formatAbsoluteTime('0001-01-01T00:00:00+00:00')).toBe('')
     expect(formatAbsoluteTime('not a date')).toBe('')
+  })
+})
+
+describe('formatDateAndTime', () => {
+  // The delivery column reads this out to somebody searching a mailbox, so the month has to be
+  // named rather than numbered: 9/5 is the fifth of September or the ninth of May depending on
+  // where the reader lives, and they are looking for one particular morning.
+  it('names the month, and gives a time to go with it', () => {
+    const formatted = formatDateAndTime('2026-09-04T12:00:00Z')
+
+    expect(formatted).not.toBe('')
+    expect(formatted).toMatch(/[A-Za-z]{3}/)
+    expect(formatted).toMatch(/\d{4}/)
+    expect(formatted).toMatch(/\d{1,2}:\d{2}/)
+  })
+
+  // Empty for the same inputs as the other two, so a caller can hang all of them off one check.
+  it('renders nothing wherever the relative phrase does not', () => {
+    expect(formatDateAndTime('0001-01-01T00:00:00+00:00')).toBe('')
+    expect(formatDateAndTime('not a date')).toBe('')
+    expect(formatDateAndTime('')).toBe('')
   })
 })

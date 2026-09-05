@@ -1,4 +1,4 @@
-using GiftExchange.Library.Contexts;
+﻿using GiftExchange.Library.Contexts;
 using GiftExchange.Library.Entities;
 using Microsoft.Data.Sqlite;
 
@@ -75,14 +75,16 @@ public class EntityRoundTripTests : IDisposable
                     ParticipantId = organizerParticipantId,
                     HatId = hatId,
                     PersonId = organizerPersonId,
-                    PickedRecipientParticipantId = Guid.Empty
+                    PickedRecipientParticipantId = Guid.Empty,
+                    Emoji = "😀"
                 },
                 new ParticipantEntity
                 {
                     ParticipantId = otherParticipantId,
                     HatId = hatId,
                     PersonId = otherPersonId,
-                    PickedRecipientParticipantId = Guid.Empty
+                    PickedRecipientParticipantId = Guid.Empty,
+                    Emoji = "😀"
                 });
 
             context.ParticipantEligibleRecipients.Add(new ParticipantEligibleRecipientEntity
@@ -139,7 +141,8 @@ public class EntityRoundTripTests : IDisposable
                 ParticipantId = participantId,
                 HatId = hatId,
                 PersonId = personId,
-                PickedRecipientParticipantId = Guid.Empty
+                PickedRecipientParticipantId = Guid.Empty,
+                Emoji = "😀"
             });
 
             await context.SaveChangesAsync();
@@ -184,14 +187,16 @@ public class EntityRoundTripTests : IDisposable
                     ParticipantId = receiverId,
                     HatId = hatId,
                     PersonId = receiverPersonId,
-                    PickedRecipientParticipantId = Guid.Empty
+                    PickedRecipientParticipantId = Guid.Empty,
+                    Emoji = "😀"
                 },
                 new ParticipantEntity
                 {
                     ParticipantId = giverId,
                     HatId = hatId,
                     PersonId = giverPersonId,
-                    PickedRecipientParticipantId = receiverId
+                    PickedRecipientParticipantId = receiverId,
+                    Emoji = "😀"
                 });
 
             await context.SaveChangesAsync();
@@ -236,7 +241,8 @@ public class EntityRoundTripTests : IDisposable
                 ParticipantId = participantId,
                 HatId = hatId,
                 PersonId = personId,
-                PickedRecipientParticipantId = Guid.Empty
+                PickedRecipientParticipantId = Guid.Empty,
+                Emoji = "😀"
             });
 
             var save = async () => await context.SaveChangesAsync();

@@ -46,6 +46,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
+    <!--
+      The faces the picker offers, compared against PersonEmoji.All by PersonEmojiTests. The list is
+      deliberately written down in both languages; this is what stops the two spellings drifting.
+    -->
+    <Content Include="..\app\src\personEmoji.ts" Link="App\personEmoji.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
     <!-- The schemas are compared against the records they describe by SchemaDriftTests. -->
     <Content Include="..\GiftExchange.Library\Schemas\*.schema.json" Link="Schemas\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

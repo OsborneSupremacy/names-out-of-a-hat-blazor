@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The organizer of the gift exchange. Overwritten with the authenticated caller before the request is handled."
+        },
+        "hatId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The gift exchange the participant belongs to"
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The address the participant is recorded at, used to find them"
+        },
+        "emoji": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8,
+            "description": "The face to mark them with. Must be one of the faces the application offers, which the handler is what checks: a gateway model can bound the length but has no way to state the list."
+        }
+    },
+    "required": [
+        "organizerEmail",
+        "hatId",
+        "email",
+        "emoji"
+    ],
+    "additionalProperties": false
+}

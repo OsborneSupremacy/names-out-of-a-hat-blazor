@@ -28,6 +28,17 @@ internal record ComposeInvitationRequest
     public required string PickedName { get; init; }
 
     /// <summary>
+    /// The face that person is marked with in this hat, so the invitation and the announcement at
+    /// the end of the exchange mark them the same way.
+    /// </summary>
+    /// <remarks>
+    /// Carried rather than looked up inside the composer, so a preview -- which names nobody real
+    /// -- can supply a stand-in instead of the composer having to know that some invitations are
+    /// about imaginary people.
+    /// </remarks>
+    public required string PickedEmoji { get; init; }
+
+    /// <summary>
     /// Their gift ideas routing token, or empty. Empty leaves the ask and share blocks out entirely
     /// rather than rendering an address that routes nowhere.
     /// </summary>

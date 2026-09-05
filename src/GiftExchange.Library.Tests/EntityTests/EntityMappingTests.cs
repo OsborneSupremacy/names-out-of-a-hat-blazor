@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using GiftExchange.Library.Contexts;
 using GiftExchange.Library.Entities;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -154,6 +154,26 @@ public partial class EntityMappingTests
     ];
 
     /// <summary>
+    /// Columns carrying a DEFAULT, and why each one is worth the exception.
+    ///
+    /// The rule this suspends is stated on <see cref="NoSurvivingColumn_HasADefault"/>: every field
+    /// is named by whoever writes the row, so what the application believes it wrote is what is
+    /// there. A default is a second author.
+    ///
+    /// It is suspended here to buy something the entries in
+    /// <see cref="ColumnsDsqlCannotConstrain"/> could not: a column added to a table that already
+    /// holds rows can be NOT NULL only if it arrives with a default to fill them, and DSQL will
+    /// never let it be tightened afterwards. One statement's worth of second authorship, in
+    /// exchange for the constraint being the database's rather than the application's.
+    /// </summary>
+    private static readonly ImmutableHashSet<string> ColumnsWithADefault =
+    [
+        // Added NOT NULL DEFAULT '' by participant--0003; participant--0004 turns that empty string
+        // into a face on every row that is somebody.
+        "participant.emoji"
+    ];
+
+    /// <summary>
     /// Nothing is nullable. Absence is spelled with a value instead — the all-zero UUID, the
     /// minimum timestamp, the empty string — so reading a row never means asking whether a column
     /// is there.
@@ -199,15 +219,28 @@ public partial class EntityMappingTests
     [Fact]
     public void NoSurvivingColumn_HasADefault()
     {
-        var defaulted = ParseTables()
+        var defaulted = DefaultedColumns();
+
+        defaulted.Should().BeSubsetOf(ColumnsWithADefault);
+    }
+
+    /// <summary>
+    /// An entry naming a column that no longer carries a default is stale, and would quietly excuse
+    /// the next column to take its place — the same guard
+    /// <see cref="EveryDocumentedNullableColumn_IsStillNullable"/> puts on the other list.
+    /// </summary>
+    [Fact]
+    public void EveryDocumentedDefault_IsStillADefault() =>
+        ColumnsWithADefault.Should().BeSubsetOf(DefaultedColumns());
+
+    private static IEnumerable<string> DefaultedColumns() =>
+        ParseTables()
             .SelectMany(
                 table => table.Value,
                 (table, column) => new { table, column })
             .Where(declared => declared.column.Value.Contains("DEFAULT", StringComparison.OrdinalIgnoreCase))
-            .Select(declared => $"{declared.table.Key}.{declared.column.Key}");
-
-        defaulted.Should().BeEmpty();
-    }
+            .Select(declared => $"{declared.table.Key}.{declared.column.Key}")
+            .ToImmutableList();
 
     /// <summary>
     /// A primary key is named for the table it identifies, never a bare "id", so a column keeps
@@ -252,7 +285,13 @@ public partial class EntityMappingTests
             nameof(ParticipantEmailDeliveryEntity.Status),
             DeliveryStatuses.All
         ),
-        (nameof(HatEntity), nameof(HatEntity.Status), HatStatuses.All)
+        (nameof(HatEntity), nameof(HatEntity.Status), HatStatuses.All),
+
+        // Not a vocabulary in the same sense -- a face means nothing to the application, and this
+        // column is never compared against a constant. It is here for the one thing the others are
+        // checked for: every value the application can write fits the column it is written into,
+        // which for an emoji is not obvious by looking.
+        (nameof(ParticipantEntity), nameof(ParticipantEntity.Emoji), PersonEmoji.All)
     ];
 
     /// <summary>

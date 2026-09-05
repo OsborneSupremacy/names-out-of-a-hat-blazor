@@ -60,13 +60,18 @@ public class CompletionEmailCompositionService
     /// <remarks>
     /// The emoji sits against the picked name, the same way round as in the invitation, so somebody
     /// reading this next to the invitation they were sent sees the same person marked the same way.
+    /// It is the face that person wears in this hat, looked up rather than derived from the name,
+    /// which is what makes the two messages agree even after an organizer has changed one.
+    ///
+    /// Not encoded, and it does not need to be: a face is one of a closed list this application
+    /// owns. The names around it are the organizer's words and are encoded.
     /// </remarks>
     private static string BuildDraw(Hat hat)
     {
         var rows = hat.Participants
             .Where(participant => !string.IsNullOrWhiteSpace(participant.PickedRecipient))
             .Select(participant =>
-                $"{HttpUtility.HtmlEncode(participant.Person.Name)} &rarr; {participant.PickedRecipient.GetPersonEmojiFor()} <b>{HttpUtility.HtmlEncode(participant.PickedRecipient)}</b>")
+                $"{HttpUtility.HtmlEncode(participant.Person.Name)} &rarr; {hat.EmojiFor(participant.PickedRecipient)} <b>{HttpUtility.HtmlEncode(participant.PickedRecipient)}</b>")
             .ToList();
 
         return rows.Count == 0

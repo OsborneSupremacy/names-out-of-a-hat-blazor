@@ -137,6 +137,11 @@
                     "$ref": "#/definitions/exportedparticipantreference",
                     "description": "Who this participant drew. The empty reference until the picks are revealed, since the gift exchange keeps the draw from its own organizer until then."
                 },
+                "emoji": {
+                    "type": "string",
+                    "maxLength": 8,
+                    "description": "The face this participant is marked with wherever they are named. One of a closed list the application offers."
+                },
                 "eligibleRecipients": {
                     "type": "array",
                     "items": {
@@ -166,6 +171,7 @@
                 "participantId",
                 "person",
                 "pickedRecipient",
+                "emoji",
                 "eligibleRecipients",
                 "deliveryStatus",
                 "deliveryDetail",

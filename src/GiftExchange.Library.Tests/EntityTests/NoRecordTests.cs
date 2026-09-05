@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using GiftExchange.Library.Contexts;
 using GiftExchange.Library.Entities;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -57,6 +57,8 @@ public partial class NoRecordTests
         participant.PersonId.Should().Be(Guid.Empty);
         // It draws itself, which is what makes following any unshaken pick an inner join.
         participant.PickedRecipientParticipantId.Should().Be(Guid.Empty);
+        // Nobody has a face, which is the point: this row stands for not taking part.
+        participant.Emoji.Should().BeEmpty();
     }
 
     /// <summary>

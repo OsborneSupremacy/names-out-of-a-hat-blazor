@@ -29,7 +29,9 @@ public class EmailCompositionService
             $"Dear {HttpUtility.HtmlEncode(request.ParticipantName)},",
             GetGreeting(hat, organizerName, organizerEmail),
             "The person whose name was picked out of a hat for you is:",
-            $"<b>{pickedName.GetPersonEmojiFor()} {HttpUtility.HtmlEncode(pickedName)}</b>"
+            // The face is not encoded and does not need to be: it is one of a closed list this
+            // application owns, never anything a participant or an organizer typed.
+            $"<b>{request.PickedEmoji} {HttpUtility.HtmlEncode(pickedName)}</b>"
         };
 
         // Encoded after the sentence is built rather than before: the words around the organizer's

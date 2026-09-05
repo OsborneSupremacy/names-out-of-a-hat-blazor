@@ -20,6 +20,16 @@ internal class ParticipantEntityConfiguration : IEntityTypeConfiguration<Partici
             .HasColumnName("picked_recipient_participant_id")
             .IsRequired();
 
+        // Added by participant--0003, which declares it NOT NULL -- so unlike hat.status_updated_at
+        // this is required on both sides rather than only here. Eight characters against faces that
+        // are one code point each: enough for any of them, and far short of anything that could be
+        // mistaken for a text field.
+        builder
+            .Property(participant => participant.Emoji)
+            .HasColumnName("emoji")
+            .HasMaxLength(8)
+            .IsRequired();
+
         // One row per person per hat. Nothing here constrains display names — those live on person,
         // and it is AddParticipantService that refuses a name already taken within the hat.
         builder

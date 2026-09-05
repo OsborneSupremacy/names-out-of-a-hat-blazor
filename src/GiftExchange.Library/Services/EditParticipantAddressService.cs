@@ -248,6 +248,7 @@ internal class EditParticipantAddressService : IApiGatewayHandler
                 Hat = hat,
                 ParticipantName = change.Name,
                 PickedName = participant.PickedRecipient,
+                PickedEmoji = hat.EmojiFor(participant.PickedRecipient),
                 GiftIdeasToken = giftIdeasToken,
                 LeaveToken = leaveToken
             });

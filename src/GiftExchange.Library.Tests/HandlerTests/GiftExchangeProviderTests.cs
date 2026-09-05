@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using GiftExchange.Library.Contexts;
@@ -278,14 +278,16 @@ public class GiftExchangeProviderTests
                 ParticipantId = Guid.CreateVersion7(),
                 HatId = hat.HatId,
                 PersonId = first.PersonId,
-                PickedRecipientParticipantId = Guid.Empty
+                PickedRecipientParticipantId = Guid.Empty,
+                Emoji = "😀"
             },
             new ParticipantEntity
             {
                 ParticipantId = Guid.CreateVersion7(),
                 HatId = hat.HatId,
                 PersonId = second.PersonId,
-                PickedRecipientParticipantId = Guid.Empty
+                PickedRecipientParticipantId = Guid.Empty,
+                Emoji = "😀"
             });
 
         // act

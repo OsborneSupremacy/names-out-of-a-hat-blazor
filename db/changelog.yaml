@@ -5,10 +5,13 @@
 #   * Secondary indexes require CREATE INDEX ASYNC. They are one-liners, so they sit inline
 #     here rather than in files.
 #   * No foreign keys, so referential cleanup on delete lives in the application.
-#   * ALTER TABLE ... ALTER COLUMN ... SET NOT NULL is rejected outright, so a column added to a
-#     table that already exists can never be made NOT NULL. Combined with having no defaults to
-#     add it with, that means such a column stays nullable in the database and the application is
-#     what keeps it filled -- the same division of labour as the missing foreign keys.
+#   * ALTER TABLE ... ALTER COLUMN ... SET NOT NULL is rejected outright, so a column cannot be
+#     tightened after the fact: whatever it arrives as, it stays. It can arrive NOT NULL, but only
+#     alongside a DEFAULT to fill the rows the table already holds -- participant--0003 does that,
+#     and is the one column in this schema carrying a default. A column added without one is
+#     nullable forever and the application is what keeps it filled, which is the arrangement
+#     hat--0003 and hat--0005 are stuck with -- the same division of labour as the missing foreign
+#     keys.
 #
 # Files are named <object>--<nnnn>.sql so every change to an object sorts together. When
 # this file gets long, move the settled changesets into an archive changelog.
@@ -1033,3 +1036,49 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: UPDATE hat SET status_updated_at = NULL
+
+  # Two changesets for one column, as with hat--0005 and hat--0006: add it, then fill in the rows
+  # that already exist. Unlike those two it arrives NOT NULL, because it arrives with a default to
+  # fill the existing rows with -- see the note in the file. What the header rules out is tightening
+  # a column after the fact, not adding a constrained one.
+  - changeSet:
+      id: participant--0003
+      author: ben
+      comment: >
+        The face a participant is marked with wherever they are named — in the participant list, in
+        the invitation that tells somebody whose name they drew, and in the announcement listing the
+        whole draw.
+
+        It used to be derived from the name every time one was needed, which agreed with itself
+        across emails without storing anything and left the organizer no way to change it. A column
+        is what an edit needs.
+
+        NOT NULL DEFAULT '', which is the one shape in which a column can be added to a table that
+        already holds rows and still be constrained by the database. participant--0004 turns that
+        empty string into a face.
+      changes:
+        - sqlFile:
+            path: tables/participant--0003.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: ALTER TABLE participant DROP COLUMN emoji
+
+  - changeSet:
+      id: participant--0004
+      author: ben
+      comment: >
+        A face for every row that predates the column, spread across the list by a byte of the
+        participant id's digest, and the empty string kept for the sentinel participant.
+
+        Unconditional on purpose: the column was only just added, so every row is holding the empty
+        string it defaulted to.
+      changes:
+        - sqlFile:
+            path: tables/participant--0004.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: UPDATE participant SET emoji = NULL

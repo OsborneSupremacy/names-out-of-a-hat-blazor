@@ -1,0 +1,95 @@
+.edit-emoji-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.edit-emoji-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #666666;
+}
+
+/* auto-fill rather than a fixed column count, so the grid reflows on a phone instead of forcing
+ * the dialog wider than the screen. */
+.edit-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 0.5rem;
+}
+
+.edit-emoji-option {
+  padding: 0.5rem 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  background: none;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.edit-emoji-option:hover:not(:disabled) {
+  border-color: #999999;
+}
+
+/* Both a border and a background: at this size a border alone is easy to miss among twenty
+ * neighbours, and colour alone would be the only thing saying which is chosen. */
+.edit-emoji-option-selected {
+  border-color: #1a1a1a;
+  background: #f0f0f0;
+}
+
+.edit-emoji-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #b3261e;
+}
+
+/* The trigger in the participant list: the face itself, big enough to read and to hit, with
+ * nothing around it until it is hovered. It has to look like something that can be clicked without
+ * competing with the name beside it. */
+.participant-emoji-button {
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.participant-emoji-button:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+/* Where there is nothing to click -- the picked recipient's face, which belongs to their own row
+ * rather than to this one. */
+.participant-emoji {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .edit-emoji-hint {
+    color: #9ca3af;
+  }
+
+  .edit-emoji-option {
+    border-color: #374151;
+  }
+
+  .edit-emoji-option:hover:not(:disabled) {
+    border-color: #6b7280;
+  }
+
+  /* The light theme marks the choice with a pale fill; here that would be the brightest thing on
+   * the page. Same idea, inverted: a lifted surface and a border that reads against it. */
+  .edit-emoji-option-selected {
+    border-color: #a5b4fc;
+    background: #374151;
+  }
+
+  .edit-emoji-error {
+    color: #f87171;
+  }
+}

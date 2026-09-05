@@ -154,12 +154,48 @@ public class CompletionEmailCompositionServiceTests
             InvitationsQueuedDate = DateTimeOffset.MinValue
         };
 
-    private static Participant ParticipantFor(string name, string email, string pickedRecipient) =>
+    /// <summary>
+    /// The same face the invitation used, because both now read it off the participant rather than
+    /// deriving it from the name. An organizer who changed somebody's face after invitations went
+    /// out sees the new one here, which is the cost of storing it and is the right way round: this
+    /// message is written now, and the invitation was written then.
+    /// </summary>
+    [Fact]
+    public void ComposeEmail_MarksEachPickedNameWithThatPersonsOwnFace()
+    {
+        // arrange: everybody wears something different, so a line carrying the wrong face is a
+        // failure rather than a coincidence.
+        var hat = HatFor("Family Christmas") with
+        {
+            Participants =
+            [
+                ParticipantFor("Alice", "alice@example.com", "Bob", "😀"),
+                ParticipantFor("Bob", "bob@example.com", "Charlie", "🤠"),
+                ParticipantFor("Charlie", "charlie@example.com", "Alice", "🥳")
+            ]
+        };
+
+        // act
+        var body = _sut.ComposeEmail(hat, "Alice");
+
+        // assert: the face sits against the picked name, not the picker's.
+        body.Should().Contain("Alice &rarr; 🤠 <b>Bob</b>");
+        body.Should().Contain("Bob &rarr; 🥳 <b>Charlie</b>");
+        body.Should().Contain("Charlie &rarr; 😀 <b>Alice</b>");
+    }
+
+    private static Participant ParticipantFor(
+        string name,
+        string email,
+        string pickedRecipient,
+        string emoji = "😀"
+    ) =>
         new()
         {
             Person = new Person { Name = name, Email = email },
             PickedRecipient = pickedRecipient,
             EligibleRecipients = [],
+            Emoji = emoji,
             DeliveryStatus = DeliveryStatus.Unknown,
             DeliveryDetail = string.Empty,
             DeliveryMessageType = string.Empty,

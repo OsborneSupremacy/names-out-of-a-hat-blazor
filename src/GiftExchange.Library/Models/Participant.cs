@@ -9,6 +9,17 @@ public record Participant
     public required ImmutableList<string> EligibleRecipients { get; init; }
 
     /// <summary>
+    /// The face this participant is marked with wherever they are named — one of
+    /// <c>PersonEmoji.All</c>, and empty only for a record that stands for nobody.
+    /// </summary>
+    /// <remarks>
+    /// Stored rather than derived, so an organizer can change it and so it says the same thing in
+    /// the list, in the invitation and in the announcement. It is decoration and nothing else:
+    /// nothing is identified by it, and two people in one hat may end up sharing one.
+    /// </remarks>
+    public required string Emoji { get; init; }
+
+    /// <summary>
     /// How far the last email this exchange sent them is known to have got — one of
     /// <see cref="Models.DeliveryStatus"/>, and empty until something is heard.
     /// </summary>
@@ -66,6 +77,7 @@ internal static class Participants
         Person = Persons.Empty,
         PickedRecipient = string.Empty,
         EligibleRecipients = [],
+        Emoji = string.Empty,
         DeliveryStatus = Models.DeliveryStatus.Unknown,
         DeliveryDetail = string.Empty,
         DeliveryMessageType = string.Empty,

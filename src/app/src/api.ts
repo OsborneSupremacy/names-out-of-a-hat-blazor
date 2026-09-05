@@ -53,6 +53,14 @@ export interface EditParticipantRequest {
   eligibleRecipients: string[]
 }
 
+export interface EditParticipantEmojiRequest {
+  organizerEmail: string
+  hatId: string
+  email: string
+  /** One of PERSON_EMOJI in personEmoji.ts. The server refuses anything else. */
+  emoji: string
+}
+
 export interface EditParticipantAddressRequest {
   organizerEmail: string
   hatId: string
@@ -164,6 +172,8 @@ export interface ExportedParticipant {
    * question the same way the detail view does.
    */
   pickedRecipient: ExportedParticipantReference
+  /** The face this participant is marked with. One of a closed list the server owns. */
+  emoji: string
   eligibleRecipients: ExportedParticipantReference[]
   deliveryStatus: string
   deliveryDetail: string
@@ -203,6 +213,12 @@ export interface Participant {
   }
   pickedRecipient: string
   eligibleRecipients: string[]
+  /**
+   * The face this participant is marked with wherever they are named, here and in the email that
+   * tells somebody they drew them. One of a closed list the server owns, so it is rendered as it
+   * stands rather than treated as something a person typed.
+   */
+  emoji: string
   /**
    * How far the last email sent to this participant is known to have got. Empty means nothing has
    * been heard, which is not the same as not delivered — see deliveryStatus.ts.
@@ -370,6 +386,27 @@ export async function editParticipant(request: EditParticipantRequest): Promise<
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to edit participant')
+  }
+}
+
+/**
+ * Changes the face a participant is marked with.
+ *
+ * Its own endpoint rather than part of editParticipant, for the reason editParticipantAddress is
+ * one: that call resets the exchange to IN_PROGRESS, which would throw away a completed draw over
+ * a change of decoration.
+ */
+export async function editParticipantEmoji(request: EditParticipantEmojiRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/participant/emoji`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to update the emoji')
   }
 }
 

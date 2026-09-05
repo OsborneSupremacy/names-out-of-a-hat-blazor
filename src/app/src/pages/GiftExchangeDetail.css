@@ -537,6 +537,13 @@
   gap: 0.25rem;
 }
 
+/* The face and the name sit on one line inside the cell, which is otherwise a column. */
+.participant-name-line {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
 .participant-email {
   display: block;
   color: #6b7280;

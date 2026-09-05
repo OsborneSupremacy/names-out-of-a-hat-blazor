@@ -98,6 +98,13 @@ public record ExportedParticipant
     /// </remarks>
     public required ExportedParticipantReference PickedRecipient { get; init; }
 
+    /// <summary>
+    /// The face this participant is marked with wherever they are named — one of
+    /// <c>PersonEmoji.All</c>. Part of the snapshot because it is stored rather than derived: an
+    /// export that left it out could not be read back as the exchange the organizer was looking at.
+    /// </summary>
+    public required string Emoji { get; init; }
+
     /// <summary>Who this participant was allowed to draw.</summary>
     public required ImmutableList<ExportedParticipantReference> EligibleRecipients { get; init; }
 

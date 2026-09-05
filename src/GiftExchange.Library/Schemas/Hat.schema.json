@@ -97,6 +97,11 @@
           },
           "description": "The list of potential recipients for this participant"
         },
+        "emoji": {
+          "type": "string",
+          "maxLength": 8,
+          "description": "The face this participant is marked with wherever they are named. One of a closed list the application offers, so it is safe to render as it stands."
+        },
         "deliveryStatus": {
           "type": "string",
           "description": "How far the last email sent to this participant is known to have got: SENT, DELIVERED, DELAYED, BOUNCED, COMPLAINED, REJECTED or FAILED. Empty when nothing has been heard yet, which is not the same as not delivered."

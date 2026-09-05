@@ -14,6 +14,7 @@ import {
   closeHat,
   copyHat,
   editParticipantAddress,
+  editParticipantEmoji,
   exportHat,
   resetHat,
   Hat,
@@ -28,8 +29,9 @@ import {
   formatDeliveryStatus,
   showsDeliveryDetail,
 } from '../deliveryStatus'
-import { formatRelativeTime, formatAbsoluteTime } from '../relativeTime'
+import { formatRelativeTime, formatDateAndTime } from '../relativeTime'
 import { EditAddressModal, ResendKind } from '../components/EditAddressModal'
+import { EditEmojiModal } from '../components/EditEmojiModal'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -80,6 +82,11 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [isExporting, setIsExporting] = useState(false)
   const [editingAddressFor, setEditingAddressFor] = useState<Participant | null>(null)
   const [savingAddress, setSavingAddress] = useState(false)
+  const [editingEmojiFor, setEditingEmojiFor] = useState<Participant | null>(null)
+  const [savingEmoji, setSavingEmoji] = useState(false)
+  // Kept apart from the page-level `error` for the reason addressError is: a failed change should
+  // leave the organizer looking at their exchange with the dialog still open.
+  const [emojiError, setEmojiError] = useState('')
   // Kept apart from the page-level `error`, which replaces the whole view when it is set. A failed
   // address change should leave the organizer looking at their exchange with the dialog still open.
   const [addressError, setAddressError] = useState('')
@@ -289,6 +296,49 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       setSavingAddress(false)
     }
   }
+
+  const handleOpenEmojiModal = (participant: Participant) => {
+    setEmojiError('')
+    setEditingEmojiFor(participant)
+  }
+
+  const handleSaveEmoji = async (emoji: string) => {
+    if (!hatId || !editingEmojiFor) return
+
+    setSavingEmoji(true)
+    setEmojiError('')
+
+    try {
+      await editParticipantEmoji({
+        organizerEmail: userEmail,
+        hatId,
+        email: editingEmojiFor.person.email,
+        emoji,
+      })
+
+      setEditingEmojiFor(null)
+
+      // No notice, unlike an address change: nothing was sent, and the new face is visible in the
+      // row the moment this reload lands, which says everything a sentence would.
+      const updatedHat = await getHat(userEmail, hatId)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error updating participant emoji:', err)
+      setEmojiError(err instanceof Error ? err.message : 'Failed to update the emoji')
+    } finally {
+      setSavingEmoji(false)
+    }
+  }
+
+  /**
+   * The face worn by whoever this participant drew, or nothing.
+   *
+   * Nothing is the ordinary case before the exchange is closed: the API replaces every pick with
+   * "Hidden" until then, which matches nobody here — so the column shows a name with no face
+   * against it rather than a face belonging to somebody else.
+   */
+  const emojiForName = (name: string) =>
+    hat?.participants.find(participant => participant.person.name === name)?.emoji ?? ''
 
   const handleEditEligibleRecipients = (participantEmail: string, currentEligible: string[]) => {
     setEditingEligibleFor(participantEmail)
@@ -902,22 +952,34 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                           // Empty when nothing has been heard, since the API spells a missing
                           // timestamp with the minimum date. Both are left out rather than
                           // rendered blank, so a row nothing is known about says only that.
+                          const deliveredWhen = formatDateAndTime(participant.deliveryOccurredAt)
                           const deliveredAge = formatRelativeTime(participant.deliveryOccurredAt)
-                          const deliveredAt = formatAbsoluteTime(participant.deliveryOccurredAt)
                           const messageLabel = formatDeliveryMessageType(participant.deliveryMessageType)
 
                           // What the status is about and when it happened, which together are what
                           // an organizer hands to somebody who cannot find their invitation. The
-                          // absolute time is the tooltip rather than the line: "2 days ago" is
-                          // what a column is scanned for, and the exact minute is what it is
-                          // checked against once one row matters.
-                          const deliveryMeta = [messageLabel, deliveredAge].filter(Boolean).join(' · ')
+                          // date is the line and the elapsed time is the tooltip, which is the
+                          // reverse of the exchange list: this one exists to be read out to a
+                          // participant, and a mailbox is searched by date rather than by how long
+                          // ago something was.
+                          const deliveryMeta = [messageLabel, deliveredWhen].filter(Boolean).join(' · ')
 
                           return (
                             <tr key={index}>
                               <td>
                                 <div className="participant-name-cell">
-                                  <strong>{participant.person.name}</strong>
+                                  <div className="participant-name-line">
+                                    <button
+                                      type="button"
+                                      className="participant-emoji-button"
+                                      onClick={() => handleOpenEmojiModal(participant)}
+                                      aria-label={`Change ${participant.person.name}'s emoji`}
+                                      title={`Change ${participant.person.name}'s emoji`}
+                                    >
+                                      {participant.emoji}
+                                    </button>
+                                    <strong>{participant.person.name}</strong>
+                                  </div>
                                   <span className="participant-email">{participant.person.email}</span>
                                   {/*
                                     * Only here, on the table shown once invitations have gone out.
@@ -935,7 +997,19 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                 </div>
                               </td>
                               <td>
-                                <strong>{participant.pickedRecipient || 'Not assigned'}</strong>
+                                {/*
+                                  * The face belongs to the person named here, so it only appears
+                                  * once that name is a real one: before the exchange is closed the
+                                  * pick reads "Hidden", which matches nobody and carries no face.
+                                  */}
+                                <strong>
+                                  {emojiForName(participant.pickedRecipient) && (
+                                    <span className="participant-emoji">
+                                      {emojiForName(participant.pickedRecipient)}{' '}
+                                    </span>
+                                  )}
+                                  {participant.pickedRecipient || 'Not assigned'}
+                                </strong>
                               </td>
                               <td>
                                 <div className="delivery-cell">
@@ -951,7 +1025,7 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                     <span className="delivery-detail">{participant.deliveryDetail}</span>
                                   )}
                                   {deliveryMeta && (
-                                    <span className="delivery-meta" title={deliveredAt || undefined}>
+                                    <span className="delivery-meta" title={deliveredAge || undefined}>
                                       {deliveryMeta}
                                     </span>
                                   )}
@@ -997,10 +1071,28 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                             >
                               <td>
                                 <div className="participant-name-cell">
-                                  <strong>
-                                    {participant.person.name}
-                                    {isOrganizer && <span className="organizer-badge">Organizer</span>}
-                                  </strong>
+                                  <div className="participant-name-line">
+                                    {/*
+                                      * The row itself opens the eligibility editor, so the click
+                                      * that opens the emoji picker has to stop there.
+                                      */}
+                                    <button
+                                      type="button"
+                                      className="participant-emoji-button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleOpenEmojiModal(participant)
+                                      }}
+                                      aria-label={`Change ${participant.person.name}'s emoji`}
+                                      title={`Change ${participant.person.name}'s emoji`}
+                                    >
+                                      {participant.emoji}
+                                    </button>
+                                    <strong>
+                                      {participant.person.name}
+                                      {isOrganizer && <span className="organizer-badge">Organizer</span>}
+                                    </strong>
+                                  </div>
                                   <span className="participant-email">{participant.person.email}</span>
                                   {canEditEligibility && !isEditingThis && (
                                     <span className="row-edit-indicator">Click row to edit</span>
@@ -1136,6 +1228,17 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           error={addressError}
           onCancel={() => setEditingAddressFor(null)}
           onConfirm={handleSaveAddress}
+        />
+      )}
+
+      {editingEmojiFor && (
+        <EditEmojiModal
+          participantName={editingEmojiFor.person.name}
+          currentEmoji={editingEmojiFor.emoji}
+          isSaving={savingEmoji}
+          error={emojiError}
+          onCancel={() => setEditingEmojiFor(null)}
+          onConfirm={handleSaveEmoji}
         />
       )}
 

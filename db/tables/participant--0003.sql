@@ -1,0 +1,15 @@
+-- The face a participant is marked with wherever they are named.
+--
+-- NOT NULL, unlike the columns hat--0003 and hat--0005 added. Those two are nullable because the
+-- rule DSQL enforces is narrower than it looks: ALTER COLUMN ... SET NOT NULL is rejected outright,
+-- so a column that arrives nullable stays nullable forever -- but a column may be added NOT NULL if
+-- it arrives with a default to fill the rows already in the table. This one does, so it is
+-- constrained by the database rather than only by ParticipantEntity.Emoji.
+--
+-- The empty string is that default, and it is the right filler rather than a convenient one: it is
+-- what this schema means by "no value", and it is exactly what the sentinel participant should end
+-- up holding. participant--0004 then replaces it with a real face on every row that is somebody.
+--
+-- VARCHAR(8) against faces that are a single code point each. Wide enough for any of them, and
+-- narrow enough that nobody will mistake this for somewhere to put text.
+ALTER TABLE participant ADD COLUMN emoji VARCHAR(8) NOT NULL DEFAULT ''

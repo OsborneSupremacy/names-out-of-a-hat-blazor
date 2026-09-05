@@ -134,6 +134,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<CreateHatRequest>, CreateHatRequestValidator>()
                 .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
+                .AddSingleton<IValidator<EditParticipantEmojiRequest>, EditParticipantEmojiRequestValidator>()
                 .AddSingleton<IValidator<PreviewInvitationsRequest>, PreviewInvitationsRequestValidator>()
                 .AddSingleton<IValidator<ResetHatRequest>, ResetHatRequestValidator>()
                 .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
@@ -192,6 +193,10 @@ internal static class ServiceProviderBuilder
                 // and resets the hat to IN_PROGRESS when it does — correct before the draw, and
                 // ruinous after invitations have gone out.
                 .AddKeyedSingleton<IApiGatewayHandler, EditParticipantAddressService>("put/participant/address")
+
+                // And its own endpoint for the same reason, less dramatically: a change of face
+                // should not un-shake the hat.
+                .AddKeyedSingleton<IApiGatewayHandler, EditParticipantEmojiService>("put/participant/emoji")
 
                 .AddKeyedSingleton<IApiGatewayHandler, ValidationService>("post/hat/validate")
 

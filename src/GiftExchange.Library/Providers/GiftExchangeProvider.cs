@@ -207,7 +207,11 @@ public class GiftExchangeProvider
                         HatId = newHat.HatId,
                         PersonId = participant.PersonId,
                         // A copy has not been shaken, which is the whole point of making one.
-                        PickedRecipientParticipantId = Guid.Empty
+                        PickedRecipientParticipantId = Guid.Empty,
+                        // Carried over rather than drawn again. The copy is the same people doing
+                        // the same thing next year, and an organizer who has already given
+                        // everybody a face they recognise should not have to do it twice.
+                        Emoji = participant.Emoji
                     });
 
                 foreach (var participant in carriedOver)
@@ -482,6 +486,7 @@ public class GiftExchangeProvider
             ParticipantId = participant.ParticipantId,
             Person = ToExported(participant.Person),
             PickedRecipient = ToReference(participant.PickedRecipientParticipantId, participantsById),
+            Emoji = participant.Emoji,
             EligibleRecipients =
             [
                 .. participant.EligibleRecipients
@@ -1042,6 +1047,44 @@ public class GiftExchangeProvider
             participant => participant.Email,
             participant => participant.ParticipantId,
             StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Changes the face one participant is marked with, and reports whether there was anybody to
+    /// change it on.
+    /// </summary>
+    /// <remarks>
+    /// The participant is found first and the write is then keyed by their id, rather than the one
+    /// statement that filtering on <c>Person.Email</c> would have produced. That statement is an
+    /// UPDATE joined to another table, and this file's premise is that Postgres accepting something
+    /// says nothing about whether DSQL will -- so the write is left as the plainest single-table
+    /// statement there is, and the lookup is a read like any other.
+    ///
+    /// No transaction around the pair. The row could be deleted between the two, in which case the
+    /// update matches nothing and this reports the same "not found" it would have reported a moment
+    /// earlier. Nothing is left half done, because there is only one write.
+    ///
+    /// Scoped by hat id and address because that is what the caller has: the API identifies
+    /// participants by the address they are recorded at, and the hat is what ownership was
+    /// established against.
+    /// </remarks>
+    /// <returns>false when no participant in that hat holds that address.</returns>
+    internal async Task<bool> UpdateParticipantEmojiAsync(UpdateParticipantEmojiRequest request)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
+
+        var participantId = await FindParticipantIdByEmailAsync(context, request.HatId, request.ParticipantEmail)
+            .ConfigureAwait(false);
+
+        if (participantId == Guid.Empty)
+            return false;
+
+        var updated = await context.Participants
+            .Where(participant => participant.ParticipantId == participantId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(participant => participant.Emoji, request.Emoji))
+            .ConfigureAwait(false);
+
+        return updated > 0;
     }
 
     /// <summary>
@@ -1888,12 +1931,20 @@ public class GiftExchangeProvider
 
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
+        // Chosen from what the hat is already wearing, which the caller has in hand. Read from
+        // those records rather than queried for: this is the same list the caller checked for a
+        // duplicate name against, and asking the database again would only be a second opinion on
+        // a decision that does not need one -- two people added at the same instant may pick the
+        // same face either way, and a face is decoration.
+        var emoji = PersonEmoji.Assign(existingParticipants.Select(existing => existing.Emoji));
+
         var participant = new ParticipantEntity
         {
             ParticipantId = Guid.CreateVersion7(),
             HatId = request.HatId,
             PersonId = personId,
-            PickedRecipientParticipantId = Guid.Empty
+            PickedRecipientParticipantId = Guid.Empty,
+            Emoji = emoji
         };
 
         context.Participants.Add(participant);
@@ -1924,6 +1975,7 @@ public class GiftExchangeProvider
         {
             PickedRecipient = string.Empty,
             Person = new Person { Name = request.Name, Email = request.Email },
+            Emoji = emoji,
             // Nothing has been sent to somebody who was added a moment ago.
             DeliveryStatus = Models.DeliveryStatus.Unknown,
             DeliveryDetail = string.Empty,
@@ -2445,6 +2497,7 @@ public class GiftExchangeProvider
                 participant.PickedRecipientParticipantId,
                 string.Empty),
             Person = new Person { Name = participant.Person.Name, Email = participant.Person.Email },
+            Emoji = participant.Emoji,
             EligibleRecipients = participant.EligibleRecipients
                 .Select(row => row.EligibleParticipant.Person.Name)
                 .ToImmutableList(),

@@ -86,6 +86,32 @@ public class EmailCompositionServiceTests
         body.Should().Contain("Ampersand &amp; Co");
     }
 
+    /// <summary>
+    /// The face beside the picked name is the one that person wears in this hat, handed to the
+    /// composer rather than worked out from the name. That is what lets an organizer change it and
+    /// what keeps this message agreeing with the announcement sent at the end of the exchange.
+    /// </summary>
+    [Fact]
+    public void ComposeEmail_MarksThePickedNameWithTheFaceItWasGiven()
+    {
+        // act
+        var body = _sut.ComposeEmail(Invitation(pickedName: "Charlie", pickedEmoji: "🥳"));
+
+        // assert
+        body.Should().Contain("<b>🥳 Charlie</b>");
+    }
+
+    [Fact]
+    public void ComposeEmail_GivenNoFace_StillNamesThePick()
+    {
+        // act: nothing sends this today -- every participant is given a face as they are added --
+        // so it is the defensive branch, and what matters is that the name survives it.
+        var body = _sut.ComposeEmail(Invitation(pickedName: "Charlie", pickedEmoji: string.Empty));
+
+        // assert
+        body.Should().Contain("<b> Charlie</b>");
+    }
+
     [Fact]
     public void ComposeEmail_OpensWithTheBrandingMasthead()
     {
@@ -227,6 +253,7 @@ public class EmailCompositionServiceTests
         Hat? hat = null,
         string participantName = "Alice",
         string pickedName = "Charlie",
+        string pickedEmoji = "🤠",
         string giftIdeasToken = "token",
         string leaveToken = "leave-token"
     ) =>
@@ -235,6 +262,7 @@ public class EmailCompositionServiceTests
             Hat = hat ?? HatFor("Ben", "ben@example.com", "Family Christmas"),
             ParticipantName = participantName,
             PickedName = pickedName,
+            PickedEmoji = pickedEmoji,
             GiftIdeasToken = giftIdeasToken,
             LeaveToken = leaveToken
         };

@@ -89,6 +89,10 @@ internal class PreviewInvitationsService : IApiGatewayHandler
                 Hat = hat,
                 ParticipantName = PlaceholderParticipantName,
                 PickedName = PlaceholderPickedName,
+                // A stand-in face, because the picked name is a stand-in too. Every real
+                // participant wears one of these, so the preview shows the organizer the shape of
+                // the line rather than a gap where a face will be.
+                PickedEmoji = PersonEmoji.Placeholder,
                 GiftIdeasToken = PlaceholderGiftIdeasToken,
                 LeaveToken = PlaceholderLeaveToken
             }),

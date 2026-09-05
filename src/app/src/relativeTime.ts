@@ -64,3 +64,28 @@ export function formatAbsoluteTime(timestamp: string): string {
 
   return at.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' })
 }
+
+/**
+ * The same moment again, short enough to sit in a table cell rather than in a tooltip.
+ *
+ * The third of these formatters exists because a date is sometimes the point rather than the
+ * footnote. An organizer telling a participant where to look for an invitation cannot pass on "1
+ * day ago" — the participant has to search a mailbox, and a mailbox is sorted by date. So the
+ * delivery column shows this and keeps the elapsed phrase for its tooltip, which is the opposite
+ * of the arrangement on the exchange list, where recency is what a list is scanned for.
+ *
+ * The medium date style rather than the long one, because "Sep 5" survives a narrow column where
+ * "September 5" wraps, and it still names the month rather than leaving 9/5 to be read as the
+ * fifth of September or the ninth of May depending on where the reader is.
+ *
+ * Empty for the same inputs as the other two, so a caller can hang all of them off one check.
+ */
+export function formatDateAndTime(timestamp: string): string {
+  const at = new Date(timestamp)
+
+  if (Number.isNaN(at.getTime())) return ''
+
+  if (at.getUTCFullYear() <= 1) return ''
+
+  return at.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}

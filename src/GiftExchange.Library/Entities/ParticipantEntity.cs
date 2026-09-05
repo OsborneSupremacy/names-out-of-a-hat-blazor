@@ -28,6 +28,18 @@ public class ParticipantEntity
     /// </remarks>
     public required Guid PickedRecipientParticipantId { get; set; }
 
+    /// <summary>
+    /// The face this participant is marked with wherever they are named — one of
+    /// <c>PersonEmoji.All</c>, assigned when they are added and the organizer's to change.
+    /// </summary>
+    /// <remarks>
+    /// On the participant rather than the person, so it is one of the things true only within this
+    /// hat. That is the difference between an organizer marking somebody in their own exchange and
+    /// an organizer reaching into every other exchange that person is in — which is what a name
+    /// edit does, deliberately, and what a face edit should not.
+    /// </remarks>
+    public required string Emoji { get; set; }
+
     public HatEntity Hat { get; set; } = null!;
 
     public PersonEntity Person { get; set; } = null!;

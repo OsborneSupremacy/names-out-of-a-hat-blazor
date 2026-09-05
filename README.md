@@ -175,6 +175,14 @@ Editing a participant resets the exchange to `IN_PROGRESS`, which is correct bef
 
 So fixing an address is a separate, narrower operation that leaves the draw intact and resends automatically. The resend isn't optional: an address corrected after invitations went out is only ever corrected because somebody didn't receive theirs, and a correction that left them still not knowing would fix nothing.
 
+### A participant's emoji is stored, not derived
+
+Every participant carries a face, beside their name in the list and beside it again in the email telling somebody they drew them. It used to be derived from the name — the same characters hashed to the same emoji every time, so the invitation and the announcement at the end agreed with each other without anything being stored.
+
+That worked until the organizer wanted a say in it. A derived value has nowhere to hold an edit, and it moved on its own whenever somebody was renamed. So it's a column now, assigned when a participant is added — preferring one nobody in that hat is already wearing — and carried over when an exchange is copied.
+
+Changing it is its own endpoint, for the reason correcting an address is: `PUT /participant` resets the exchange to `IN_PROGRESS`, and throwing away a completed draw over a change of decoration would be absurd. The face itself is chosen from a closed list the server owns, which is what makes it safe to store and render without moderation or escaping — there's no free text in it to moderate. What's on that list is a decision rather than a dump of every smiley Unicode has: a face is assigned to a named person and shown beside their name, so nothing gloomy, amorous or caricatured is in there, and neither is anything built out of zero-width joiners, which comes apart into two unrelated emoji in the mail clients that don't know it. `PersonEmoji` spells the rule out.
+
 ### User content is moderated, and fails closed
 
 Free-text fields go through Amazon Comprehend's toxicity detection. If the check can't be performed, the content is rejected rather than accepted.

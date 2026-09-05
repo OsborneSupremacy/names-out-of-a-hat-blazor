@@ -60,6 +60,7 @@ public static class NoRecord
             ParticipantId = Guid.Empty,
             HatId = Guid.Empty,
             PersonId = Guid.Empty,
-            PickedRecipientParticipantId = Guid.Empty
+            PickedRecipientParticipantId = Guid.Empty,
+            Emoji = string.Empty
         };
 }

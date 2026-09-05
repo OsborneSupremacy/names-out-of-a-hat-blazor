@@ -106,6 +106,7 @@ internal class EnqueueInvitationsService : IApiGatewayHandler
                     Hat = hat,
                     ParticipantName = participant.Person.Name,
                     PickedName = participant.PickedRecipient,
+                    PickedEmoji = hat.EmojiFor(participant.PickedRecipient),
                     GiftIdeasToken = giftIdeasToken,
                     LeaveToken = leaveToken
                 }),
