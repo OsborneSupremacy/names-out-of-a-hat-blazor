@@ -1192,6 +1192,120 @@ public class GiftExchangeProvider
     }
 
     /// <summary>
+    /// Changes the name one participant is known by, and reports what it collided with if it could
+    /// not.
+    /// </summary>
+    /// <remarks>
+    /// One statement's worth of work, wrapped in a transaction only because the check in front of
+    /// it has to hold while it runs. The name lives on the person, so nothing about the draw moves:
+    /// eligibility and picks are participant ids, and the names the domain records carry are
+    /// projected from the person row at read time. Renaming somebody after the hat is shaken is
+    /// therefore safe in a way that removing and re-adding them is not.
+    ///
+    /// The reach is the thing to be careful about. A person is one row for the whole application,
+    /// so this rename is felt in every exchange they take part in, including ones somebody else
+    /// organizes — the same property <see cref="UpdateOrganizerNameAsync"/> has, and the one
+    /// <see cref="ResolvePersonIdAsync"/> already relies on when an organizer states what somebody
+    /// is called by adding them. That is why the collision check looks at every hat this person is
+    /// in rather than only the one being edited: a name that is free here can be taken there, and
+    /// letting the write through would leave a stranger's exchange with two people called the same
+    /// thing and an announcement that cannot say which one you drew.
+    ///
+    /// Stricter than <see cref="UpdateOrganizerNameAsync"/>'s caller, which checks only the hats
+    /// the renamer organizes. Left that way rather than loosened to match: the wider check is the
+    /// correct one, and this is the endpoint where an organizer is renaming somebody who is not
+    /// themselves.
+    /// </remarks>
+    internal async Task<UpdateParticipantNameResponse> UpdateParticipantNameAsync(
+        UpdateParticipantNameRequest request
+    )
+    {
+        var response = UpdateParticipantNameResponses.For(NameChangeOutcome.ParticipantNotFound);
+
+        await InTransactionAsync(async context =>
+        {
+            // Reset, because InTransactionAsync replays the whole delegate on a fresh context.
+            response = UpdateParticipantNameResponses.For(NameChangeOutcome.ParticipantNotFound);
+
+            var participant = await context.Participants
+                .Include(row => row.Person)
+                .SingleOrDefaultAsync(row => row.HatId == request.HatId
+                                             && row.Person.Email == request.ParticipantEmail)
+                .ConfigureAwait(false);
+
+            if (participant is null)
+                return;
+
+            var previousName = participant.Person.Name;
+
+            // Every exchange this person takes part in, which is the full extent of what renaming
+            // them touches.
+            var hatIds = await context.Participants
+                .AsNoTracking()
+                .Where(row => row.PersonId == participant.PersonId)
+                .Select(row => row.HatId)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            var normalized = Normalize(request.Name);
+
+            // Anybody in one of those exchanges who already answers to the new name. The person
+            // being renamed is excluded by person id rather than by participant id, so they are
+            // excluded in all of their exchanges at once — which is what makes a change of
+            // capitalisation, or a rename to the name they already have, an accepted no-op rather
+            // than a collision with themselves.
+            //
+            // ToLower, not ToLowerInvariant: see FindHatsWhereParticipantNameIsTakenAsync. Only the
+            // former translates to SQL.
+            var conflicts = await context.Participants
+                .AsNoTracking()
+                .Where(row => hatIds.Contains(row.HatId)
+                              && row.PersonId != participant.PersonId
+                              && row.Person.Name.ToLower() == normalized)
+                .Select(row => new { HatName = row.Hat.Name, row.Hat.OrganizerPersonId })
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            if (conflicts.Count > 0)
+            {
+                var organizerPersonId = await FindPersonIdByEmailAsync(context, request.OrganizerEmail)
+                    .ConfigureAwait(false);
+
+                response = new UpdateParticipantNameResponse
+                {
+                    Outcome = NameChangeOutcome.NameAlreadyInExchange,
+                    ParticipantId = Guid.Empty,
+                    PreviousName = previousName,
+                    ConflictingHatNames = conflicts
+                        .Where(conflict => conflict.OrganizerPersonId == organizerPersonId)
+                        .Select(conflict => conflict.HatName)
+                        .Distinct()
+                        .ToImmutableList(),
+                    ConflictsElsewhere = conflicts
+                        .Any(conflict => conflict.OrganizerPersonId != organizerPersonId)
+                };
+
+                return;
+            }
+
+            participant.Person.Name = request.Name;
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
+
+            response = new UpdateParticipantNameResponse
+            {
+                Outcome = NameChangeOutcome.Changed,
+                ParticipantId = participant.ParticipantId,
+                PreviousName = previousName,
+                ConflictingHatNames = [],
+                ConflictsElsewhere = false
+            };
+        }).ConfigureAwait(false);
+
+        return response;
+    }
+
+    /// <summary>
     /// Records what SES said about one message, creating the row if this is the first thing heard
     /// about it and moving it forwards if it is not.
     /// </summary>

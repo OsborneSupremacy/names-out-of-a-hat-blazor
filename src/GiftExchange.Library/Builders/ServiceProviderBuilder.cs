@@ -135,6 +135,7 @@ internal static class ServiceProviderBuilder
                 .AddSingleton<IValidator<EditHatRequest>, EditHatRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantRequest>, EditParticipantRequestValidator>()
                 .AddSingleton<IValidator<EditParticipantEmojiRequest>, EditParticipantEmojiRequestValidator>()
+                .AddSingleton<IValidator<EditParticipantNameRequest>, EditParticipantNameRequestValidator>()
                 .AddSingleton<IValidator<PreviewInvitationsRequest>, PreviewInvitationsRequestValidator>()
                 .AddSingleton<IValidator<ResetHatRequest>, ResetHatRequestValidator>()
                 .AddSingleton<IValidator<SendInvitationsRequest>, SendInvitationsRequestValidator>()
@@ -197,6 +198,11 @@ internal static class ServiceProviderBuilder
                 // And its own endpoint for the same reason, less dramatically: a change of face
                 // should not un-shake the hat.
                 .AddKeyedSingleton<IApiGatewayHandler, EditParticipantEmojiService>("put/participant/emoji")
+
+                // And its own for the same reason again. A name is stored on the person and read
+                // back into the domain records every time, so renaming somebody moves nothing the
+                // draw is made of and must not un-shake the hat.
+                .AddKeyedSingleton<IApiGatewayHandler, EditParticipantNameService>("put/participant/name")
 
                 .AddKeyedSingleton<IApiGatewayHandler, ValidationService>("post/hat/validate")
 

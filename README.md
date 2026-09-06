@@ -195,6 +195,12 @@ That worked until the organizer wanted a say in it. A derived value has nowhere 
 
 Changing it is its own endpoint, for the reason correcting an address is: `PUT /participant` resets the exchange to `IN_PROGRESS`, and throwing away a completed draw over a change of decoration would be absurd. The face itself is chosen from a closed list the server owns, which is what makes it safe to store and render without moderation or escaping — there's no free text in it to moderate. What's on that list is a decision rather than a dump of every smiley Unicode has: a face is assigned to a named person and shown beside their name, so nothing gloomy, amorous or caricatured is in there, and neither is anything built out of zero-width joiners, which comes apart into two unrelated emoji in the mail clients that don't know it. `PersonEmoji` spells the rule out.
 
+### Renaming somebody renames them everywhere
+
+An organizer can correct the name a participant goes by, and it's a third endpoint for the same reason the address and the emoji are: `PUT /participant` resets the exchange to `IN_PROGRESS`, and what somebody is called has nothing to do with the draw. Eligibility and picks are stored as participant ids, and the names in the domain records are read back off the person row every time — so a rename after the hat is shaken leaves the hat shaken, and the announcement greets everybody by whatever they're called when it's written.
+
+The part worth saying out loud is the reach. A name belongs to the person, not to their place in one exchange, so renaming somebody changes their name in *every* exchange they take part in — including ones this organizer doesn't run. That's the same property that lets somebody fix their own name once instead of once per hat, and it's why the collision check is wider than the exchange being edited: a name that's free here can be taken there, and letting the write through would leave a stranger's exchange with two people answering to the same thing. Collisions in the caller's own exchanges are named back to them, because those are the ones they can go and fix. A collision in somebody else's is refused and left unnamed — the refusal has to be explicable, and whose guest list it landed on isn't theirs to learn.
+
 ### User content is moderated, and fails closed
 
 Free-text fields go through Amazon Comprehend's toxicity detection. If the check can't be performed, the content is rejected rather than accepted.

@@ -42,6 +42,7 @@ public class SchemaDriftTests
         { nameof(EditParticipantAddressRequest), "EditParticipantAddressRequest.schema.json", "" },
         { nameof(EditParticipantAddressResponse), "EditParticipantAddressResponse.schema.json", "" },
         { nameof(EditParticipantEmojiRequest), "EditParticipantEmojiRequest.schema.json", "" },
+        { nameof(EditParticipantNameRequest), "EditParticipantNameRequest.schema.json", "" },
         { nameof(ErrorResponse), "ErrorResponse.schema.json", "" },
         { nameof(ResetHatRequest), "ResetHatRequest.schema.json", "" },
 

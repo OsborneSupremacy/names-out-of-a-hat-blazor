@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "organizerEmail": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The organizer of the gift exchange. Overwritten with the authenticated caller before the request is handled."
+        },
+        "hatId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The gift exchange the participant belongs to"
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 5,
+            "maxLength": 254,
+            "description": "The address the participant is recorded at, used to find them"
+        },
+        "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "The name to call them by. A name belongs to the person, so this is what they are called in every gift exchange they take part in. The handler's validator is what restricts the characters: the gateway compares patterns with ECMA 262 regex, which has no Unicode property escapes, so the rule as written would reject the very names it exists to allow."
+        }
+    },
+    "required": [
+        "organizerEmail",
+        "hatId",
+        "email",
+        "name"
+    ],
+    "additionalProperties": false
+}
