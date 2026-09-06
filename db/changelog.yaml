@@ -1084,3 +1084,49 @@ databaseChangeLog:
       rollback:
         - sql:
             sql: UPDATE participant SET emoji = NULL
+
+  # Two changesets for one column again, for the reason hat--0005/0006 and participant--0003/0004
+  # give: DSQL will not take a NOT NULL or a DEFAULT on an ADD COLUMN, so the rows already in the
+  # table are filled by a statement of their own.
+  - changeSet:
+      id: person--0003
+      author: ben
+      comment: >
+        Who introduced this person to the application, which is what decides whose name it is to
+        change.
+
+        A name lives on the person and nowhere else, so editing one is felt in every exchange they
+        appear in. Two people may make that edit: the person themselves, and whoever first typed
+        their name into an exchange. Telling the second of those from a stranger is the whole
+        reason for the column — without it, any organizer sharing a participant with another can
+        rename them out from under both.
+      changes:
+        - sqlFile:
+            path: tables/person--0003.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: ALTER TABLE person DROP COLUMN added_by_person_id
+
+  - changeSet:
+      id: person--0004
+      author: ben
+      comment: >
+        An introducer for every row that predates the column, reconstructed from the exchanges each
+        person takes part in: the organizer of the earliest one is who added them, because
+        AddParticipantService is the only path in and the organizer is always its caller.
+
+        Anybody that finds nothing for arrived under their own steam and gets their own id, the
+        sentinel included.
+
+        Unconditional on purpose: the column was only just added, so every row is holding the NULL
+        it arrived as.
+      changes:
+        - sqlFile:
+            path: tables/person--0004.sql
+            relativeToChangelogFile: true
+            splitStatements: false
+      rollback:
+        - sql:
+            sql: UPDATE person SET added_by_person_id = NULL

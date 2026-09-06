@@ -161,6 +161,7 @@ internal class EditParticipantAddressService : IApiGatewayHandler
             .UpdateParticipantAddressAsync(new UpdateParticipantAddressRequest
             {
                 HatId = request.HatId,
+                OrganizerEmail = request.OrganizerEmail,
                 CurrentEmail = request.CurrentEmail,
                 NewEmail = request.NewEmail
             })

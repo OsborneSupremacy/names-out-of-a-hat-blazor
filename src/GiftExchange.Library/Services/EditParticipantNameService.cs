@@ -21,6 +21,13 @@ namespace GiftExchange.Library.Services;
 /// them in every exchange they are in, including ones this organizer does not run. That is not a
 /// side effect of the endpoint but of a person being one row — the same thing that lets an
 /// organizer correct a name once instead of once per hat.
+///
+/// Which is exactly why not every organizer may. Having somebody in your exchange is not standing
+/// to say what they are called; introducing them is. So the rename is refused for a participant
+/// this organizer neither is nor added, and the check itself lives in
+/// <c>GiftExchangeProvider.RenamePersonAsync</c> alongside the write, because the same rule has to
+/// hold for <see cref="UpdateProfileService"/> and for the add path that would otherwise be a way
+/// around both.
 /// </remarks>
 [UsedImplicitly]
 internal class EditParticipantNameService : IApiGatewayHandler
@@ -79,13 +86,25 @@ internal class EditParticipantNameService : IApiGatewayHandler
                 new AggregateException(hatPreconditionResult.PreconditionFailureMessage.FailureMessage),
                 hatPreconditionResult.PreconditionFailureMessage.StatusCode);
 
+        // Checked here rather than left to the provider, which knows about people and not about
+        // who is in which exchange. Without it an organizer could rename anybody whose address they
+        // could guess, as long as they had added them to something once — the provider would find
+        // the person, find the standing, and never ask whether this exchange had anything to do
+        // with it.
+        var participant = hatPreconditionResult.Hat.Participants
+            .SingleOrDefault(candidate => candidate.Person.Email.ContentEquals(request.Email));
+
+        if (participant is null)
+            return new Result<StatusCodeOnlyResponse>(
+                new KeyNotFoundException($"Participant with email `{request.Email}` not found"),
+                HttpStatusCode.NotFound);
+
         var change = await _giftExchangeProvider
-            .UpdateParticipantNameAsync(new UpdateParticipantNameRequest
+            .RenamePersonAsync(new RenamePersonRequest
             {
-                HatId = request.HatId,
-                ParticipantEmail = request.Email,
+                Email = request.Email,
                 Name = request.Name,
-                OrganizerEmail = request.OrganizerEmail
+                RequestedByEmail = request.OrganizerEmail
             })
             .ConfigureAwait(false);
 
@@ -93,8 +112,8 @@ internal class EditParticipantNameService : IApiGatewayHandler
             return Failure(change, request);
 
         _logger.LogInformation(
-            "Participant {ParticipantId} in hat {HatId} was renamed.",
-            change.ParticipantId,
+            "Person {PersonId} was renamed by the organizer of hat {HatId}.",
+            change.PersonId,
             request.HatId);
 
         return new Result<StatusCodeOnlyResponse>(
@@ -103,12 +122,12 @@ internal class EditParticipantNameService : IApiGatewayHandler
     }
 
     private static Result<StatusCodeOnlyResponse> Failure(
-        UpdateParticipantNameResponse change,
+        RenamePersonResponse change,
         EditParticipantNameRequest request
     ) =>
         change.Outcome switch
         {
-            NameChangeOutcome.ParticipantNotFound => new Result<StatusCodeOnlyResponse>(
+            NameChangeOutcome.PersonNotFound => new Result<StatusCodeOnlyResponse>(
                 new KeyNotFoundException($"Participant with email `{request.Email}` not found"),
                 HttpStatusCode.NotFound),
 
@@ -116,10 +135,29 @@ internal class EditParticipantNameService : IApiGatewayHandler
                 new InvalidOperationException(ConflictMessage(change, request.Name)),
                 HttpStatusCode.Conflict),
 
+            // Forbidden rather than Conflict, for the reason AddParticipantService answers a
+            // refused address with it: a conflict says the request collided with something and
+            // could be retried differently, and no name will make this one work. It is not about
+            // the name at all.
+            NameChangeOutcome.NotTheirNameToChange => new Result<StatusCodeOnlyResponse>(
+                new InvalidOperationException(NotYoursMessage(change.PreviousName)),
+                HttpStatusCode.Forbidden),
+
             _ => new Result<StatusCodeOnlyResponse>(
                 new InvalidOperationException("The name could not be changed."),
                 HttpStatusCode.InternalServerError)
         };
+
+    /// <summary>
+    /// Says why a rename is not this organizer's to make, without saying whose it is.
+    /// </summary>
+    /// <remarks>
+    /// Naming the other organizer would answer a question the refusal did not raise and hand over
+    /// somebody else's involvement in an exchange this organizer cannot see. What the message owes
+    /// them is the reason and the two remedies, both of which are true without anybody being named.
+    /// </remarks>
+    private static string NotYoursMessage(string currentName) =>
+        $"{currentName} was added to a gift exchange by somebody else, and a name belongs to the person rather than to one exchange — so this one is not yours to change. They can change it themselves, and so can whoever first added them.";
 
     /// <summary>
     /// Says where the new name is already taken, in the terms the organizer is entitled to hear it.
@@ -130,7 +168,7 @@ internal class EditParticipantNameService : IApiGatewayHandler
     /// nothing more than that is theirs to know. The two are worth telling apart — one is a message
     /// about work the organizer can do, the other about a rename they will have to make differently.
     /// </remarks>
-    private static string ConflictMessage(UpdateParticipantNameResponse change, string name)
+    private static string ConflictMessage(RenamePersonResponse change, string name)
     {
         if (change.ConflictingHatNames.Count == 0)
             return $"Renaming somebody changes their name in every gift exchange they are in, and in one of the others they take part in, somebody already goes by {name}. Participants in a gift exchange need distinct names, so please pick a different one.";

@@ -46,11 +46,13 @@ public class EntityRoundTripTests : IDisposable
             context.Persons.AddRange(
                 new PersonEntity
                 {
-                    PersonId = organizerPersonId, Name = "Organizer", Email = "organizer@example.com"
+                    PersonId = organizerPersonId, Name = "Organizer", Email = "organizer@example.com",
+                    AddedByPersonId = organizerPersonId
                 },
                 new PersonEntity
                 {
-                    PersonId = otherPersonId, Name = "Someone Else", Email = "someone@example.com"
+                    PersonId = otherPersonId, Name = "Someone Else", Email = "someone@example.com",
+                    AddedByPersonId = otherPersonId
                 });
 
             context.Hats.Add(new HatEntity
@@ -133,7 +135,8 @@ public class EntityRoundTripTests : IDisposable
         {
             context.Persons.Add(new PersonEntity
             {
-                PersonId = personId, Name = "Organizer", Email = "organizer@example.com"
+                PersonId = personId, Name = "Organizer", Email = "organizer@example.com",
+                AddedByPersonId = personId
             });
             context.Hats.Add(NewHat(hatId, personId, "Shared Person Hat", HatStatus.InProgress));
             context.Participants.Add(new ParticipantEntity
@@ -176,8 +179,8 @@ public class EntityRoundTripTests : IDisposable
         await using (var context = CreateContext())
         {
             context.Persons.AddRange(
-                new PersonEntity { PersonId = giverPersonId, Name = "Giver", Email = "giver@example.com" },
-                new PersonEntity { PersonId = receiverPersonId, Name = "Receiver", Email = "receiver@example.com" });
+                new PersonEntity { PersonId = giverPersonId, Name = "Giver", Email = "giver@example.com", AddedByPersonId = giverPersonId },
+                new PersonEntity { PersonId = receiverPersonId, Name = "Receiver", Email = "receiver@example.com", AddedByPersonId = receiverPersonId });
 
             context.Hats.Add(NewHat(hatId, giverPersonId, "Shaken Hat", HatStatus.NamesAssigned));
 
@@ -233,7 +236,8 @@ public class EntityRoundTripTests : IDisposable
         {
             context.Persons.Add(new PersonEntity
             {
-                PersonId = personId, Name = "Undrawn", Email = "undrawn@example.com"
+                PersonId = personId, Name = "Undrawn", Email = "undrawn@example.com",
+                AddedByPersonId = personId
             });
             context.Hats.Add(NewHat(hatId, personId, "Unshaken Hat", HatStatus.InProgress));
             context.Participants.Add(new ParticipantEntity
@@ -268,7 +272,8 @@ public class EntityRoundTripTests : IDisposable
         {
             context.Persons.Add(new PersonEntity
             {
-                PersonId = personId, Name = "Organizer", Email = "organizer@example.com"
+                PersonId = personId, Name = "Organizer", Email = "organizer@example.com",
+                AddedByPersonId = personId
             });
             context.Hats.Add(NewHat(hatId, personId, "Mutable Hat", HatStatus.InProgress));
 

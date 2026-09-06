@@ -6,7 +6,11 @@
 # here without narrowing it to Latin. The handler's validator is what enforces it.
 #
 # 409 is declared because a name is unique within an exchange, and a rename reaches every exchange
-# the person is in.
+# the person is in. The 403 this handler also returns -- for a participant the caller neither is nor
+# introduced -- is not, for the reason api-edit-participant-address.tf gives about its own 429: the
+# integration is AWS_PROXY, so method responses are documentation rather than a filter, and the
+# module offers no flag for one. POST /participant has answered 403 on the same terms since the
+# do-not-add lists landed.
 module "lambda-edit-participant-name" {
   source                                            = "./modules/api"
   gateway_rest_api_id                               = aws_api_gateway_rest_api.giftexchange-gateway.id

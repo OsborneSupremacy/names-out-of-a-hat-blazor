@@ -87,7 +87,14 @@ public class GiftExchangeProvider
     /// <returns>true if the hat was created, false if the organizer already has one by that name.</returns>
     public async Task<bool> CreateHatAsync(HatDataModel hatDataModel)
     {
-        var organizerPersonId = await ResolvePersonIdAsync(hatDataModel.OrganizerEmail, hatDataModel.OrganizerName)
+        // Introducing themselves: an organizer creating an exchange is the one case where the
+        // person being written and the person writing them are the same.
+        var organizerPersonId = await ResolvePersonIdAsync(new ResolvePersonRequest
+            {
+                Email = hatDataModel.OrganizerEmail,
+                Name = hatDataModel.OrganizerName,
+                IntroducedByEmail = hatDataModel.OrganizerEmail
+            })
             .ConfigureAwait(false);
 
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
@@ -154,7 +161,12 @@ public class GiftExchangeProvider
             // Resolved before the transaction opens: the organizer already exists, since they own
             // the hat being copied, but this is where a person is written and it does not belong
             // inside the unit of work that writes the copy.
-            var organizerPersonId = await ResolvePersonIdAsync(newHat.OrganizerEmail, newHat.OrganizerName)
+            var organizerPersonId = await ResolvePersonIdAsync(new ResolvePersonRequest
+                {
+                    Email = newHat.OrganizerEmail,
+                    Name = newHat.OrganizerName,
+                    IntroducedByEmail = newHat.OrganizerEmail
+                })
                 .ConfigureAwait(false);
 
             await InTransactionAsync(async context =>
@@ -1163,11 +1175,21 @@ public class GiftExchangeProvider
 
             if (existingPerson is null)
             {
+                var introducedById = await FindPersonIdByEmailAsync(context, request.OrganizerEmail)
+                    .ConfigureAwait(false);
+
+                var personId = Guid.CreateVersion7();
+
                 var person = new PersonEntity
                 {
-                    PersonId = Guid.CreateVersion7(),
+                    PersonId = personId,
                     Name = name,
-                    Email = request.NewEmail
+                    Email = request.NewEmail,
+                    // The organizer typing the correction is introducing this address, so the name
+                    // on it is theirs to fix again if they get it wrong twice. Their own row exists
+                    // by now — ownership of the hat was established against it — so the fallback to
+                    // a self-reference is only there because nothing here should assume that.
+                    AddedByPersonId = introducedById == Guid.Empty ? personId : introducedById
                 };
 
                 context.Persons.Add(person);
@@ -1192,58 +1214,133 @@ public class GiftExchangeProvider
     }
 
     /// <summary>
-    /// Changes the name one participant is known by, and reports what it collided with if it could
-    /// not.
+    /// Whether this person's name is that person's to change.
     /// </summary>
     /// <remarks>
-    /// One statement's worth of work, wrapped in a transaction only because the check in front of
-    /// it has to hold while it runs. The name lives on the person, so nothing about the draw moves:
-    /// eligibility and picks are participant ids, and the names the domain records carry are
-    /// projected from the person row at read time. Renaming somebody after the hat is shaken is
-    /// therefore safe in a way that removing and re-adding them is not.
+    /// Two people, and no more. Themselves, because the row is identified by an address they hold;
+    /// and whoever introduced them, because they are the one who typed the name in the first place
+    /// and the one an organizer correcting a typo almost always is.
     ///
-    /// The reach is the thing to be careful about. A person is one row for the whole application,
-    /// so this rename is felt in every exchange they take part in, including ones somebody else
-    /// organizes — the same property <see cref="UpdateOrganizerNameAsync"/> has, and the one
-    /// <see cref="ResolvePersonIdAsync"/> already relies on when an organizer states what somebody
-    /// is called by adding them. That is why the collision check looks at every hat this person is
-    /// in rather than only the one being edited: a name that is free here can be taken there, and
-    /// letting the write through would leave a stranger's exchange with two people called the same
-    /// thing and an announcement that cannot say which one you drew.
+    /// Everybody else is refused, and the case that makes that worth enforcing is two organizers
+    /// with a participant in common. A name is stored once and read into every exchange the person
+    /// appears in, so without this the second organizer can rename somebody in the first's
+    /// exchange — repeatedly, and invisibly to everybody except the person themselves.
     ///
-    /// Stricter than <see cref="UpdateOrganizerNameAsync"/>'s caller, which checks only the hats
-    /// the renamer organizes. Left that way rather than loosened to match: the wider check is the
-    /// correct one, and this is the endpoint where an organizer is renaming somebody who is not
-    /// themselves.
+    /// The all-zero id is refused rather than treated as a match. It is the sentinel's, and it is
+    /// also what a caller with no person row resolves to; either way it is nobody, and nobody is
+    /// not entitled to a name.
     /// </remarks>
-    internal async Task<UpdateParticipantNameResponse> UpdateParticipantNameAsync(
-        UpdateParticipantNameRequest request
-    )
+    private static bool MayRename(PersonEntity person, Guid byPersonId) =>
+        byPersonId != Guid.Empty
+        && (person.PersonId == byPersonId || person.AddedByPersonId == byPersonId);
+
+    /// <summary>
+    /// Changes the name somebody goes by, and reports what stopped it if anything did.
+    /// </summary>
+    /// <remarks>
+    /// The one place a name is written. Both endpoints that change one arrive here — an organizer
+    /// editing a participant, and somebody editing their own profile — because a name is a fact
+    /// about a person rather than about a membership, and having two spellings of the same write
+    /// was how the two came to disagree about what they checked.
+    ///
+    /// Nothing about a draw moves. Eligibility and picks are participant ids, and the names the
+    /// domain records carry are projected off the person row at read time, so renaming somebody
+    /// after a hat is shaken leaves the hat shaken. That is the difference between this and
+    /// removing and re-adding them, which is what an organizer had to do before.
+    ///
+    /// The reach is what the two checks are for. A rename is felt in every exchange the person
+    /// appears in, including ones the caller does not run, so it asks whether the caller is
+    /// entitled to make it at all, and then whether the new name is free everywhere it would land
+    /// rather than only in the exchange being edited. A name free here and taken there would leave
+    /// a stranger's exchange with two people answering to the same thing and an announcement that
+    /// cannot say which one you drew.
+    ///
+    /// Somebody setting their own name before the application has a row for them is introducing
+    /// themselves, and that is written rather than refused. It is the state a person is in between
+    /// signing in and creating their first exchange, and the alternative — reporting that the
+    /// person whose name they are setting does not exist — describes the situation accurately and
+    /// helps nobody.
+    /// </remarks>
+    internal async Task<RenamePersonResponse> RenamePersonAsync(RenamePersonRequest request)
     {
-        var response = UpdateParticipantNameResponses.For(NameChangeOutcome.ParticipantNotFound);
+        // As in ResolvePersonIdAsync: the empty address is the sentinel's, and a rename reaching it
+        // would give the row meaning "nobody" a name.
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new ArgumentException("A person needs an email address; the empty one belongs to the sentinel row.", nameof(request));
+
+        var isSelf = request.Email.ContentEquals(request.RequestedByEmail);
+
+        await using (var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false))
+        {
+            var known = await context.Persons
+                .AsNoTracking()
+                .AnyAsync(person => person.Email == request.Email)
+                .ConfigureAwait(false);
+
+            if (!known)
+            {
+                if (!isSelf)
+                    return RenamePersonResponses.For(NameChangeOutcome.PersonNotFound);
+
+                // Nobody the application has never heard of takes part in anything, so there is
+                // nothing for the name to collide with and no check worth running. Written through
+                // the same method every other introduction goes through, which is what handles two
+                // requests racing to write one address.
+                var introducedId = await ResolvePersonIdAsync(new ResolvePersonRequest
+                {
+                    Email = request.Email,
+                    Name = request.Name,
+                    IntroducedByEmail = request.Email
+                }).ConfigureAwait(false);
+
+                return new RenamePersonResponse
+                {
+                    Outcome = NameChangeOutcome.Changed,
+                    PersonId = introducedId,
+                    PreviousName = string.Empty,
+                    ConflictingHatNames = [],
+                    ConflictsElsewhere = false
+                };
+            }
+        }
+
+        var response = RenamePersonResponses.For(NameChangeOutcome.PersonNotFound);
 
         await InTransactionAsync(async context =>
         {
             // Reset, because InTransactionAsync replays the whole delegate on a fresh context.
-            response = UpdateParticipantNameResponses.For(NameChangeOutcome.ParticipantNotFound);
+            response = RenamePersonResponses.For(NameChangeOutcome.PersonNotFound);
 
-            var participant = await context.Participants
-                .Include(row => row.Person)
-                .SingleOrDefaultAsync(row => row.HatId == request.HatId
-                                             && row.Person.Email == request.ParticipantEmail)
+            var person = await context.Persons
+                .SingleOrDefaultAsync(candidate => candidate.Email == request.Email)
                 .ConfigureAwait(false);
 
-            if (participant is null)
+            if (person is null)
                 return;
 
-            var previousName = participant.Person.Name;
+            var requesterId = isSelf
+                ? person.PersonId
+                : await FindPersonIdByEmailAsync(context, request.RequestedByEmail).ConfigureAwait(false);
 
-            // Every exchange this person takes part in, which is the full extent of what renaming
-            // them touches.
+            if (!MayRename(person, requesterId))
+            {
+                response = RenamePersonResponses.For(NameChangeOutcome.NotTheirNameToChange)
+                    with { PreviousName = person.Name };
+                return;
+            }
+
+            // Every exchange this person is part of, which is the full extent of what renaming them
+            // touches. Organized as well as taken part in: an organizer is a participant of their
+            // own exchange today, and a rule that quietly depended on that would be one more thing
+            // to remember if it ever stopped being true.
             var hatIds = await context.Participants
                 .AsNoTracking()
-                .Where(row => row.PersonId == participant.PersonId)
+                .Where(row => row.PersonId == person.PersonId)
                 .Select(row => row.HatId)
+                .Union(context.Hats
+                    .AsNoTracking()
+                    .Where(hat => hat.OrganizerPersonId == person.PersonId)
+                    .Select(hat => hat.HatId))
                 .ToListAsync()
                 .ConfigureAwait(false);
 
@@ -1255,12 +1352,11 @@ public class GiftExchangeProvider
             // capitalisation, or a rename to the name they already have, an accepted no-op rather
             // than a collision with themselves.
             //
-            // ToLower, not ToLowerInvariant: see FindHatsWhereParticipantNameIsTakenAsync. Only the
-            // former translates to SQL.
+            // ToLower, not ToLowerInvariant: only the former translates to SQL.
             var conflicts = await context.Participants
                 .AsNoTracking()
                 .Where(row => hatIds.Contains(row.HatId)
-                              && row.PersonId != participant.PersonId
+                              && row.PersonId != person.PersonId
                               && row.Person.Name.ToLower() == normalized)
                 .Select(row => new { HatName = row.Hat.Name, row.Hat.OrganizerPersonId })
                 .ToListAsync()
@@ -1268,34 +1364,33 @@ public class GiftExchangeProvider
 
             if (conflicts.Count > 0)
             {
-                var organizerPersonId = await FindPersonIdByEmailAsync(context, request.OrganizerEmail)
-                    .ConfigureAwait(false);
-
-                response = new UpdateParticipantNameResponse
+                response = new RenamePersonResponse
                 {
                     Outcome = NameChangeOutcome.NameAlreadyInExchange,
-                    ParticipantId = Guid.Empty,
-                    PreviousName = previousName,
+                    PersonId = Guid.Empty,
+                    PreviousName = person.Name,
                     ConflictingHatNames = conflicts
-                        .Where(conflict => conflict.OrganizerPersonId == organizerPersonId)
+                        .Where(conflict => conflict.OrganizerPersonId == requesterId)
                         .Select(conflict => conflict.HatName)
                         .Distinct()
                         .ToImmutableList(),
                     ConflictsElsewhere = conflicts
-                        .Any(conflict => conflict.OrganizerPersonId != organizerPersonId)
+                        .Any(conflict => conflict.OrganizerPersonId != requesterId)
                 };
 
                 return;
             }
 
-            participant.Person.Name = request.Name;
+            var previousName = person.Name;
+
+            person.Name = request.Name;
 
             await context.SaveChangesAsync().ConfigureAwait(false);
 
-            response = new UpdateParticipantNameResponse
+            response = new RenamePersonResponse
             {
                 Outcome = NameChangeOutcome.Changed,
-                ParticipantId = participant.ParticipantId,
+                PersonId = person.PersonId,
                 PreviousName = previousName,
                 ConflictingHatNames = [],
                 ConflictsElsewhere = false
@@ -1978,70 +2073,20 @@ public class GiftExchangeProvider
         return wasReset;
     }
 
-    /// <summary>
-    /// Hats belonging to this organizer where somebody other than them already goes by the given
-    /// name. Renaming into one of those would leave two participants sharing a name.
-    /// </summary>
-    public async Task<ImmutableList<string>> FindHatsWhereParticipantNameIsTakenAsync(
-        string organizerEmail,
-        string name
-    )
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
-
-        var organizerPersonId = await FindPersonIdByEmailAsync(context, organizerEmail).ConfigureAwait(false);
-
-        if (organizerPersonId == Guid.Empty)
-            return [];
-
-        var normalized = Normalize(name);
-
-        var hatNames = await context.Hats
-            .AsNoTracking()
-            // ToLower, not ToLowerInvariant: see FindParticipantIdByNameAsync.
-            .Where(hat => hat.OrganizerPersonId == organizerPersonId
-                          && hat.Participants.Any(participant => participant.PersonId != organizerPersonId
-                                                                 && participant.Person.Name.ToLower() == normalized))
-            .Select(hat => hat.Name)
-            .ToListAsync()
-            .ConfigureAwait(false);
-
-        return hatNames.ToImmutableList();
-    }
-
-    /// <summary>
-    /// Changes the name this person is known by.
-    /// </summary>
-    /// <remarks>
-    /// A name is stored once, on the person, so this is a single statement where it used to be a
-    /// transaction spanning every hat they organize and every participant row within them.
-    ///
-    /// The other side of that is reach: this changes the name wherever the person appears, which
-    /// includes exchanges organized by somebody else. That follows from a person being one row
-    /// rather than one per membership, and it is the same reason an organizer editing a
-    /// participant's name in <see cref="CreateParticipantAsync"/> is felt everywhere too.
-    /// </remarks>
-    public async Task UpdateOrganizerNameAsync(string organizerEmail, string name)
-    {
-        // As in ResolvePersonIdAsync: the empty address is the sentinel's, and this statement would
-        // rename it rather than match nobody.
-        if (string.IsNullOrWhiteSpace(organizerEmail))
-            throw new ArgumentException("A person needs an email address; the empty one belongs to the sentinel row.", nameof(organizerEmail));
-
-        await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
-
-        await context.Persons
-            .Where(person => person.Email == organizerEmail)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(person => person.Name, name))
-            .ConfigureAwait(false);
-    }
-
     public async Task<Participant> CreateParticipantAsync(
         AddParticipantRequest request,
         ImmutableList<Participant> existingParticipants
     )
     {
-        var personId = await ResolvePersonIdAsync(request.Email, request.Name).ConfigureAwait(false);
+        // Introduced by the organizer, which resolves to themselves when they are adding
+        // themselves. Somebody the application already knows keeps the name they already have
+        // unless this organizer is entitled to state it — see ResolvePersonIdAsync.
+        var personId = await ResolvePersonIdAsync(new ResolvePersonRequest
+        {
+            Email = request.Email,
+            Name = request.Name,
+            IntroducedByEmail = request.OrganizerEmail
+        }).ConfigureAwait(false);
 
         await using var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
@@ -2444,7 +2489,7 @@ public class GiftExchangeProvider
 
     /// <summary>
     /// The id of the person registered to this email address, writing them in if they are new to
-    /// the application, and recording the name the caller supplied.
+    /// the application.
     /// </summary>
     /// <remarks>
     /// Runs in its own context and its own transaction, ahead of whatever the caller is about to
@@ -2461,38 +2506,61 @@ public class GiftExchangeProvider
     /// a duplicate name leaves the organizer behind in the directory. A person with no hats and no
     /// participations is inert, and the next attempt finds them rather than writing them again.
     ///
-    /// The supplied name always wins. An organizer adding somebody to an exchange, or editing them
-    /// once they are in it, is stating what that person is called, and there is one place to say
-    /// it. It follows that the change is visible in every hat they appear in — see
-    /// <see cref="UpdateOrganizerNameAsync"/>.
+    /// The supplied name wins only when the caller has standing to say what this person is called:
+    /// they are that person, or they introduced them. That used to be unconditional, and it is the
+    /// larger half of what made a name something two organizers could fight over — a rename refused
+    /// by <see cref="RenamePersonAsync"/> could be had anyway by removing somebody and adding them
+    /// back under the name you wanted, because the add path wrote whatever it was handed. It no
+    /// longer does. An organizer adding somebody the application already knows gets them under the
+    /// name they already have, silently, which is the same thing that happens when a participant is
+    /// moved onto an address that belongs to an existing person.
     /// </remarks>
-    private async Task<Guid> ResolvePersonIdAsync(string email, string name)
+    private async Task<Guid> ResolvePersonIdAsync(ResolvePersonRequest request)
     {
         // The sentinel person holds the empty address. Reaching here with one would find it and
         // give it a name, and the caller would go on to write a hat owned by "nobody". Both are
         // worse than stopping: every address that gets this far has been through validation, so an
         // empty one is a bug upstream rather than input to accommodate.
-        if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("A person needs an email address; the empty one belongs to the sentinel row.", nameof(email));
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new ArgumentException("A person needs an email address; the empty one belongs to the sentinel row.", nameof(request));
+
+        var isSelf = request.Email.ContentEquals(request.IntroducedByEmail);
 
         await using (var context = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false))
         {
+            // The all-zero id when they are introducing themselves, and also when the introducer is
+            // somebody this table has never heard of — which should not happen, since an organizer
+            // has a row before they can add anybody. Both read as "nobody else", and the row that
+            // gets written points at itself.
+            var introducedById = isSelf
+                ? Guid.Empty
+                : await FindPersonIdByEmailAsync(context, request.IntroducedByEmail).ConfigureAwait(false);
+
             var existing = await context.Persons
-                .FirstOrDefaultAsync(candidate => candidate.Email == email)
+                .FirstOrDefaultAsync(candidate => candidate.Email == request.Email)
                 .ConfigureAwait(false);
 
             if (existing is not null)
             {
-                existing.Name = name;
-                await context.SaveChangesAsync().ConfigureAwait(false);
+                // Never reassigned: whoever introduced somebody keeps that standing, and adding
+                // them to a second exchange does not transfer it to whoever did the adding.
+                if (MayRename(existing, isSelf ? existing.PersonId : introducedById))
+                {
+                    existing.Name = request.Name;
+                    await context.SaveChangesAsync().ConfigureAwait(false);
+                }
+
                 return existing.PersonId;
             }
 
+            var personId = Guid.CreateVersion7();
+
             var person = new PersonEntity
             {
-                PersonId = Guid.CreateVersion7(),
-                Name = name,
-                Email = email
+                PersonId = personId,
+                Name = request.Name,
+                Email = request.Email,
+                AddedByPersonId = introducedById == Guid.Empty ? personId : introducedById
             };
 
             context.Persons.Add(person);
@@ -2512,7 +2580,7 @@ public class GiftExchangeProvider
         // not write.
         await using var reread = await _contextFactory.CreateDbContextAsync().ConfigureAwait(false);
 
-        return await FindPersonIdByEmailAsync(reread, email).ConfigureAwait(false);
+        return await FindPersonIdByEmailAsync(reread, request.Email).ConfigureAwait(false);
     }
 
     private static async Task<Guid> FindParticipantIdByEmailAsync(

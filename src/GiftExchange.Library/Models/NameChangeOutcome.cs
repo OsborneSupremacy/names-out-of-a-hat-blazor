@@ -1,25 +1,34 @@
 namespace GiftExchange.Library.Models;
 
 /// <summary>
-/// What became of an attempt to change the name a participant is known by.
+/// What became of an attempt to change the name somebody goes by.
 /// </summary>
 /// <remarks>
-/// A name belongs to the person rather than to one membership, so the only way this fails — short
-/// of the participant no longer being there — is a collision with somebody else's name in an
-/// exchange the renamed person is in. That is refused rather than resolved: the alternative is
-/// silently leaving one exchange with two people called the same thing, and the domain records
-/// still identify a pick by name.
+/// A name is stored on the person and read back into every exchange they appear in, so both
+/// failures here are about that reach rather than about the name itself: one says the rename was
+/// not the caller's to make, and the other that somebody it would have reached already answers to
+/// it. The two need different remedies, which is why they are different outcomes.
 /// </remarks>
 public enum NameChangeOutcome
 {
-    /// <summary>The participant now goes by the new name, everywhere they appear.</summary>
+    /// <summary>They now go by the new name, everywhere they appear.</summary>
     Changed,
 
-    /// <summary>Nobody in this exchange is recorded at the address given.</summary>
-    ParticipantNotFound,
+    /// <summary>The application has never heard of the address given.</summary>
+    PersonNotFound,
 
     /// <summary>
     /// Somebody else already goes by the new name in an exchange this person takes part in.
     /// </summary>
-    NameAlreadyInExchange
+    NameAlreadyInExchange,
+
+    /// <summary>
+    /// The caller neither is this person nor introduced them, so the name is not theirs to change.
+    /// </summary>
+    /// <remarks>
+    /// The refusal a shared participant needs. Two organizers can have the same person in their
+    /// exchanges, and without this the second could rename them in the first's — repeatedly, and
+    /// invisibly to everybody but the person themselves.
+    /// </remarks>
+    NotTheirNameToChange
 }

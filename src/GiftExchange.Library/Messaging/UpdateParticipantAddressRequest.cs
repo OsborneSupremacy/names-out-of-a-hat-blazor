@@ -14,6 +14,14 @@ internal record UpdateParticipantAddressRequest
 {
     public required Guid HatId { get; init; }
 
+    /// <summary>
+    /// The organizer making the correction. Not scope — ownership is settled before the work
+    /// reaches the provider — but authorship: an address the application has never seen becomes a
+    /// new person, and this is who introduced them, which is what decides whose name it is to
+    /// change afterwards.
+    /// </summary>
+    public required string OrganizerEmail { get; init; }
+
     /// <summary>The address as it stands, which is how the participant is found.</summary>
     public required string CurrentEmail { get; init; }
 

@@ -1,0 +1,17 @@
+-- Who introduced this person to the application, and therefore whose name it is to change.
+--
+-- A name is stored once, on the person, so an edit to it is felt in every exchange they appear in.
+-- That is what makes it worth saying who may make one. Two people may: the person themselves, who
+-- holds the address this row is identified by, and whoever first typed their name into an
+-- exchange. Everybody else is told no. Without this column there is no way to tell the second of
+-- those from a stranger, and any organizer who ever shares a participant with another can rename
+-- them out from under both of them.
+--
+-- Points at person, like every other id here, and self-references for somebody who arrived under
+-- their own steam -- an organizer creating their first exchange introduces themselves.
+--
+-- Nullable, for the reason hat--0003 and hat--0005 give: DSQL rejects ALTER COLUMN ... SET NOT
+-- NULL, and takes neither a NOT NULL nor a DEFAULT on an ADD COLUMN, so the rows already in the
+-- table can only be filled by a statement of their own. person--0004 is that statement, and
+-- PersonEntity.AddedByPersonId being non-nullable is what keeps every row written after it filled.
+ALTER TABLE person ADD COLUMN added_by_person_id UUID

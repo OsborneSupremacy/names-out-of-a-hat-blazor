@@ -260,14 +260,20 @@ public class GiftExchangeProviderTests
 
         await using var context = contextFactory.CreateDbContext();
 
+        var firstPersonId = Guid.CreateVersion7();
+
         var first = new PersonEntity
         {
-            PersonId = Guid.CreateVersion7(), Name = "First", Email = $"first.{hat.HatId}@example.com"
+            PersonId = firstPersonId, Name = "First", Email = $"first.{hat.HatId}@example.com",
+            AddedByPersonId = firstPersonId
         };
+
+        var secondPersonId = Guid.CreateVersion7();
 
         var second = new PersonEntity
         {
-            PersonId = Guid.CreateVersion7(), Name = "Second", Email = $"second.{hat.HatId}@example.com"
+            PersonId = secondPersonId, Name = "Second", Email = $"second.{hat.HatId}@example.com",
+            AddedByPersonId = secondPersonId
         };
 
         context.Persons.AddRange(first, second);
@@ -559,7 +565,12 @@ public class GiftExchangeProviderTests
     [Fact]
     public async Task RenamingTheEmptyAddress_IsRefusedRatherThanRenamingTheSentinel()
     {
-        var rename = async () => await _sut.UpdateOrganizerNameAsync(string.Empty, "Not The Sentinel");
+        var rename = async () => await _sut.RenamePersonAsync(new RenamePersonRequest
+        {
+            Email = string.Empty,
+            Name = "Not The Sentinel",
+            RequestedByEmail = string.Empty
+        });
 
         await rename.Should().ThrowAsync<ArgumentException>();
 

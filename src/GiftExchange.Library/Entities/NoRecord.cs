@@ -25,7 +25,10 @@ public static class NoRecord
         {
             PersonId = Guid.Empty,
             Name = string.Empty,
-            Email = string.Empty
+            Email = string.Empty,
+            // Its own id, which is what every person who was introduced by nobody holds. The
+            // sentinel introduced itself in the only sense available to it.
+            AddedByPersonId = Guid.Empty
         };
 
     /// <summary>

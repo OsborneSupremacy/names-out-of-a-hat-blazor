@@ -119,6 +119,66 @@ public class UpdateProfileTests
         alices.Organizer.Name.Should().Be(alicesHat.OrganizerName);
     }
 
+    /// <summary>
+    /// The gap that converging on <c>RenamePersonAsync</c> closed. This check used to look only at
+    /// exchanges the renamer organizes, and a rename reaches every exchange they are in — so
+    /// somebody could rename themselves into a collision in an exchange run by anybody else.
+    ///
+    /// The refusal does not name that exchange. Whose it is, and who else is in it, is not the
+    /// renamer's to learn from a message about their own profile.
+    /// </summary>
+    [Fact]
+    public async Task UpdateProfile_GivenANameTakenInSomebodyElsesExchange_ReturnsConflict()
+    {
+        // arrange: Bob takes part in Alice's exchange, which already has a Dave in it.
+        var bobEmail = FakeValues.Email(new Bogus.Faker());
+
+        var alicesHat = await CreateHatWithOrganizerAsync();
+
+        await _provider.CreateParticipantAsync(new AddParticipantRequest
+        {
+            OrganizerEmail = alicesHat.OrganizerEmail,
+            HatId = alicesHat.HatId,
+            Name = "Bob Original",
+            Email = bobEmail
+        }, []);
+
+        await _provider.CreateParticipantAsync(new AddParticipantRequest
+        {
+            OrganizerEmail = alicesHat.OrganizerEmail,
+            HatId = alicesHat.HatId,
+            Name = "Dave",
+            Email = "dave.in.alices.exchange@example.com"
+        }, []);
+
+        // act: Bob renames himself, in a session of his own rather than in Alice's exchange.
+        var response = await UpdateNameAsync(bobEmail, "Dave");
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Conflict);
+        response.Body.Should().NotContain(alicesHat.HatName);
+    }
+
+    /// <summary>
+    /// Somebody who has signed in but created nothing has no person row yet, so setting a name is
+    /// how they get one. It used to be a silent no-op that answered OK and wrote nothing.
+    /// </summary>
+    [Fact]
+    public async Task UpdateProfile_ForSomebodyWithNoRecordYet_WritesOne()
+    {
+        // arrange
+        var email = $"newcomer.{Guid.CreateVersion7():N}@example.com";
+
+        // act
+        var response = await UpdateNameAsync(email, "Newly Named");
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.OK);
+
+        var (organizerName, _) = await _provider.GetHatsAsync(email);
+        organizerName.Should().Be("Newly Named");
+    }
+
     private Task<APIGatewayProxyResponse> UpdateNameAsync(string organizerEmail, string name) =>
         _sut.FunctionHandler(
             _jsonService

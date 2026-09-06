@@ -25,8 +25,6 @@ public class EditParticipantNameTests
 
     private readonly TestDataService _testDataService;
 
-    private readonly AddParticipantRequestFaker _participantFaker = new();
-
     private readonly IApiGatewayHandler _sut;
 
     public EditParticipantNameTests(PostgresFixture dbFixture)
@@ -132,7 +130,7 @@ public class EditParticipantNameTests
     public async Task EditName_GivenANameAnotherParticipantHere_ReturnsConflictAndNamesTheExchange()
     {
         // arrange
-        var hat = await CreateHatWithOrganizerAsync();
+        var hat = await CreateHatWithOrganizerAsync("The Colliding Exchange");
         var participant = await AddParticipantAsync(hat, "Original Name");
         await AddParticipantAsync(hat, "Taken Name");
 
@@ -156,8 +154,8 @@ public class EditParticipantNameTests
     public async Task EditName_GivenANameTakenInSomebodyElsesExchange_ReturnsConflictWithoutNamingIt()
     {
         // arrange: Bob is in Alice's exchange and in Carol's, and Carol's already has a Dave.
-        var alicesHat = await CreateHatWithOrganizerAsync();
-        var carolsHat = await CreateHatWithOrganizerAsync();
+        var alicesHat = await CreateHatWithOrganizerAsync("Alices Exchange");
+        var carolsHat = await CreateHatWithOrganizerAsync("Carols Exchange");
 
         var bob = await AddParticipantAsync(alicesHat, "Bob Original");
         await AddParticipantAsync(carolsHat, "Bob Original", bob.Email);
@@ -219,6 +217,89 @@ public class EditParticipantNameTests
         stored.Organizer.Name.Should().Be("Organizer Renamed");
     }
 
+    /// <summary>
+    /// The refusal the hierarchy exists for. Two organizers can have the same person in their
+    /// exchanges, and only the one who introduced them may say what they are called.
+    /// </summary>
+    [Fact]
+    public async Task EditName_BySomebodyWhoNeitherIsNorAddedThem_ReturnsForbidden()
+    {
+        // arrange: Alice introduced Bob. Carol then added the same address to hers.
+        var alicesHat = await CreateHatWithOrganizerAsync();
+        var carolsHat = await CreateHatWithOrganizerAsync();
+
+        var bob = await AddParticipantAsync(alicesHat, "Bob Original");
+        await AddParticipantAsync(carolsHat, "Bob Original", bob.Email);
+
+        // act
+        var response = await RenameAsync(carolsHat.Organizer.Email, carolsHat.Id, bob.Email, "Bob Renamed");
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.Forbidden);
+        // The refusal explains itself without naming the organizer it is protecting.
+        response.Body.Should().NotContain(alicesHat.Organizer.Email);
+
+        var stored = await _testDataService
+            .GetParticipantAsync(alicesHat.Organizer.Email, alicesHat.Id, bob.Email);
+
+        stored.Person.Name.Should().Be("Bob Original");
+    }
+
+    /// <summary>
+    /// The other half of the hierarchy: whoever introduced somebody keeps that standing wherever
+    /// they appear, so Alice can still fix Bob's name after Carol has added him to hers.
+    /// </summary>
+    [Fact]
+    public async Task EditName_BySomebodyWhoAddedThem_IsAllowedEverywhereTheyAppear()
+    {
+        // arrange
+        var alicesHat = await CreateHatWithOrganizerAsync();
+        var carolsHat = await CreateHatWithOrganizerAsync();
+
+        var bob = await AddParticipantAsync(alicesHat, "Bob Original");
+        await AddParticipantAsync(carolsHat, "Bob Original", bob.Email);
+
+        // act
+        var response = await RenameAsync(alicesHat.Organizer.Email, alicesHat.Id, bob.Email, "Bob Corrected");
+
+        // assert
+        response.StatusCode.Should().Be((int)HttpStatusCode.OK);
+
+        var inCarols = await _testDataService
+            .GetParticipantAsync(carolsHat.Organizer.Email, carolsHat.Id, bob.Email);
+
+        inCarols.Person.Name.Should().Be("Bob Corrected");
+    }
+
+    /// <summary>
+    /// Adding somebody the application already knows does not acquire their name, which is what
+    /// stops the hierarchy being walked around by removing and re-adding them.
+    /// </summary>
+    [Fact]
+    public async Task AddingSomebodyAlreadyKnown_DoesNotRenameThem()
+    {
+        // arrange
+        var alicesHat = await CreateHatWithOrganizerAsync();
+        var carolsHat = await CreateHatWithOrganizerAsync();
+
+        var bob = await AddParticipantAsync(alicesHat, "Bob Original");
+
+        // act: Carol adds the same address under a name of her choosing.
+        await AddParticipantAsync(carolsHat, "Bob As Carol Types It", bob.Email);
+
+        // assert
+        var inAlices = await _testDataService
+            .GetParticipantAsync(alicesHat.Organizer.Email, alicesHat.Id, bob.Email);
+
+        inAlices.Person.Name.Should().Be("Bob Original");
+
+        // And Carol sees him under the name he already had, not the one she typed.
+        var inCarols = await _testDataService
+            .GetParticipantAsync(carolsHat.Organizer.Email, carolsHat.Id, bob.Email);
+
+        inCarols.Person.Name.Should().Be("Bob Original");
+    }
+
     [Fact]
     public async Task EditName_ForSomebodyNotInTheExchange_ReturnsNotFound()
     {
@@ -257,6 +338,18 @@ public class EditParticipantNameTests
         stored.Person.Name.Should().Be("Bob Original");
     }
 
+    /// <summary>
+    /// Deterministic rather than faked, and unique per call.
+    /// </summary>
+    /// <remarks>
+    /// Every test class in this collection shares one database, and a name is now global to a
+    /// person: a faked address that collided with one from another class would give this test
+    /// somebody else's participant, carrying somebody else's introducer, and the rename would be
+    /// refused for a reason the test never set up. Bogus makes that unlikely; a guid makes it
+    /// impossible, and costs nothing here because no assertion cares what the address looks like.
+    /// </remarks>
+    private static string UniqueEmail(string label) => $"{label}.{Guid.CreateVersion7():N}@example.com";
+
     private Task<APIGatewayProxyResponse> RenameAsync(
         string organizerEmail,
         Guid hatId,
@@ -279,9 +372,9 @@ public class EditParticipantNameTests
     /// Mirrors CreateHatService: the organizer is a participant in their own exchange, and both
     /// rows point at the same person.
     /// </summary>
-    private async Task<Hat> CreateHatWithOrganizerAsync()
+    private async Task<Hat> CreateHatWithOrganizerAsync(string? hatName = null)
     {
-        var hat = await _testDataService.CreateTestHatAsync();
+        var hat = await CreateTestHatAsync(hatName);
 
         await _testDataService.CreateParticipantAsync(new AddParticipantRequest
         {
@@ -296,20 +389,49 @@ public class EditParticipantNameTests
 
     private async Task<Person> AddParticipantAsync(Hat hat, string name, string? email = null)
     {
-        var request = _participantFaker.Generate() with
+        var request = new AddParticipantRequest
         {
             OrganizerEmail = hat.Organizer.Email,
             HatId = hat.Id,
-            Name = name
+            Name = name,
+            Email = email ?? UniqueEmail("participant")
         };
-
-        if (email is not null)
-            request = request with { Email = email };
 
         var existing = await _provider.GetParticipantsAsync(hat.Organizer.Email, hat.Id);
 
         await _testDataService.CreateParticipantAsync(request, existing);
 
         return new Person { Name = request.Name, Email = request.Email };
+    }
+
+    /// <summary>
+    /// A hat with an organizer nobody else in the database is, and a name a test can assert on
+    /// when it needs to see which exchange a refusal is talking about.
+    /// </summary>
+    private async Task<Hat> CreateTestHatAsync(string? hatName)
+    {
+        var data = new HatDataModelFaker().Generate() with
+        {
+            OrganizerEmail = UniqueEmail("organizer")
+        };
+
+        if (hatName is not null)
+            // Suffixed so two exchanges by the same label cannot collide, and short enough to stay
+            // inside the 50 characters hat.name allows.
+            data = data with { HatName = $"{hatName} {Guid.CreateVersion7():N}"[..30] };
+
+        await _testDataService.CreateHatAsync(data);
+
+        return new Hat
+        {
+            Id = data.HatId,
+            Name = data.HatName,
+            Status = HatStatus.InProgress,
+            AdditionalInformation = data.AdditionalInformation,
+            PriceRange = data.PriceRange,
+            Organizer = new Person { Email = data.OrganizerEmail, Name = data.OrganizerName },
+            Participants = [],
+            InvitationsQueuedDate = DateTimeOffset.MinValue
+        };
     }
 }

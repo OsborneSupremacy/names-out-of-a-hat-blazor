@@ -24,6 +24,8 @@ public partial class NoRecordTests
         person.PersonId.Should().Be(Guid.Empty);
         person.Name.Should().BeEmpty();
         person.Email.Should().BeEmpty();
+        // Introduced by itself, which is how this schema spells "nobody introduced them".
+        person.AddedByPersonId.Should().Be(Guid.Empty);
     }
 
     [Fact]

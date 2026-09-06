@@ -157,7 +157,12 @@ public partial class EntityMappingTests
         // constrained to a table already holding rows -- DSQL took neither half, which is where the
         // second clause of the summary above comes from. ParticipantEntity.Emoji is non-nullable
         // and a face is chosen when a participant is added, so every row written since carries one.
-        "participant.emoji"
+        "participant.emoji",
+
+        // Added by person--0003, backfilled by person--0004. PersonEntity.AddedByPersonId is
+        // non-nullable, and the two paths that write a person -- ResolvePersonIdAsync and the
+        // address correction that lands on an address nobody holds -- both state it.
+        "person.added_by_person_id"
     ];
 
     /// <summary>
