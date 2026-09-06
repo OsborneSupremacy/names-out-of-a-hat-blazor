@@ -537,6 +537,14 @@
   gap: 0.25rem;
 }
 
+/* The two repairs offered on a participant -- their address and their name -- sit on one line
+ * rather than stacking, so the cell does not grow a column of links. */
+.participant-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 /* The face and the name sit on one line inside the cell, which is otherwise a column. */
 .participant-name-line {
   display: flex;

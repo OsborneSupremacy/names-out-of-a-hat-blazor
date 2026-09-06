@@ -15,6 +15,7 @@ import {
   copyHat,
   editParticipantAddress,
   editParticipantEmoji,
+  editParticipantName,
   exportHat,
   resetHat,
   Hat,
@@ -33,6 +34,7 @@ import { formatRelativeTime, formatDateAndTime } from '../relativeTime'
 import { MAX_PARTICIPANTS } from '../participantLimit'
 import { EditAddressModal, ResendKind } from '../components/EditAddressModal'
 import { EditEmojiModal } from '../components/EditEmojiModal'
+import { EditParticipantNameModal } from '../components/EditParticipantNameModal'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AddParticipantModal } from '../components/AddParticipantModal'
@@ -87,6 +89,12 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
   const [savingAddress, setSavingAddress] = useState(false)
   const [editingEmojiFor, setEditingEmojiFor] = useState<Participant | null>(null)
   const [savingEmoji, setSavingEmoji] = useState(false)
+  const [editingNameFor, setEditingNameFor] = useState<Participant | null>(null)
+  const [savingName, setSavingName] = useState(false)
+  // Kept apart from the page-level `error` like the two above, and carrying more than they usually
+  // do: this is where the server's refusal lands when the rename was not this organizer's to make,
+  // and that sentence is the entire explanation the organizer gets.
+  const [nameError, setNameError] = useState('')
   // Kept apart from the page-level `error` for the reason addressError is: a failed change should
   // leave the organizer looking at their exchange with the dialog still open.
   const [emojiError, setEmojiError] = useState('')
@@ -330,6 +338,55 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
       setEmojiError(err instanceof Error ? err.message : 'Failed to update the emoji')
     } finally {
       setSavingEmoji(false)
+    }
+  }
+
+  const handleOpenNameModal = (participant: Participant) => {
+    setNameError('')
+    setEditingNameFor(participant)
+  }
+
+  /**
+   * Renaming one participant.
+   *
+   * The dialog stays open on a failure, which matters more here than for the other two edits: the
+   * refusals this can return are explanations rather than glitches — somebody else already goes by
+   * that name, or the name is not this organizer's to change — and both are read while looking at
+   * the box that caused them.
+   *
+   * A notice afterwards, unlike the emoji edit, because the change is not confined to what the
+   * organizer can see. The row will show the new name when the reload lands; the sentence is there
+   * to say the rest of it went further than this exchange.
+   */
+  const handleSaveName = async (newName: string) => {
+    if (!hatId || !editingNameFor) return
+
+    const previousName = editingNameFor.person.name
+
+    setSavingName(true)
+    setNameError('')
+
+    try {
+      await editParticipantName({
+        organizerEmail: userEmail,
+        hatId,
+        email: editingNameFor.person.email,
+        name: newName,
+      })
+
+      setEditingNameFor(null)
+
+      setParticipantsNotice(
+        `${previousName} is now ${newName}, here and in every other gift exchange they take part in.`
+      )
+
+      const updatedHat = await getHat(userEmail, hatId)
+      setHat(updatedHat)
+    } catch (err) {
+      console.error('Error updating participant name:', err)
+      setNameError(err instanceof Error ? err.message : 'Failed to update the name')
+    } finally {
+      setSavingName(false)
     }
   }
 
@@ -1011,13 +1068,28 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                     * column is right beside it — and where removing and re-adding
                                     * somebody would break the draw instead of fixing anything.
                                     */}
-                                  <button
-                                    type="button"
-                                    className="edit-address-button"
-                                    onClick={() => handleOpenAddressModal(participant)}
-                                  >
-                                    Edit Address
-                                  </button>
+                                  <div className="participant-edit-actions">
+                                    <button
+                                      type="button"
+                                      className="edit-address-button"
+                                      onClick={() => handleOpenAddressModal(participant)}
+                                    >
+                                      Edit Address
+                                    </button>
+                                    {/*
+                                      * Beside the address for the same reason the address is here:
+                                      * this is the table an organizer is looking at when somebody
+                                      * writes back to say their name is spelled wrong, and neither
+                                      * repair should cost them the draw.
+                                      */}
+                                    <button
+                                      type="button"
+                                      className="edit-name-button"
+                                      onClick={() => handleOpenNameModal(participant)}
+                                    >
+                                      Edit Name
+                                    </button>
+                                  </div>
                                 </div>
                               </td>
                               <td>
@@ -1122,13 +1194,22 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
                                     <span className="row-edit-indicator">Click row to edit</span>
                                   )}
                                   {isEditingThis && (
-                                    <button
-                                      type="button"
-                                      className="edit-address-button"
-                                      onClick={() => handleOpenAddressModal(participant)}
-                                    >
-                                      Edit Address
-                                    </button>
+                                    <div className="participant-edit-actions">
+                                      <button
+                                        type="button"
+                                        className="edit-address-button"
+                                        onClick={() => handleOpenAddressModal(participant)}
+                                      >
+                                        Edit Address
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="edit-name-button"
+                                        onClick={() => handleOpenNameModal(participant)}
+                                      >
+                                        Edit Name
+                                      </button>
+                                    </div>
                                   )}
                                   {isEditingThis && !isOrganizer && (
                                     <button
@@ -1241,6 +1322,17 @@ export function GiftExchangeDetail({ userEmail, onSignOut }: GiftExchangeDetailP
           error={addressError}
           onCancel={() => setEditingAddressFor(null)}
           onConfirm={handleSaveAddress}
+        />
+      )}
+
+      {editingNameFor && (
+        <EditParticipantNameModal
+          currentName={editingNameFor.person.name}
+          currentEmail={editingNameFor.person.email}
+          isSaving={savingName}
+          error={nameError}
+          onCancel={() => setEditingNameFor(null)}
+          onConfirm={handleSaveName}
         />
       )}
 

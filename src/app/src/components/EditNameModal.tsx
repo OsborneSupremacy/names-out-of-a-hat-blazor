@@ -61,9 +61,14 @@ export function EditNameModal({ currentName, onClose, onSubmit }: EditNameModalP
             {error && <div className="error-text">{error}</div>}
           </div>
 
+          {/*
+            * "take part in", not "organize". A name belongs to the person rather than to one
+            * exchange, so this reaches exchanges somebody else runs and you are only a participant
+            * in — which is also why it can be refused when somebody there already goes by it.
+            */}
           <p className="modal-note">
-            This updates your name in every gift exchange you organize. Invitations that have
-            already been sent will still show your old name.
+            This updates your name in every gift exchange you take part in, including ones somebody
+            else organizes. Invitations that have already been sent will still show your old name.
           </p>
 
           <div className="modal-actions">

@@ -1,0 +1,93 @@
+.edit-participant-name-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.edit-participant-name-current {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666666;
+}
+
+.edit-participant-name-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.edit-participant-name-input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+}
+
+.edit-participant-name-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #666666;
+}
+
+.edit-participant-name-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #b3261e;
+}
+
+/* Small and quiet, matching .edit-address-button in EditAddressModal.css deliberately: both are
+ * repairs sitting in the same participant cell, and they should not look like different weights of
+ * action. Duplicated rather than shared because there are two of them; if a third turns up, this
+ * pair and that one become one class — the same bargain the modal chrome comment describes. */
+.edit-name-button {
+  padding: 0.125rem 0;
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666666;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.edit-name-button:hover {
+  color: inherit;
+}
+
+/* The application follows the reader's system theme, and every component styles its own dark
+ * variant -- see EditEmojiModal.css, which this borrows its palette from. Worth stating what the
+ * error colour is doing here rather than only what it is: the refusal this endpoint can return is
+ * the entire explanation an organizer gets for why a rename was not theirs to make, so it is the
+ * one line in the dialog that must not be the hardest thing on it to read. The light theme's red
+ * lands at about 2:1 against this surface. */
+@media (prefers-color-scheme: dark) {
+  .edit-participant-name-current,
+  .edit-participant-name-note {
+    color: #9ca3af;
+  }
+
+  .edit-participant-name-label {
+    color: #d1d5db;
+  }
+
+  .edit-participant-name-input {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .edit-participant-name-input:disabled {
+    background-color: #1f2937;
+  }
+
+  .edit-participant-name-error {
+    color: #f87171;
+  }
+
+  .edit-name-button {
+    color: #9ca3af;
+  }
+
+  .edit-name-button:hover {
+    color: #f9fafb;
+  }
+}

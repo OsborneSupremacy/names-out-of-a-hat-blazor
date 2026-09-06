@@ -79,3 +79,53 @@
 .edit-address-button:hover {
   color: inherit;
 }
+
+/* The application follows the reader's system theme and every component styles its own dark
+ * variant. This file had none, so the four hard-coded colours below were landing on the dark
+ * modal surface at contrast ratios of roughly 2:1 -- readable if you knew what it said.
+ *
+ * Only the four. Everything else here inherits, and `color-scheme: light dark` on :root already
+ * carries it: the current-address line, the label and the warning's own text come out near-white,
+ * and the input takes the UA's dark fill without being asked. Its border did not, which is the one
+ * addition below that is about looking wrong rather than reading badly -- and the fill is restated
+ * anyway so this input matches the ones in AddParticipantModal.css rather than the browser's idea
+ * of grey.
+ *
+ * The error is the line that matters most. It is where the server's explanation lands -- an
+ * address already in this exchange, a name it would collide with -- and an organizer who cannot
+ * read it is left with a dialog that simply refused them. */
+@media (prefers-color-scheme: dark) {
+  .edit-address-input {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .edit-address-input:disabled {
+    background-color: #1f2937;
+  }
+
+  .edit-address-hint {
+    color: #9ca3af;
+  }
+
+  /* The bar exists to be noticed before an email goes out on somebody's behalf. In the light theme
+   * that is what the deep red does; here it was a dark stripe on a dark panel. */
+  .edit-address-warning {
+    border-left-color: #f87171;
+  }
+
+  .edit-address-error {
+    color: #f87171;
+  }
+
+  /* Matched to .edit-name-button, which sits immediately beside this one in the participant cell.
+   * Two links doing the same kind of work should not be two different greys. */
+  .edit-address-button {
+    color: #9ca3af;
+  }
+
+  .edit-address-button:hover {
+    color: #f9fafb;
+  }
+}

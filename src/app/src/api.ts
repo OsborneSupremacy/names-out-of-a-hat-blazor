@@ -61,6 +61,14 @@ export interface EditParticipantEmojiRequest {
   emoji: string
 }
 
+export interface EditParticipantNameRequest {
+  organizerEmail: string
+  hatId: string
+  /** The address the participant is recorded at, which is how the server finds them. */
+  email: string
+  name: string
+}
+
 export interface EditParticipantAddressRequest {
   organizerEmail: string
   hatId: string
@@ -407,6 +415,32 @@ export async function editParticipantEmoji(request: EditParticipantEmojiRequest)
 
   if (!response.ok) {
     await handleApiError(response, 'Failed to update the emoji')
+  }
+}
+
+/**
+ * Changes the name a participant is known by.
+ *
+ * Its own endpoint rather than part of editParticipant, for the reason editParticipantEmoji is one:
+ * that call resets the exchange to IN_PROGRESS, and a name has nothing to do with the draw —
+ * eligibility and picks are held server-side as ids, so a rename cannot invalidate one.
+ *
+ * Two refusals are worth knowing about at the call site, both surfaced as the server's own message:
+ * 409 when somebody in an exchange this person is in already goes by the new name, and 403 when the
+ * caller neither is that person nor added them. Nothing in the participant payload says which
+ * organizer introduced whom, so the 403 can only be found out by asking.
+ */
+export async function editParticipantName(request: EditParticipantNameRequest): Promise<void> {
+  const headers = await getAuthHeaders()
+
+  const response = await fetch(`${apiConfig.endpoint}/participant/name`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    await handleApiError(response, 'Failed to update the name')
   }
 }
 
