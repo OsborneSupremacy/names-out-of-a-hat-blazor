@@ -1,7 +1,22 @@
+/* The other dialogs take their padding from `.modal-content form`. This one has no form -- it is a
+ * single field and two buttons, with nothing to submit -- so it supplies its own, as
+ * SendConfirmationModal.css does for the same reason. Without it every line sits flush against the
+ * edge of the modal and the input's border runs off both sides.
+ *
+ * 1.5rem rather than the 1.25rem EditAddressModal.css uses, so the body copy lines up with the
+ * heading above it: `.modal-header` is 1.5rem too. */
 .edit-participant-name-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 1.5rem;
+}
+
+/* The column's own gap already separates the buttons from the note above them, and
+ * `.modal-actions` adds 2rem of its own on top of that -- which in a dialog this short reads as a
+ * hole rather than as breathing room. */
+.edit-participant-name-body .modal-actions {
+  margin-top: 1rem;
 }
 
 .edit-participant-name-current {
