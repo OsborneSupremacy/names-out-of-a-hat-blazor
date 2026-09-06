@@ -25,6 +25,26 @@ internal static class FakeValues
     public static string Email(Faker faker) =>
         $"{faker.Random.AlphaNumeric(8)}.{faker.Person.Email}".ToLowerInvariant();
 
+    /// <summary>
+    /// A person's name, suffixed so that two faked people cannot land on the same one.
+    /// </summary>
+    /// <remarks>
+    /// The same problem <see cref="Email"/> solves, and for a closely related reason. Bogus draws
+    /// first names from a pool small enough that a hat seeded with a handful of participants
+    /// regularly gets two of the same, and participants within a gift exchange must have distinct
+    /// names -- so the collision does not fail where it happened. It surfaces later, somewhere
+    /// else, as whatever that test happened to be asserting: an eligible-recipients list with a
+    /// duplicate entry in ResetHatTests, a 409 about a duplicate name where AddParticipantTests
+    /// expected one about the participant limit, or a 201 that never came. Three classes, failing
+    /// differently, roughly one full run in five.
+    ///
+    /// Inside the rule AddParticipantRequestValidator enforces -- letters, digits and spaces are
+    /// all it needs -- and short enough that the 100 character bound is never in question. The name
+    /// stays readable so a failure message still reads like it is about a person.
+    /// </remarks>
+    public static string Name(Faker faker) =>
+        Truncate($"{faker.Person.FirstName} {faker.Random.AlphaNumeric(8)}", 100);
+
     public static string PriceRange(Faker faker) => Truncate(faker.Random.Words(3), 50);
 
     public static string AdditionalInformation(Faker faker) => Truncate(faker.Random.Words(5), 2000);

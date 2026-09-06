@@ -6,7 +6,7 @@ public sealed class PersonFaker : Faker<Models.Person>
 {
     public PersonFaker()
     {
-        RuleFor(p => p.Name, f => f.Person.FirstName);
+        RuleFor(p => p.Name, FakeValues.Name);
         RuleFor(p => p.Email, FakeValues.Email);
     }
 }
